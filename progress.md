@@ -12,6 +12,10 @@ Agent가 서비스 저장소 루트의 `progress.md`로 복사해 이어 쓴다(
   - R02 보완: 직접 찍은 사진 없이 제품 후보를 고르면 서버가 후보 이미지를 내려받아(공인 주소만, 10MB·JPG/PNG/WEBP) 제품 이미지 원본으로 저장하고 대표 이미지로 씀
   - 미흡: R00 '예시 옷장 둘러보기'는 랜딩의 고정 미리보기뿐, 문제정의 근거(experiences·sources·인터뷰) 비어 있음
   - 한계: 배경이 복잡하거나 옷과 배경색이 비슷하면 지우지 않고 원본 유지(정밀 누끼 모델은 쓰지 않음)
+  - R03 main 반영 a1a93fd. 팀원 커밋 c82fb5e의 POST /api/images/{id}/processed(옷·대표 이미지에 연결하지 않음, 화면에서 안 씀)는 그대로 둠 → 하나로 정리할지 팀 확인 필요
+- 2026-10-29 범위 변경 발견(팀원 커밋 6cdebd3·318f47e·ee85b50, 우성 수정안): 문제를 '집 밖·박스 속 옷의 위치·상태 모름'으로 좁힘. 해법 chosen = 박스·세탁소 '옮기는 단위' 묶음 기록, 3D 가상착의·코디 rejected, features에서 R05·R06 제외, R11(묶음 기록) 추가
+  - 학생이 이 세션에서 준 기획안(택 인식+통합 기록 chosen, 3D deferred)은 수정 전 버전으로 보임 → 어느 쪽을 기준으로 할지 학생 답 대기
+  - 수정안 기준이면: R11 미구현(QR·영수증 촬영, 여러 벌 묶어 옮김, 박스·본가 위치), R04 '집 밖/박스' 보기 없음, scenarios.yaml S4·S5(3D·추천)가 제외 기능을 씀 → 흐름 교체 필요, 3D·추천 화면을 숨길지 결정 필요
   - 운영 미완: e2e/ 없음, workflows/scenarios.yml 없음(backend·frontend CI만), 배포 URL 없음, AI 키 연결 실요청 미확인
 - 2026-10-29 학생 결정: 백엔드 Spring, DB MariaDB, 프런트 Vite+React. DB는 5NF까지 정규화하고 ER 다이어그램과 교차 검증 결과를 제공(docs/db/ERD.md). 이 PC에 Docker 없음 → docker 검증은 GitHub Actions로
 - 로컬 테스트용 일회용 MariaDB 10.4 인스턴스: 127.0.0.1:3399(root, 비밀번호 없음, 데이터는 세션 scratchpad). 학생 PC의 MariaDB 서비스(3307)는 건드리지 않음
