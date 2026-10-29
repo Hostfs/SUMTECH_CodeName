@@ -188,8 +188,7 @@ export function Mannequin({
           <ellipse cx="100" cy="40" rx="21" ry="26" />
         </g>
 
-        {/* 옷: 하의 → 신발 → 상의 → 아우터 순으로 겹친다 */}
-        <Fit cutout={bottom} cx={100} top={172} {...plan("bottom", bottom, 2 * hw + 8)} />
+        {/* 옷: 신발 → 하의(밑단이 신발을 덮는다) → 상의 → 아우터 순으로 겹친다 */}
         {[-1, 1].map((d) => {
           if (!shoes) return null;
           // 옆모습 신발(가로로 긴 사진)은 정면 신발처럼 다시 구성해서 놓는다
@@ -198,6 +197,7 @@ export function Mannequin({
           }
           return <Fit key={d} cutout={shoes} cx={100 + d * (legX - 2)} bottom={433} flip={d === -1} {...plan("shoes", shoes, 44)} />;
         })}
+        <Fit cutout={bottom} cx={100} top={172} {...plan("bottom", bottom, 2 * hw + 8)} />
         <Fit cutout={top} cx={100} top={70} {...plan("top", top, 2 * armOuter + 4)} />
         <Fit cutout={outer} cx={100} top={64} {...plan("outer", outer, 2 * armOuter + 20)} />
         {/* 가방·소품은 오른손 쪽에 늘어뜨리고, 모자는 머리 위에 씌운다 */}
