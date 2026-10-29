@@ -126,3 +126,57 @@ export const CameraIcon = (p: IconProps) => (
     <circle cx="12" cy="13" r="3.2" />
   </Icon>
 );
+
+export const BellIcon = (p: IconProps) => (
+  <Icon size={20} {...p}>
+    <path d="M6 16 V11 A6 6 0 0 1 18 11 V16 L19.5 18 H4.5 Z" />
+    <path d="M10 20.5 a2 2 0 0 0 4 0" />
+  </Icon>
+);
+
+/** 코디(상의) 아이콘 */
+export const ShirtIcon = (p: IconProps) => (
+  <Icon size={16} {...p}>
+    <path d="M8.5 4 L4 7 L6 10.5 L8 9.5 V20 H16 V9.5 L18 10.5 L20 7 L15.5 4 Q12 7 8.5 4Z" />
+  </Icon>
+);
+
+// ── 날씨 아이콘 (목업과 같은 경로) ──
+
+export const SunIcon = (p: IconProps) => (
+  <Icon size={22} stroke={1.5} {...p}>
+    <circle cx="12" cy="12" r="4" />
+    <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+  </Icon>
+);
+
+export const PartlyCloudyIcon = (p: IconProps) => (
+  <Icon size={22} stroke={1.5} {...p}>
+    <path d="M12 2v2M4.93 4.93l1.41 1.41M20 12h2M19.07 4.93l-1.41 1.41M15.95 12.65a4 4 0 0 0-5.93-4.13M13 22H7a5 5 0 1 1 4.9-6H13a3 3 0 0 1 0 6Z" />
+  </Icon>
+);
+
+export const CloudIcon = (p: IconProps) => (
+  <Icon size={22} stroke={1.5} {...p}>
+    <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />
+  </Icon>
+);
+
+export const RainIcon = (p: IconProps) => (
+  <Icon size={22} stroke={1.5} {...p}>
+    <path d="M4 14.9A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.24M16 14v6M8 14v6M12 16v6" />
+  </Icon>
+);
+
+export const SnowIcon = (p: IconProps) => (
+  <Icon size={22} stroke={1.5} {...p}>
+    <path d="M4 14.9A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.24" />
+    <path d="M8 15h.01M8 19h.01M12 17h.01M12 21h.01M16 15h.01M16 19h.01" />
+  </Icon>
+);
+
+export const MoonIcon = (p: IconProps) => (
+  <Icon size={22} stroke={1.5} {...p}>
+    <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+  </Icon>
+);
