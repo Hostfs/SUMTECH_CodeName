@@ -12,10 +12,10 @@ export function Screen({
   background?: React.ReactNode;
 }) {
   return (
-    <div className="absolute inset-0 overflow-hidden bg-bg">
+    <div className="absolute inset-0 overflow-clip bg-bg">
       {background}
       <main
-        className="no-scrollbar relative h-full overflow-y-auto overscroll-contain pt-[var(--status-h)]"
+        className="no-scrollbar @container relative h-full overflow-y-auto overscroll-contain pt-[var(--status-h)]"
         style={withTabBar ? { paddingBottom: "var(--tabbar-h)" } : undefined}
       >
         {children}

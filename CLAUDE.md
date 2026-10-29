@@ -31,6 +31,8 @@
 
 - Next.js 15 (App Router) + TypeScript + Tailwind CSS v4
   - Tailwind v4는 설정 파일 대신 `app/globals.css`의 `@theme inline`에서 CSS 변수를 클래스로 연결한다(`bg-primary`, `text-deep`, `rounded-card` …).
+  - 전역 요소 스타일은 반드시 `@layer base` 안에 둔다. 레이어 밖에 두면 Tailwind 유틸리티(예: `text-on`)를 덮어쓴다.
+  - 공통 UI: `components/ui/`(Button·Chip·Sheet·Toast), 아이콘 `components/icons.tsx`(목업 SVG 경로). 바텀시트와 토스트는 아이폰 화면 안에 그려진다.
   - 글꼴은 npm `pretendard`(가변 글꼴, dynamic subset)를 `app/layout.tsx`에서 불러온다.
   - 아이콘: 탭 바처럼 목업에 있는 아이콘은 `design/html`의 SVG를 그대로 옮기고, 목업에 없는 아이콘만 lucide-react를 쓴다.
 - UI 컴포넌트: shadcn/ui를 필요한 것만 쓰고, 스타일은 `design-system.md` 토큰으로 덮어쓴다.
@@ -62,6 +64,11 @@
 - 전역 `word-break: keep-all;`. 단어 중간에서 줄이 끊기면 안 된다.
 - 줄바꿈 후 각 줄이 한 줄에 들어가야 한다. 넘치면 문장을 짧게 다듬는다. 3줄로 넘어가면 안 된다.
 - 문구 목록은 `docs/screens.md`에 있다. 임의로 바꾸지 말고, 바꿔야 하면 이유를 남긴다.
+- 목업이 없어서 새로 정한 문구 (팀 확인 필요):
+  - 장소 선택 시트: 제목 `보관 위치 선택`, 확인 버튼 `위치 변경`
+  - 필터 시트: 제목 `필터`, 묶음 `종류·계절·색상·보관 위치`, 버튼 `필터 초기화` · `n벌 보기`. 필터를 고르면 `필터 n`으로 개수를 보여 준다.
+  - 정렬 메뉴: `최근 등록순` · `이름순`
+  - 검색어 없이 필터만으로 결과가 없을 때: `조건에 맞는 옷이 없어요.` + `필터 초기화`
 
 ## 6. 해커톤 구현 범위
 
@@ -106,6 +113,16 @@ type ThemeSetting = 'auto' | Season;
 ```
 
 R09 원칙: 화면들은 같은 garment id를 참조하므로, 한 화면에서 바꾼 값이 모든 화면에 같게 보여야 한다.
+
+구현 (2단계, 2026-10-29):
+- 타입은 `lib/types.ts`. 저장소 인터페이스는 `lib/repo/types.ts`(모두 Promise). 지금 구현은 `lib/repo/local.ts`(목업으로 시작, `closet.db` 키로 localStorage 저장). 백엔드를 붙일 때는 `lib/repo/index.ts`의 `repos`만 바꾼다.
+- 화면은 repo를 직접 부르지 않고 `components/DataProvider.tsx`의 `useData()`를 쓴다. 쓰기는 repo를 거친 뒤 목록을 다시 읽어 모든 화면에 반영한다.
+- 옷을 지우면 코디 슬롯에서도 빠진다. 장소를 지우면 하위 칸도 지워지고 그 안의 옷은 '미지정'이 된다.
+- 목업 데이터는 `lib/mock/seed.ts`. 옷 그림은 `design/html/closet_*.html`에서 추출한 SVG(`lib/mock/art.ts`)를 `photoUrl`(data URL)로 넣었다. 실제 사진도 같은 `photoUrl`로 들어온다.
+  - 장소 구조: 옷장 A(왼쪽 행거·오른쪽 행거·서랍 1~3), 옷장 B(행거), 수납 상자 1, 수납 상자 2, 신발장(1단·2단). 보관함 목업의 '행거 2 · 서랍 3'에 맞췄다.
+  - 목업 카드의 '옷장 A · 행거'(카키 셔츠)는 옷장 A의 행거가 둘이라 '옷장 A · 오른쪽 행거'로 정리했다.
+- 위치 표기는 카드 `옷장 A · 왼쪽 행거`, 상세·토스트 `옷장 A › 왼쪽 행거` (`lib/places.ts`의 `placePath`). 토스트의 '로/으로'는 `withRo`가 받침을 보고 고른다.
+- 내 옷장의 검색어·칩·필터·정렬은 sessionStorage(`closet.query`)에 두어 상세나 다른 탭에 다녀와도 남는다. 홈 검색은 `/closet?q=검색어`로 넘긴다. 등록 직후 강조할 카드는 `/closet?new=id`.
 
 ## 9. 아직 팀이 정하지 않은 것
 

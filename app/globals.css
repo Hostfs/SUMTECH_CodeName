@@ -67,29 +67,31 @@
   --text-tab: 11.5px;
 }
 
-/* ── 전역 ── */
-* {
-  box-sizing: border-box;
-}
-html,
-body {
-  margin: 0;
-  height: 100%;
-}
-body {
-  font-family: var(--font-sans);
-  color: var(--ink);
-  letter-spacing: -0.01em;
-  word-break: keep-all;
-  overflow-wrap: break-word;
-  -webkit-font-smoothing: antialiased;
-  -webkit-tap-highlight-color: transparent;
-}
-button {
-  font: inherit;
-  letter-spacing: inherit;
-  color: inherit;
-  cursor: pointer;
+/* ── 전역 (Tailwind 유틸리티가 이길 수 있게 base 레이어에 둔다) ── */
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+  html,
+  body {
+    margin: 0;
+    height: 100%;
+  }
+  body {
+    font-family: var(--font-sans);
+    color: var(--ink);
+    letter-spacing: -0.01em;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+  }
+  button {
+    font: inherit;
+    letter-spacing: inherit;
+    color: inherit;
+    cursor: pointer;
+  }
 }
 
 /* ── 아이폰 미리보기 프레임 ──

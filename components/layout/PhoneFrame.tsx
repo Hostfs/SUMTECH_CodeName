@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { applyPhoneZoom } from "@/lib/phone";
+import { ToastViewport } from "@/components/ui/Toast";
 import { StatusBar } from "./StatusBar";
 
 /** 넓은 화면에서는 아이폰 프레임, 실제 폰에서는 전체 화면으로 보여 준다 (globals.css 참고). */
@@ -17,6 +18,7 @@ export function PhoneFrame({ children }: { children: React.ReactNode }) {
       <div className="phone-frame">
         <div className="phone-screen">
           {children}
+          <ToastViewport />
           <StatusBar />
           <div className="phone-island" aria-hidden />
           <div className="phone-home-indicator" aria-hidden />

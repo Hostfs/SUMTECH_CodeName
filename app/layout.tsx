@@ -1,7 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import "pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css";
 import "./globals.css";
+import { DataProvider } from "@/components/DataProvider";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { ToastProvider } from "@/components/ui/Toast";
 import { PhoneFrame } from "@/components/layout/PhoneFrame";
 import { phoneZoomScript } from "@/lib/phone";
 import { themeInitScript } from "@/lib/theme";
@@ -27,7 +29,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <ThemeProvider>
-          <PhoneFrame>{children}</PhoneFrame>
+          <DataProvider>
+            <ToastProvider>
+              <PhoneFrame>{children}</PhoneFrame>
+            </ToastProvider>
+          </DataProvider>
         </ThemeProvider>
       </body>
     </html>
