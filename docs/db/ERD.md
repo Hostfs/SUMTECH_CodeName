@@ -4,6 +4,7 @@
 - 테이블 46개(핵심 29 + 도메인 17), 외래키 60개(복합 FK 1개 포함, 열 쌍 61개), CHECK 제약 22개, 같은 주인 트리거 22개
 - V2(R11 옮기는 묶음, 2.1절)를 더하면 테이블 51개(핵심 34 + 도메인 17), 외래키 69개(열 쌍 70개), CHECK 22개, 트리거 30개다. V2 개수는 스크립트에서 센 값이고, 실제 적용은 CI의 마이그레이션 테스트로 확인한다. 아래 1~2절 다이어그램과 검증 수치는 V1 기준이다.
 - V3(`V3__scope_cleanup.sql`): 범위에서 뺀 코디 테이블 `outfits`·`outfit_garments`·`body_profiles`를 지우고, 옷 ↔ 등록 때 한 제품 검색 연결 `garment_product_searches`(같은 주인 트리거 2개)를 더했다. 그래서 테이블 49개다. 아래 다이어그램의 코디 테이블은 V1 기록으로 남겨 둔다.
+- V4(`V4__care_completed_kst.sql`): `care_events.ck_ce_completed`를 `DATE(completed_at + INTERVAL 9 HOUR) >= dropped_on`으로 바꿨다. `completed_at`은 UTC로, `dropped_on`은 서울 날짜로 저장돼 서울 00~09시 회수가 막혔다. 테이블·CHECK 개수는 그대로다.
 - 아래 다이어그램은 손으로 그리지 않았다. `schema.sql`을 실제 MariaDB 10.4.12에 적용한 뒤 `information_schema`에서 자동 생성했다. 관계선 41 + 20 = 61개가 외래키 열 쌍 61개와 같다.
 
 ## 1. 교차 검증 결과

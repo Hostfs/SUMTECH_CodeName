@@ -1,6 +1,7 @@
 package ai.otgyeol;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.net.CookieManager;
 import java.net.URI;
@@ -11,6 +12,7 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -408,6 +410,26 @@ class OtgyeolApplicationTests {
         assertThat(linked.get("search").get("candidates").size()).isZero();
         assertThat(new Client().login().post("/api/garments", "{\"name\":\"남의 검색\",\"subType\":\"SHIRT\",\"searchId\":" + searchId + "}")
                 .status()).isEqualTo(404);
+    }
+
+    @Test
+    void careCompletedCheckUsesSeoulDate() throws Exception {
+        // completed_at은 UTC로, dropped_on은 서울 날짜로 저장된다. 실행 시각과 관계없이 서울 00:30 회수를 확인한다.
+        Client c = new Client();
+        c.post("/api/auth/signup", "{\"email\":\"kst" + System.nanoTime() + "@example.com\",\"password\":\"password123\"}");
+        long shirt = c.post("/api/garments", "{\"name\":\"새벽 회수 셔츠\",\"subType\":\"SHIRT\"}").body().get("summary").get("id").asLong();
+        long care = c.post("/api/garments/" + shirt + "/care", "{\"careType\":\"WASH\",\"place\":\"HOME\",\"dueOn\":\"" + today(1) + "\"}")
+                .body().get("inProgress").get(0).get("care").get("id").asLong();
+        ZoneId seoul = ZoneId.of("Asia/Seoul");
+        LocalDate today = LocalDate.now(seoul);
+        String earlyToday = today.atTime(0, 30).atZone(seoul).withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime().toString();
+        String lateYesterday = today.minusDays(1).atTime(23, 30).atZone(seoul).withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime().toString();
+
+        // 맡긴 날 서울 23:30(전날)에 회수했다는 기록은 막힌다
+        assertThatThrownBy(() -> jdbc.update("UPDATE care_events SET completed_at = ? WHERE id = ?", lateYesterday, care))
+                .hasMessageContaining("ck_ce_completed");
+        // 맡긴 날 서울 00:30 회수(UTC로는 전날 15:30)는 된다
+        assertThat(jdbc.update("UPDATE care_events SET completed_at = ? WHERE id = ?", earlyToday, care)).isEqualTo(1);
     }
 
     /** AI 없이 검색 기록 한 건을 만든다(결과 없음). 로그인한 사용자의 것. */
