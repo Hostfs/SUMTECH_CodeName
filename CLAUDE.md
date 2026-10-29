@@ -178,6 +178,8 @@ R09 원칙: 화면들은 같은 garment id를 참조하므로, 한 화면에서 
 
 ## 10. 작업 방식
 
+- **GitHub (2026-10-29)**: 원격 `origin` = `https://github.com/Hostfs/SUMTECH_CodeName`(비공개 팀 저장소). 이 저장소에는 팀의 다른 프로젝트('옷결': Java 서버 + React)가 `main`에 이미 있어서, 우리 앱(Next.js '내 옷장')은 **`gelee` 브랜치에만** 올린다. 이력이 `main`과 이어지지 않으므로 `main`에 직접 올리거나 강제로 덮어쓰지 않는다(합치려면 팀과 폴더 구성을 정한 뒤 PR). 로컬 브랜치 이름(`master`)과 원격 이름(`gelee`)이 달라서 `git push`만으로는 거부된다. 항상 `git push origin master:gelee`로 올린다.
+
 - 화면은 `design/html`의 해당 파일과 `design/mockups` 이미지를 열어 비교하며 구현한다. 완료 후 390×844에서 스크린샷을 찍어 목업과 대조한다.
   - 대조 방법: `npm run dev` 후 브라우저 창을 480×920 이상으로 두면 프레임이 1배(화면 390×844)로 나온다.
   - 계절 테마는 `/my/theme`에서 바꿔 확인한다 (임시 화면 `/dev/theme`은 5단계에서 지웠다).
