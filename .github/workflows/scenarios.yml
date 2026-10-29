@@ -14,11 +14,12 @@ concurrency:
 
 jobs:
   e2e:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       RELEASE_ID: ${{ github.sha }}
       AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
+      KMA_API_KEY: ${{ secrets.KMA_API_KEY }}
     steps:
       - uses: actions/checkout@v5
 

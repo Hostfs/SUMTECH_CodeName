@@ -15,9 +15,10 @@ function menu(page: Page, name: string) {
   return page.locator('nav[aria-label="주 메뉴"]:visible').getByRole('link', { name: new RegExp(`^${name}`) })
 }
 
+// 앱은 한국 날짜로 회수 예정일을 계산한다. CI 러너(UTC)에서도 같은 날짜가 되게 서울 기준 오늘에서 센다.
 function inDays(days: number) {
-  const d = new Date()
-  d.setDate(d.getDate() + days)
+  const [y, m, day] = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul' }).format(new Date()).split('-').map(Number)
+  const d = new Date(y, m - 1, day + days)
   return d
 }
 

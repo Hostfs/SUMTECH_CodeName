@@ -573,3 +573,81 @@ a { color: inherit; }
 @media (min-width: 960px) { .account-bar { display: none; } }
 
 .care-status { color: var(--accent); font-weight: 700; }
+
+/* ---------- 오늘 날씨(R12) ---------- */
+/* 배경은 날씨 장면(맑음·구름·흐림·비·눈)과 밤낮으로 바뀐다. 글자는 모든 장면에서 흰색, 옷 카드는 흰 바탕. */
+.wx {
+  --wx-ink-2: rgba(255, 255, 255, .78);
+  position: relative; overflow: hidden; isolation: isolate;
+  color: #fff; border-radius: var(--r-card); padding: 20px; margin-bottom: 18px;
+  background: linear-gradient(165deg, #3a78c9 0%, #6fa7e3 100%);
+}
+.wx > * { position: relative; z-index: 1; }
+.wx-cloudy   { background: linear-gradient(165deg, #4f72a0 0%, #93add0 100%); }
+.wx-overcast { background: linear-gradient(165deg, #4e5866 0%, #858f9c 100%); }
+.wx-rain     { background: linear-gradient(165deg, #2f3d50 0%, #56697f 100%); }
+.wx-snow     { background: linear-gradient(165deg, #5f7590 0%, #a3b3c6 100%); }
+.wx.night            { background: linear-gradient(165deg, #0b1733 0%, #1f3566 100%); }
+.wx.night.wx-cloudy,
+.wx.night.wx-overcast { background: linear-gradient(165deg, #131b2b 0%, #34425a 100%); }
+.wx.night.wx-rain     { background: linear-gradient(165deg, #0f1622 0%, #2a3648 100%); }
+.wx.night.wx-snow     { background: linear-gradient(165deg, #1a2436 0%, #46566f 100%); }
+
+/* 비·눈·별: 배경 위 얇은 무늬. 움직임 줄이기 설정이면 멈춘다. */
+.wx::before { content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.wx-rain::before {
+  background-image: repeating-linear-gradient(105deg, transparent 0 14px, rgba(255, 255, 255, .16) 14px 15px, transparent 15px 34px);
+  background-size: 120px 120px; animation: wx-rain 0.9s linear infinite;
+}
+.wx-snow::before {
+  background-image: radial-gradient(circle, rgba(255, 255, 255, .7) 1.6px, transparent 2.2px), radial-gradient(circle, rgba(255, 255, 255, .45) 1.2px, transparent 1.8px);
+  background-size: 46px 46px, 31px 31px; background-position: 0 0, 15px 20px; animation: wx-snow 6s linear infinite;
+}
+.wx.night.wx-clear::before {
+  background-image: radial-gradient(circle, rgba(255, 255, 255, .8) 1px, transparent 1.6px), radial-gradient(circle, rgba(255, 255, 255, .5) 0.8px, transparent 1.4px);
+  background-size: 73px 61px, 47px 39px; background-position: 10px 7px, 30px 22px;
+}
+@keyframes wx-rain { to { background-position: -40px 120px; } }
+@keyframes wx-snow { to { background-position: 10px 46px, 25px 51px; } }
+@media (prefers-reduced-motion: reduce) { .wx::before { animation: none; } }
+
+.wx-empty {
+  display: flex; gap: 14px; align-items: center; justify-content: space-between; flex-wrap: wrap;
+  background: var(--accent-soft-2); color: var(--ink); border: 1px solid var(--line);
+}
+.wx-empty strong { display: block; font-size: var(--t-h2); }
+.wx-empty p { margin: 4px 0 0; color: var(--ink-2); font-size: var(--t-small); max-width: 46ch; }
+.wx-empty .btn { flex: none; }
+
+.wx-now { position: relative; display: grid; grid-template-columns: auto auto minmax(0, 1fr); align-items: center; gap: 4px 12px; padding-right: 64px; }
+.wx-icon { width: 48px; height: 48px; color: #fff; }
+.wx-clear:not(.night) .wx-icon { color: #ffd76a; }
+.wx-temp { font-size: 3rem; font-weight: 700; line-height: 1; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.wx-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.wx-text strong { font-size: var(--t-h2); }
+.wx-text span { color: var(--wx-ink-2); font-size: var(--t-small); }
+.wx-text .wx-src { font-size: 0.75rem; }
+.wx-refresh { position: absolute; top: 0; right: 0; background: none; border: 0; color: var(--wx-ink-2); font: inherit; font-size: var(--t-small); text-decoration: underline; cursor: pointer; padding: 4px 0; }
+.wx-tips { list-style: none; margin: 14px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: var(--t-small); }
+.wx-tips li { padding-left: 14px; position: relative; }
+.wx-tips li::before { content: ""; position: absolute; left: 2px; top: .6em; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+.wx-picks { margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(255, 255, 255, .22); }
+.wx-picks h2 { margin: 0 0 10px; font-size: var(--t-body); font-weight: 700; }
+.wx-picks h2 small { display: block; margin-top: 2px; font-weight: 400; font-size: 0.75rem; color: var(--wx-ink-2); }
+.wx-picks ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+.wx-pick {
+  display: flex; align-items: center; gap: 12px; padding: 8px 10px 8px 8px; border-radius: var(--r-tile);
+  background: var(--surface); color: var(--ink); text-decoration: none; min-width: 0;
+}
+.wx-pick:hover { box-shadow: 0 0 0 2px rgba(255, 255, 255, .6); }
+.wx-pick .row-thumb { flex: none; }
+.wx-pick-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.wx-pick-reason { font-size: 0.75rem; color: var(--ink-3); }
+.wx-pick-name { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wx-pick-loc { display: flex; align-items: center; gap: 4px; color: var(--accent); font-size: var(--t-small); min-width: 0; }
+.wx-pick-loc svg { width: 14px; height: 14px; flex: none; }
+.wx-none { margin: 0; color: var(--wx-ink-2); font-size: var(--t-small); }
+@media (min-width: 640px) { .wx-picks ul { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1200px) { .wx-picks ul { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (max-width: 380px) { .wx-now { grid-template-columns: auto minmax(0, 1fr); } .wx-icon { display: none; } }

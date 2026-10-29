@@ -156,3 +156,21 @@ export type Board = { today: string; dueToday: BoardItem[]; overdue: BoardItem[]
 export type Body = { heightCm: number | null; shoulderCm: number | null; chestCm: number | null; waistCm: number | null; hipCm: number | null; inseamCm: number | null }
 export type Outfit = { id: number; name: string; top: GarmentSummary | null; bottom: GarmentSummary | null }
 export type Recommendation = { top: GarmentSummary; bottom: GarmentSummary; reason: string }
+
+/** 현재 위치 날씨(R12). 기상청 초단기실황·단기예보를 서버가 합친 값. 받지 못한 값은 null. */
+export type Weather = {
+  observedAt: string
+  temperature: number | null
+  sky: string | null
+  precipitation: string
+  raining: boolean
+  humidity: number | null
+  windSpeed: number | null
+  minTemperature: number | null
+  maxTemperature: number | null
+  rainChance: number | null
+  /** 기온 기준표로 고른 계절(SPRING 등)과 화면 표기 */
+  seasons: string[]
+  seasonLabels: string[]
+  seasonReason: string
+}

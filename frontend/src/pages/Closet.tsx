@@ -4,6 +4,7 @@ import { api, errorMessage } from '../api'
 import GarmentCard from '../components/GarmentCard'
 import { IconSearch } from '../components/Icons'
 import { Loading, Notice } from '../components/Ui'
+import WeatherCard from '../components/WeatherCard'
 import { useLabel, useSession } from '../session'
 import type { GarmentSummary } from '../types'
 
@@ -29,6 +30,7 @@ export default function Closet() {
   const [query, setQuery] = useState(params.get('q') ?? '')
   const [items, setItems] = useState<GarmentSummary[] | null>(null)
   const [total, setTotal] = useState<number | null>(null)
+  const [allItems, setAllItems] = useState<GarmentSummary[] | null>(null)
   const [error, setError] = useState('')
 
   // 검색어는 잠시 멈춘 뒤 서버에 보낸다(이름·브랜드·색상·종류·위치 경로에서 찾음).
@@ -36,7 +38,7 @@ export default function Closet() {
     const t = setTimeout(() => {
       const q = query.trim()
       api.get<GarmentSummary[]>(`/api/garments${q ? `?q=${encodeURIComponent(q)}` : ''}`)
-        .then((list) => { setItems(list); setError(''); if (!q) setTotal(list.length) })
+        .then((list) => { setItems(list); setError(''); if (!q) { setTotal(list.length); setAllItems(list) } })
         .catch((e) => setError(errorMessage(e)))
     }, query ? 250 : 0)
     return () => clearTimeout(t)
@@ -62,6 +64,8 @@ export default function Closet() {
         <h1 className="page-title">내 옷장{total !== null && <small>총 {total}벌</small>}</h1>
         <Link className="btn btn-sm btn-soft" to="/register">옷 등록</Link>
       </div>
+
+      {allItems && allItems.length > 0 && <WeatherCard items={allItems} />}
 
       <label className="search">
         <IconSearch />
