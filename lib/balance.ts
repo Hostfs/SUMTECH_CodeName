@@ -34,9 +34,9 @@ export function balance(slot: WornSlot, c: Cutout, tw0: number): { tw: number; t
       return { th, tw: clamp(th / r, tw0 * 0.85, tw0 * 1.12) };
     }
     case "bottom": {
-      if (th0 >= 180) {
-        // 긴 바지: 길이는 허리~발목에 맞추고, 폭은 원래 모양을 최대한 살린다 (와이드 팬츠는 넓게)
-        const th = 246;
+      if (th0 >= 140) {
+        // 긴 바지: 길이는 허리~발목에 맞추고(조금 짧은 사진은 비례해서), 폭은 원래 모양을 최대한 살린다 (와이드 팬츠는 넓게)
+        const th = th0 >= 180 ? 246 : 200 + (th0 - 140) * (46 / 40);
         return { th, tw: clamp(th / r, tw0 * 0.8, tw0 * 1.3) };
       }
       // 반바지·치마: 발목까지 늘리지 않고 원래 길이를 지킨다

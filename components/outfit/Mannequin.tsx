@@ -87,7 +87,6 @@ export function Mannequin({
   const sw = 50 * k(0.55); // 어깨 반폭
   // 윗옷을 입으면 몸의 어깨선을 안으로 들여서 옷 어깨 밖으로 마네킹이 튀어나오지 않게 한다
   const clothed = Boolean(top || outer);
-  const bsw = clothed ? sw * 0.78 : sw;
   const ww = 35 * k(1); // 허리 반폭
   const hw = 44 * k(0.9); // 엉덩이 반폭
   const armW = 13 * k(0.7);
@@ -96,13 +95,17 @@ export function Mannequin({
   const legX = hw * 0.5;
   /** 팔이 가장 바깥으로 나가는 지점(손목)까지의 반폭. 상의·아우터 소매가 여기까지 덮는다. */
   const armOuter = sw + 12 + armW / 2;
+  // 실제로 입힌 윗옷의 폭 안쪽으로 몸 어깨를 들인다 (옷 어깨는 둥글어서 몸 모서리가 삐져나오기 쉽다)
+  const clothTw = outer ? plan("outer", outer, 2 * armOuter + 20).tw : top ? plan("top", top, 2 * armOuter + 4).tw : 0;
+  const bsw = clothed ? Math.min(sw * 0.78, (clothTw / 2) * 0.55) : sw;
+  const sy0 = clothed ? 84 : 74; // 윗옷 안쪽 어깨 높이
 
-  const torso = `M ${100 - bsw * 0.4} 74 Q ${100 - bsw} 76 ${100 - bsw} 92 L ${100 - ww} 170 Q ${100 - ww - 2} 200 ${100 - hw} 236 Q 100 252 ${100 + hw} 236 Q ${100 + ww + 2} 200 ${100 + ww} 170 L ${100 + bsw} 92 Q ${100 + bsw} 76 ${100 + bsw * 0.4} 74 Z`;
+  const torso = `M ${100 - bsw * 0.4} ${sy0} Q ${100 - bsw} ${sy0 + 2} ${100 - bsw} 100 L ${100 - ww} 170 Q ${100 - ww - 2} 200 ${100 - hw} 236 Q 100 252 ${100 + hw} 236 Q ${100 + ww + 2} 200 ${100 + ww} 170 L ${100 + bsw} 100 Q ${100 + bsw} ${sy0 + 2} ${100 + bsw * 0.4} ${sy0} Z`;
 
   // 옷을 입으면 손이 소매 끝으로 삐져나오지 않게 팔을 위쪽만 그린다(긴 소매는 이 아래를 덮는다)
   const arm = (dir: -1 | 1) =>
     clothed
-      ? `${100 + dir * (bsw - 2)},96 ${100 + dir * (bsw + 4)},140`
+      ? `${100 + dir * (bsw - 2)},104 ${100 + dir * (bsw + 3)},135`
       : `${100 + dir * (sw - 2)},88 ${100 + dir * (sw + 8)},150 ${100 + dir * (sw + 12)},210`;
   const leg = (dir: -1 | 1) => ({
     thigh: `${100 + dir * legX},236 ${100 + dir * (legX + 1)},335`,

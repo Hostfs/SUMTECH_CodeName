@@ -316,7 +316,10 @@ async function compute(src: string): Promise<Cutout | null> {
               n++;
               sum += lum(d[i], d[i + 1], d[i + 2]);
             }
-            return n === 0 ? null : sum / n < medLum * 0.85;
+            if (n === 0) return null;
+            const avg = sum / n;
+            // 어두운 신발뿐 아니라 흰 운동화처럼 옷보다 확 밝은 줄도 신발로 본다
+            return avg < medLum * 0.85 || (avg > medLum * 1.6 && avg - medLum > 45);
           };
           const maxDark = Math.round(h * 0.22);
           // 줄 하나는 들쭉날쭉해서, 아래 5줄 평균으로 판단한다
