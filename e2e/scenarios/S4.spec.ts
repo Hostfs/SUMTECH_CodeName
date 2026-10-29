@@ -15,20 +15,8 @@ function menu(page: Page, name: string) {
   return page.locator('nav[aria-label="주 메뉴"]:visible').getByRole('link', { name: new RegExp(`^${name}`) })
 }
 
-// 시드는 로그인할 때마다 다시 만들어져 공간 번호가 바뀐다. 박스에 붙여 둔 라벨 사진은 앱의 'QR 라벨'에서 그대로 받아 쓴다.
-async function summerBoxLabel(page: Page) {
-  await menu(page, '옷장 지도').click()
-  await page.getByRole('button', { name: '여름 박스 QR 라벨' }).click()
-  const img = page.getByRole('img', { name: '여름 박스 옮기기 QR' })
-  await expect(img).toBeVisible()
-  const src = (await img.getAttribute('src'))!
-  await page.locator('.sheet-actions').getByRole('button', { name: '닫기' }).click()
-  return Buffer.from(src.split(',')[1], 'base64')
-}
-
-test("S4 사용자가 박스 라벨 QR과 '처음 보는 옷'으로 여름 옷을 '여름 박스'에 묶음 보관한 뒤 한 벌을 다시 집 안 옷장으로 꺼낸다", async ({ page }) => {
+test("S4 사용자가 여름 옷 두 벌을 한 번에 '여름 박스'로 옮기고 집 밖/박스 보기로 확인한다", async ({ page }) => {
   await login(page)
-  const label = await summerBoxLabel(page)
 
   // 메뉴에서 '옮기기'를 누른다
   await menu(page, '옮기기').click()
@@ -36,27 +24,16 @@ test("S4 사용자가 박스 라벨 QR과 '처음 보는 옷'으로 여름 옷�
   // '박스·집 밖'을 누른다
   await page.getByRole('tab', { name: '박스·집 밖' }).click()
 
-  // '박스 라벨 찍기'로 '여름 박스' QR 라벨 사진을 올리고, 보낼 곳이 '여름 박스'로 골라진 것을 확인한다
-  await page.getByLabel('박스 라벨 찍기').setInputFiles({ name: 'summer-box-label.png', mimeType: 'image/png', buffer: label })
-  await expect(page.getByText('라벨 QR을 읽었어요: 여름 박스')).toBeVisible()
-  await expect(page.getByRole('radio', { name: /^여름 박스/ })).toHaveAttribute('aria-checked', 'true')
+  // 보낼 곳에서 '여름 박스'를 고른다
+  await page.getByRole('radiogroup', { name: '보낼 곳' }).getByRole('radio', { name: /^여름 박스/ }).click()
 
-  // '처음 보는 옷'에 '스트라이프 마 셔츠'(셔츠)를 넣고 '등록하고 넣기'를 누른다
-  await page.getByRole('button', { name: '처음 보는 옷' }).click()
-  await page.getByLabel('옷 이름').fill('스트라이프 마 셔츠')
-  await page.getByLabel('옷 종류').selectOption({ label: '셔츠' })
-  await page.getByRole('button', { name: '등록하고 넣기' }).click()
+  // 옮길 옷에서 '린넨 반소매 셔츠'와 '네이비 반바지'를 고른다
   const list = page.getByRole('group', { name: '옮길 옷 목록' })
-  const added = list.getByRole('button').first()
-  await expect(added).toContainText('스트라이프 마 셔츠')
-  await expect(added).toHaveAttribute('aria-pressed', 'true')
-
-  // 옮길 옷에서 '린넨 반소매 셔츠'와 '네이비 반바지'를 추가로 고른다
   await list.getByRole('button', { name: /린넨 반소매 셔츠/ }).click()
   await list.getByRole('button', { name: /네이비 반바지/ }).click()
 
-  // '여름 박스로 보냄 (3벌)'을 누른다
-  await page.getByRole('button', { name: '여름 박스로 보냄 (3벌)' }).click()
+  // '여름 박스로 보냄 (2벌)'을 누른다
+  await page.getByRole('button', { name: '여름 박스로 보냄 (2벌)' }).click()
   await expect(page.getByRole('status', { name: '옮긴 결과' })).toBeVisible()
 
   // 메뉴에서 '내 옷장'을 누른다
@@ -65,21 +42,11 @@ test("S4 사용자가 박스 라벨 QR과 '처음 보는 옷'으로 여름 옷�
   // 보기 기준에서 '집 밖/박스'를 고른다
   await page.getByLabel('보기 기준').selectOption({ label: '집 밖/박스' })
 
-  // '박스 속' 묶음에 세 벌, 위치는 '박스 속 · 여름 박스'
+  // '박스 속' 묶음에 두 벌, 위치는 '박스 속 · 여름 박스'
   const box = page.getByRole('region', { name: '박스 속 묶음' })
-  for (const name of ['스트라이프 마 셔츠', '린넨 반소매 셔츠', '네이비 반바지']) {
+  for (const name of ['린넨 반소매 셔츠', '네이비 반바지']) {
     const card = box.getByTestId('garment-card').filter({ hasText: name })
     await expect(card).toBeVisible()
     await expect(card).toContainText('박스 속 · 여름 박스')
   }
-
-  // '박스 속' 묶음에서 '네이비 반바지'를 눌러 옷 상세를 연다
-  await box.getByTestId('garment-card').filter({ hasText: '네이비 반바지' }).click()
-  await expect(page.locator('.loc-path')).toContainText('여름 박스')
-
-  // '위치 변경'에서 '옷장 A → 왼쪽 행거'를 고르고 '여기로 옮김'을 누른다
-  await page.getByRole('button', { name: '위치 변경' }).click()
-  await page.getByRole('radiogroup', { name: '옮길 공간' }).getByRole('button', { name: /^옷장 A → 왼쪽 행거/ }).click()
-  await page.getByRole('button', { name: '여기로 옮김' }).click()
-  await expect(page.locator('.loc-path')).toContainText('옷장 A → 왼쪽 행거')
 })

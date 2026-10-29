@@ -1,8 +1,4 @@
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { expect, test, type Page } from '@playwright/test'
-
-const RECEIPT = path.join(path.dirname(fileURLToPath(import.meta.url)), '../fixtures/receipt.jpg')
 
 const SEED_EMAIL = process.env.SEED_USER_EMAIL ?? 'student@example.com'
 const SEED_PASSWORD = process.env.SEED_USER_PASSWORD ?? 'loopthon-2026'
@@ -26,7 +22,7 @@ function inDays(days: number) {
   return `${d.getMonth() + 1}월 ${d.getDate()}일`
 }
 
-test('S5 사용자가 셔츠와 후드티를 영수증 사진과 함께 세탁소 묶음으로 맡기고 관리함에서 회수 예정일을 확인한다', async ({ page }) => {
+test('S5 사용자가 셔츠와 후드티를 세탁소 묶음으로 한 번에 맡기고 관리함에서 회수 예정일을 확인한다', async ({ page }) => {
   await login(page)
 
   // 메뉴에서 '옮기기'를 누른다
@@ -41,10 +37,6 @@ test('S5 사용자가 셔츠와 후드티를 영수증 사진과 함께 세탁�
   // 회수 예정일에서 '3일 뒤'를 누른다
   await page.getByRole('button', { name: '3일 뒤' }).click()
 
-  // '영수증 찍기'로 세탁소 영수증 사진 1장을 올린다
-  await page.getByLabel('영수증 찍기').setInputFiles(RECEIPT)
-  await expect(page.getByRole('img', { name: '묶음 사진 1' })).toBeVisible()
-
   // 옮길 옷에서 '체크 플란넬 셔츠'와 '그레이 후드티'를 고른다
   const list = page.getByRole('group', { name: '옮길 옷 목록' })
   await list.getByRole('button', { name: /체크 플란넬 셔츠/ }).click()
@@ -53,8 +45,6 @@ test('S5 사용자가 셔츠와 후드티를 영수증 사진과 함께 세탁�
   // '동네 세탁소에 맡김 (2벌)'을 누른다
   await page.getByRole('button', { name: '동네 세탁소에 맡김 (2벌)' }).click()
   await expect(page.getByRole('status', { name: '옮긴 결과' })).toBeVisible()
-  // 맡긴 직후 최근 옮긴 기록에 '사진 1장'이 함께 보인다
-  await expect(page.getByRole('region', { name: '최근 옮긴 기록' }).getByRole('listitem').first()).toContainText('사진 1장')
 
   // 메뉴에서 '관리함'을 누른다
   await menu(page, '관리함').click()

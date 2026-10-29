@@ -26,20 +26,8 @@ jobs:
       # 키 값은 출력하지 않고 있는지만 알린다. 없으면 S2(택 AI 분석)는 실패한다.
       - name: AI 키 설정 여부
         run: |
-          if [ -z "$AI_GATEWAY_API_KEY" ]; then
-            echo "::warning::저장소 Secrets에 AI_GATEWAY_API_KEY가 없어 S2(택 AI 분석)가 실패합니다"; exit 0
-          fi
-          key=$(printf '%s' "$AI_GATEWAY_API_KEY" | tr -d '[:space:]')
-          echo "AI_GATEWAY_API_KEY: 설정됨(공백 뺀 길이 ${#key}자)"
-          # 앱과 같은 주소·모델로 짧게 불러 본다. 응답 본문은 오류 설명만 보인다.
-          code=$(curl -s -o /tmp/ai.json -w '%{http_code}' https://ai-gateway.vercel.sh/v1/chat/completions \
-            -H "Authorization: Bearer $key" -H "Content-Type: application/json" \
-            -d '{"model":"google/gemini-2.5-flash","messages":[{"role":"user","content":"ping"}],"max_tokens":5}')
-          echo "AI Gateway 응답: HTTP $code"
-          if [ "$code" != 200 ]; then
-            head -c 400 /tmp/ai.json; echo
-            echo "::warning::AI Gateway가 저장소 키를 거절함(HTTP $code). 401은 키 값 자체, 403은 모델·결제 권한 문제"
-          fi
+          if [ -n "$AI_GATEWAY_API_KEY" ]; then echo "AI_GATEWAY_API_KEY: 설정됨"
+          else echo "::warning::저장소 Secrets에 AI_GATEWAY_API_KEY가 없어 S2(택 AI 분석)가 실패합니다"; fi
 
       - name: 빈 DB에서 앱 띄우기
         run: |

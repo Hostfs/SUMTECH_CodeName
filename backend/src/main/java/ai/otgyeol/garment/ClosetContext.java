@@ -113,29 +113,9 @@ public record ClosetContext(
             covers.findByOwner(userId).forEach(c -> coverMap.put(c.garmentId, c.imageId));
             Map<Long, String> names = new HashMap<>();
             collections.findByUserIdOrderByNameAsc(userId).forEach(c -> names.put(c.id, c.name));
-            Map<Long, SpaceType> own = new HashMap<>();
-            spaces.findByUserIdOrderByIdAsc(userId).forEach(s -> own.put(s.id, s.spaceType));
-            return new ClosetContext(locationPaths.forUser(userId), awayAware(own, locationPaths.parentMap(userId)),
-                    placementMap, open, returned, coverMap, names);
-        }
-
-        /** '본가 → 안방 옷장'처럼 박스·집 밖 아래에 만든 공간은 가장 가까운 박스·집 밖 유형을 따른다. */
-        static Map<Long, SpaceType> awayAware(Map<Long, SpaceType> own, Map<Long, Long> parentOf) {
             Map<Long, SpaceType> types = new HashMap<>();
-            for (Map.Entry<Long, SpaceType> e : own.entrySet()) {
-                SpaceType t = e.getValue();
-                Long current = parentOf.get(e.getKey());
-                // 순환이 있더라도 멈추도록 깊이를 제한한다(LocationPaths와 같은 규칙).
-                for (int depth = 0; current != null && depth < 10 && t != SpaceType.BOX && t != SpaceType.OFFSITE; depth++) {
-                    SpaceType up = own.get(current);
-                    if (up == SpaceType.BOX || up == SpaceType.OFFSITE) {
-                        t = up;
-                    }
-                    current = parentOf.get(current);
-                }
-                types.put(e.getKey(), t);
-            }
-            return types;
+            spaces.findByUserIdOrderByIdAsc(userId).forEach(s -> types.put(s.id, s.spaceType));
+            return new ClosetContext(locationPaths.forUser(userId), types, placementMap, open, returned, coverMap, names);
         }
     }
 }
