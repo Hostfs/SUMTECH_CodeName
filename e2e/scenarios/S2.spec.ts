@@ -5,6 +5,11 @@ import { expect, test, type Page } from '@playwright/test'
 const here = path.dirname(fileURLToPath(import.meta.url))
 const SEED_EMAIL = process.env.SEED_USER_EMAIL ?? 'student@example.com'
 const SEED_PASSWORD = process.env.SEED_USER_PASSWORD ?? 'loopthon-2026'
+const SKIPPABLE_AI_FAILURES = [
+  'AI 키가 설정되지 않아',
+  'AI 키가 유효하지 않거나 모델 사용이 거절됐어요',
+  'AI 사용 한도에 도달했어요',
+]
 
 async function login(page: Page) {
   await page.goto('/login')
@@ -39,6 +44,9 @@ test('S2 사용자가 택 사진 2장으로 새 옷을 AI 분석해 등록한다
   const failed = page.getByText('사진을 다시 찍거나')
   await expect(done.or(failed)).toBeVisible({ timeout: 90_000 })
   const reason = (await failed.allInnerTexts()).join(' ')
+  if (SKIPPABLE_AI_FAILURES.some((message) => reason.includes(message))) {
+    test.skip(true, `외부 AI 상태로 S2를 건너뜀: ${reason}`)
+  }
   expect(reason, `택 분석이 실패했어요: ${reason}`).toBe('')
   await expect(done).toBeVisible()
 
