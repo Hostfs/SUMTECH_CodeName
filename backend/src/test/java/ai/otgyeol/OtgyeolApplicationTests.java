@@ -255,6 +255,71 @@ class OtgyeolApplicationTests {
         assertThat(c.post("/api/spaces/" + hanger + "/garments", "{\"garmentIds\":[" + tee + "]}").status()).isEqualTo(409);
     }
 
+    @Test
+    void moveBatchesToBoxOffsiteAndLaundry() throws Exception {
+        Client c = new Client();
+        c.post("/api/auth/signup", "{\"email\":\"move" + System.nanoTime() + "@example.com\",\"password\":\"password123\"}");
+        long hanger = c.post("/api/spaces", "{\"name\":\"행거\",\"spaceType\":\"HANG\"}").body().get("spaces").get(0).get("id").asLong();
+        long[] ids = new long[5];
+        String[] names = {"여름 셔츠", "여름 반바지", "플란넬 셔츠", "후드티", "본가 코트"};
+        String[] types = {"SHIRT", "SHORTS", "SHIRT", "LONG_SLEEVE_TEE", "COAT"};
+        for (int i = 0; i < 5; i++) {
+            ids[i] = c.post("/api/garments", "{\"name\":\"" + names[i] + "\",\"subType\":\"" + types[i] + "\",\"spaceId\":" + hanger + "}")
+                    .body().get("summary").get("id").asLong();
+        }
+        long label = c.multipart("/api/images", png(0xffffff)).body().get("id").asLong();
+
+        // 박스 라벨을 찍고 두 벌을 새 박스로 한 번에 옮긴다
+        Res boxed = c.post("/api/moves", "{\"destination\":\"SPACE\",\"newSpace\":{\"name\":\"박스 A\",\"spaceType\":\"BOX\"},"
+                + "\"garmentIds\":[" + ids[0] + "," + ids[1] + "],\"imageIds\":[" + label + "]}");
+        assertThat(boxed.status()).isEqualTo(201);
+        assertThat(boxed.body().get("spacePath").asString()).isEqualTo("박스 A");
+        assertThat(boxed.body().get("imageUrls").size()).isEqualTo(1);
+        assertThat(boxed.body().get("garments").size()).isEqualTo(2);
+        JsonNode shirt = c.get("/api/garments/" + ids[0]).body().get("summary");
+        assertThat(shirt.get("locationPath").asString()).isEqualTo("박스 A");
+        assertThat(shirt.get("locationKind").asString()).isEqualTo("BOX");
+        JsonNode inBox = c.get("/api/garments?q=" + URLEncoder.encode("박스", StandardCharsets.UTF_8)).body();
+        assertThat(inBox.size()).isEqualTo(2);
+        assertThat(c.post("/api/moves", "{\"destination\":\"SPACE\",\"newSpace\":{\"name\":\"행거2\",\"spaceType\":\"HANG\"},"
+                + "\"garmentIds\":[" + ids[2] + "]}").status()).isEqualTo(400);
+
+        // 집 밖(본가)으로 옮긴 옷은 집 밖으로 보이고, 배치 추천은 집 밖을 고르지 않는다
+        long home = find(c.post("/api/spaces", "{\"name\":\"본가\",\"spaceType\":\"OFFSITE\"}").body().get("spaces"), "본가").get("id").asLong();
+        c.post("/api/moves", "{\"destination\":\"SPACE\",\"spaceId\":" + home + ",\"garmentIds\":[" + ids[4] + "]}");
+        assertThat(c.get("/api/garments/" + ids[4]).body().get("summary").get("locationKind").asString()).isEqualTo("OFFSITE");
+        c.post("/api/garments", "{\"name\":\"새 바지\",\"subType\":\"PANTS\"}");
+        JsonNode proposals = c.post("/api/placements/recommend", null).body();
+        assertThat(find(proposals, "새 바지").get("spacePath").asString()).isNotEqualTo("본가");
+
+        // 세탁소 영수증 묶음: 두 벌이 세탁 중이 되고 관리함에 회수 예정일과 함께 보인다
+        Res laundry = c.post("/api/moves", "{\"destination\":\"LAUNDRY\",\"shopName\":\"동네 세탁소\",\"dueOn\":\"" + today(2)
+                + "\",\"garmentIds\":[" + ids[2] + "," + ids[3] + "]}");
+        assertThat(laundry.status()).isEqualTo(201);
+        assertThat(laundry.body().get("shopName").asString()).isEqualTo("동네 세탁소");
+        JsonNode board = c.get("/api/care").body();
+        JsonNode flannel = find(board.get("inProgress"), "플란넬 셔츠");
+        assertThat(flannel.get("care").get("dueOn").asString()).isEqualTo(today(2));
+        assertThat(flannel.get("garment").get("statusLabel").asString()).isEqualTo("세탁 중");
+        assertThat(flannel.get("garment").get("locationKind").asString()).isEqualTo("CARE");
+        assertThat(find(board.get("inProgress"), "후드티")).isNotNull();
+
+        // 이미 맡긴 옷은 다시 맡기거나 박스로 옮길 수 없다. 날짜 순서가 틀리면 거부한다
+        assertThat(c.post("/api/moves", "{\"destination\":\"LAUNDRY\",\"garmentIds\":[" + ids[2] + "]}").status()).isEqualTo(409);
+        assertThat(c.post("/api/moves", "{\"destination\":\"SPACE\",\"spaceId\":" + home + ",\"garmentIds\":[" + ids[3] + "]}").status())
+                .isEqualTo(409);
+        assertThat(c.post("/api/moves", "{\"destination\":\"LAUNDRY\",\"dueOn\":\"" + today(-1) + "\",\"garmentIds\":[" + ids[0] + "]}")
+                .status()).isEqualTo(400);
+
+        JsonNode recent = c.get("/api/moves").body();
+        assertThat(recent.size()).isEqualTo(3);
+        assertThat(recent.get(0).get("destination").asString()).isEqualTo("LAUNDRY");
+
+        // 남의 옷은 옮길 수 없다
+        assertThat(new Client().login().post("/api/moves", "{\"destination\":\"LAUNDRY\",\"garmentIds\":[" + ids[0] + "]}").status())
+                .isEqualTo(404);
+    }
+
     static JsonNode imageById(JsonNode images, long imageId) {
         for (JsonNode n : images) {
             if (n.get("id").asLong() == imageId) {

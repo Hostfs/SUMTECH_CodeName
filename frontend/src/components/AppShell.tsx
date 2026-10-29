@@ -1,12 +1,13 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useSession } from '../session'
-import { IconBox, IconHanger, IconMap, IconPlus, IconShirt } from './Icons'
+import { IconBox, IconHanger, IconMap, IconMove, IconPlus } from './Icons'
 
+// 수정안(2026-10-29)에서 3D 코디·추천(R05·R06)을 범위에서 빼고 옮기기(R11)를 넣었다. /studio 주소는 남아 있다.
 const LINKS = [
   { to: '/closet', label: '내 옷장', icon: <IconHanger /> },
   { to: '/map', label: '옷장 지도', icon: <IconMap /> },
   { to: '/register', label: '옷 등록', icon: <IconPlus />, fab: true },
-  { to: '/studio', label: '코디 스튜디오', icon: <IconShirt /> },
+  { to: '/move', label: '옮기기', icon: <IconMove /> },
   { to: '/care', label: '관리함', icon: <IconBox /> },
 ]
 

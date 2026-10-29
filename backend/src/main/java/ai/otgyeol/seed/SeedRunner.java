@@ -41,7 +41,7 @@ import ai.otgyeol.user.User;
 import ai.otgyeol.user.UserRepository;
 
 /**
- * docker 첫 기동 때 시드 계정('사용자' 역할)과 흐름 S2~S8에 필요한 선행 데이터를 만든다.
+ * docker 첫 기동 때 시드 계정('사용자' 역할)과 흐름 S2~S8에 필요한 선행 데이터를 만든다(옷 11벌, 공간 8곳, 세탁·수선 2건).
  * SEED_USER_EMAIL이 비어 있으면(배포 환경) 아무것도 만들지 않는다. 이미 계정이 있으면 건너뛴다.
  */
 @Component
@@ -103,6 +103,7 @@ public class SeedRunner implements ApplicationRunner {
         if (email.isBlank() || user == null || !user.email.equalsIgnoreCase(email.trim())) {
             return;
         }
+        jdbc.update("DELETE FROM move_batches WHERE user_id = ?", user.id);
         jdbc.update("DELETE FROM outfits WHERE user_id = ?", user.id);
         jdbc.update("DELETE FROM product_searches WHERE user_id = ?", user.id);
         jdbc.update("DELETE FROM label_extractions WHERE user_id = ?", user.id);
@@ -121,6 +122,9 @@ public class SeedRunner implements ApplicationRunner {
         StorageSpace secondDrawer = space(userId, drawer.id, "2단", SpaceType.FOLD, 4);
         StorageSpace underBed = space(userId, null, "침대 아래", SpaceType.LONG_TERM, null);
         space(userId, underBed.id, "겨울 박스", SpaceType.LONG_TERM, 10);
+        // 옮기는 단위 묶음 기록(R11)의 목적지: 라벨을 붙인 박스와 집 밖(본가).
+        space(userId, null, "여름 박스", SpaceType.BOX, 12);
+        space(userId, null, "본가", SpaceType.OFFSITE, null);
 
         // 위치를 정한 지 일주일 된 옷장. 세탁·수선 중인 옷도 원래 자리는 남아 있어 회수 후 그 자리를 제안한다.
         Instant placedAt = Instant.now().minus(7, ChronoUnit.DAYS);
@@ -155,6 +159,22 @@ public class SeedRunner implements ApplicationRunner {
         place(knit, secondDrawer, placedAt);
         place(chino, secondDrawer, placedAt);
         // 연청 데님 팬츠는 미배치로 둔다(S6).
+
+        // 묶음 기록 흐름용: 여름 옷 두 벌은 박스로(S4), 셔츠·후드 두 벌은 세탁소로(S5) 한 번에 옮긴다.
+        Garment linen = garment(userId, "린넨 반소매 셔츠", "아이보리", "#efe8d8", SubType.SHIRT, Set.of(Season.SUMMER),
+                List.of(new M(MaterialPart.SHELL, Fiber.LINEN, 100)), 70, WearFrequency.LOW);
+        Garment shorts = garment(userId, "네이비 반바지", "네이비", "#1f2a44", SubType.SHORTS, Set.of(Season.SUMMER),
+                List.of(new M(MaterialPart.SHELL, Fiber.COTTON, 100)), 48, WearFrequency.LOW);
+        Garment flannel = garment(userId, "체크 플란넬 셔츠", "레드", "#9e3b37", SubType.SHIRT, Set.of(Season.AUTUMN, Season.WINTER),
+                List.of(new M(MaterialPart.SHELL, Fiber.COTTON, 100)), 76, WearFrequency.MEDIUM);
+        Garment hoodie = garment(userId, "그레이 후드티", "그레이", "#8e8f93", SubType.LONG_SLEEVE_TEE,
+                Set.of(Season.SPRING, Season.AUTUMN), List.of(new M(MaterialPart.SHELL, Fiber.COTTON, 80),
+                        new M(MaterialPart.SHELL, Fiber.POLYESTER, 20)), 68, WearFrequency.HIGH);
+        // 2단 서랍(수용 4벌)을 채우면 S6의 배치 추천이 달라지므로 여유 있는 왼쪽 행거에 둔다.
+        place(linen, leftHanger, placedAt);
+        place(shorts, leftHanger, placedAt);
+        place(flannel, leftHanger, placedAt);
+        place(hoodie, leftHanger, placedAt);
 
         LocalDate today = Dates.today();
         care(knit.id, CareEvent.CareType.WASH, "한빛 세탁소", "드라이클리닝", today.minusDays(4), today.minusDays(1));

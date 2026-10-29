@@ -147,10 +147,20 @@ public class PlacementService {
         return p;
     }
 
-    /** 옷은 가장 안쪽 공간에 넣는다. '옷장 A'가 아니라 '옷장 A → 왼쪽 행거'를 추천한다. */
+    /**
+     * 옷은 가장 안쪽 공간에 넣는다. '옷장 A'가 아니라 '옷장 A → 왼쪽 행거'를 추천한다.
+     * 집 밖(본가 등)은 옮길 때 사용자가 직접 고르는 곳이라 추천하지 않는다.
+     */
     private List<StorageSpace> leafSpaces(long userId) {
         Set<Long> hasChildren = new HashSet<>(locationPaths.parentMap(userId).values());
-        return spaces.findByUserIdOrderByIdAsc(userId).stream().filter(s -> !hasChildren.contains(s.id)).toList();
+        return spaces.findByUserIdOrderByIdAsc(userId).stream()
+                .filter(s -> !hasChildren.contains(s.id) && s.spaceType != SpaceType.OFFSITE)
+                .toList();
+    }
+
+    /** 장기보관을 우선하는 옷은 박스에도 넣을 수 있다. */
+    static boolean fits(SpaceType actual, SpaceType preferred) {
+        return actual == preferred || (preferred == SpaceType.LONG_TERM && actual == SpaceType.BOX);
     }
 
     private static Map<Long, Integer> confirmedLoad(List<Garment> all, ClosetContext ctx) {
@@ -175,7 +185,7 @@ public class PlacementService {
         Comparator<StorageSpace> byRoom = Comparator.comparingInt((StorageSpace s) -> remaining(s, load)).reversed()
                 .thenComparing(s -> s.id);
         Optional<StorageSpace> sameTypeWithRoom = leaves.stream()
-                .filter(s -> s.spaceType == preferred && remaining(s, load) > 0)
+                .filter(s -> fits(s.spaceType, preferred) && remaining(s, load) > 0)
                 .min(byRoom);
         if (sameTypeWithRoom.isPresent()) {
             return sameTypeWithRoom.get();
@@ -185,7 +195,7 @@ public class PlacementService {
             return anyWithRoom.get();
         }
         // 모든 공간이 찼으면 같은 유형 중 가장 덜 넘치는 곳을 고르고, 화면에 초과 수량을 보여 준다.
-        return leaves.stream().filter(s -> s.spaceType == preferred).min(byRoom)
+        return leaves.stream().filter(s -> fits(s.spaceType, preferred)).min(byRoom)
                 .orElseGet(() -> leaves.stream().min(byRoom).orElseThrow());
     }
 
@@ -198,8 +208,10 @@ public class PlacementService {
             case LONG_TERM -> "이번 계절(" + season.label + ") 옷이 아니어서 장기보관 공간을 우선했어요.";
             case HANG -> "형태 유지가 필요한 옷이라 걸기 공간을 우선했어요.";
             case FOLD -> "접어서 보관해도 되는 옷이라 접기 공간을 우선했어요.";
+            // preferredType()은 위 세 유형만 돌려준다.
+            case BOX, OFFSITE -> "";
         };
-        if (chosen.spaceType != preferred) {
+        if (!fits(chosen.spaceType, preferred)) {
             why += " 해당 유형에 남는 자리가 없어 " + chosen.spaceType.label + " 공간을 골랐어요.";
         }
         if (g.wearFrequency == WearFrequency.HIGH) {

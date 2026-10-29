@@ -2,6 +2,7 @@
 
 - 스키마 원본: [`schema.sql`](schema.sql) (MariaDB 10.4 이상, utf8mb4)
 - 테이블 46개(핵심 29 + 도메인 17), 외래키 60개(복합 FK 1개 포함, 열 쌍 61개), CHECK 제약 22개, 같은 주인 트리거 22개
+- V2(R11 옮기는 묶음, 2.1절)를 더하면 테이블 51개(핵심 34 + 도메인 17), 외래키 69개(열 쌍 70개), CHECK 22개, 트리거 30개다. V2 개수는 스크립트에서 센 값이고, 실제 적용은 CI의 마이그레이션 테스트로 확인한다. 아래 1~2절 다이어그램과 검증 수치는 V1 기준이다.
 - 아래 다이어그램은 손으로 그리지 않았다. `schema.sql`을 실제 MariaDB 10.4.12에 적용한 뒤 `information_schema`에서 자동 생성했다. 관계선 41 + 20 = 61개가 외래키 열 쌍 61개와 같다.
 
 ## 1. 교차 검증 결과
@@ -262,6 +263,28 @@ erDiagram
     users ||--o{ storage_spaces : "user_id"
     storage_spaces ||--o{ storage_space_parents : "parent_space_id"
     storage_spaces ||--o| storage_space_parents : "space_id"
+```
+
+## 2.1 옮기는 묶음(R11, V2 마이그레이션) 테이블 5개
+
+옷 여러 벌을 한 번에 박스·집 밖 공간으로 옮기거나 세탁소에 맡긴 기록이다. 공간 유형에 `BOX`(박스)와 `OFFSITE`(집 밖)를 추가했다.
+
+- 묶음 하나는 공간으로 옮긴 것(`move_batch_spaces`)이거나 세탁소에 맡긴 것(`move_batch_care_events`) 중 하나다. 한 테이블에 NULL 허용 열로 두면 NULL FK가 `user_id`를 결정하는 문제(4절 BCNF 항목)가 다시 생겨서 하위 테이블로 나눴다.
+- 옷의 현재 위치는 여전히 `garment_placements`가 정한다. 묶음은 '언제 어디로 함께 옮겼는지'와 박스 라벨·영수증 사진(`move_batch_images`)을 남기는 이력이다.
+- 세탁소 묶음은 옷마다 `care_events`를 만들고 그 ID를 묶음에 연결한다. 맡긴 곳·회수 예정일은 `care_events`에만 있어서 중복 저장하지 않는다.
+- 새 연결 테이블 4개에도 같은 주인 트리거(INSERT/UPDATE 8개)를 걸었다.
+
+```mermaid
+erDiagram
+    users ||--o{ move_batches : "user_id"
+    move_batches ||--o| move_batch_spaces : "batch_id"
+    storage_spaces ||--o{ move_batch_spaces : "space_id"
+    move_batch_spaces ||--o{ move_batch_space_garments : "batch_id"
+    garments ||--o{ move_batch_space_garments : "garment_id"
+    move_batches ||--o{ move_batch_care_events : "batch_id"
+    care_events ||--o| move_batch_care_events : "care_event_id"
+    move_batches ||--o{ move_batch_images : "batch_id"
+    images ||--o| move_batch_images : "image_id"
 ```
 
 ## 3. ER 다이어그램: 도메인(코드) 테이블 17개

@@ -420,6 +420,7 @@ public class GarmentService {
                 status.name(), status.label, ctx.usable(g), g.wearFrequency.name(),
                 placement == null ? null : placement.spaceId,
                 ctx.locationConfirmed(g) ? ctx.paths().get(placement.spaceId) : null,
+                ctx.locationKind(g).name(), ctx.locationKind(g).label,
                 ImageController.url(ctx.covers().get(g.id)), g.totalLengthCm());
     }
 
@@ -585,7 +586,8 @@ public class GarmentService {
     }
 
     private static boolean matches(GarmentSummary s, String q) {
-        return Stream.of(s.name(), s.brand(), s.colorName(), s.categoryLabel(), s.subTypeLabel(), s.locationPath())
+        return Stream.of(s.name(), s.brand(), s.colorName(), s.categoryLabel(), s.subTypeLabel(), s.locationPath(),
+                        s.locationKindLabel())
                 .filter(Objects::nonNull)
                 .anyMatch(v -> v.toLowerCase(Locale.ROOT).contains(q));
     }

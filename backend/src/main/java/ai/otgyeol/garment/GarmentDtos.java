@@ -110,7 +110,8 @@ public final class GarmentDtos {
     public record GarmentSummary(long id, String name, String brand, String colorName, String colorHex, String category,
             String categoryLabel, String subType, String subTypeLabel, String template, String templateLabel,
             List<String> seasons, List<String> collections, String status, String statusLabel, boolean usable,
-            String wearFrequency, Long spaceId, String locationPath, String imageUrl, BigDecimal totalLengthCm) {
+            String wearFrequency, Long spaceId, String locationPath, String locationKind, String locationKindLabel,
+            String imageUrl, BigDecimal totalLengthCm) {
     }
 
     public record GarmentDetail(GarmentSummary summary, String productCode, String sizeLabel, String origin,

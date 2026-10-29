@@ -41,8 +41,26 @@ export type GarmentSummary = {
   wearFrequency: string
   spaceId: number | null
   locationPath: string | null
+  /** HOME 집 안, BOX 박스 속, OFFSITE 집 밖, CARE 세탁·수선 맡김, UNPLACED 미배치 */
+  locationKind: 'HOME' | 'BOX' | 'OFFSITE' | 'CARE' | 'UNPLACED'
+  locationKindLabel: string
   imageUrl: string | null
   totalLengthCm: number | null
+}
+
+/** 옮긴 묶음(R11). destination이 SPACE면 박스·집 밖 공간, LAUNDRY면 세탁소. */
+export type MoveBatch = {
+  id: number
+  createdAt: string
+  destination: 'SPACE' | 'LAUNDRY'
+  spaceId: number | null
+  spacePath: string | null
+  spaceType: string | null
+  shopName: string | null
+  movedOn: string | null
+  dueOn: string | null
+  garments: GarmentSummary[]
+  imageUrls: string[]
 }
 
 export type CareView = {

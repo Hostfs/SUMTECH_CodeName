@@ -12,6 +12,7 @@ const VIEWS = [
   { value: 'season', label: '계절' },
   { value: 'brand', label: '브랜드' },
   { value: 'location', label: '위치' },
+  { value: 'where', label: '집 밖/박스' },
   { value: 'status', label: '상태' },
   { value: 'collection', label: '컬렉션' },
 ] as const
@@ -128,6 +129,7 @@ function groupBy(items: GarmentSummary[], view: View, label: ReturnType<typeof u
         break
       case 'brand': add(g.brand ?? '~none', g.brand ?? '브랜드 미입력', g); break
       case 'location': add(g.locationPath ?? `~${g.status}`, g.locationPath ?? (g.status === 'STORED' || g.status === 'PENDING' || g.status === 'WASH_WAITING' ? '미배치' : g.statusLabel), g); break
+      case 'where': add(g.locationKind, g.locationKindLabel, g); break
       case 'status': add(g.status, g.statusLabel, g); break
       case 'collection':
         if (g.collections.length === 0) add('~none', '컬렉션 없음', g)
@@ -138,6 +140,10 @@ function groupBy(items: GarmentSummary[], view: View, label: ReturnType<typeof u
   const groups = [...map.values()]
   if (view === 'season') {
     groups.sort((a, b) => order(seasonOrder, a.key) - order(seasonOrder, b.key))
+  } else if (view === 'where') {
+    // 바로 꺼낼 수 없는 곳(박스·집 밖·세탁소)을 먼저 보여 준다.
+    const kinds = ['BOX', 'OFFSITE', 'CARE', 'UNPLACED', 'HOME']
+    groups.sort((a, b) => order(kinds, a.key) - order(kinds, b.key))
   } else {
     groups.sort((a, b) => (a.key.startsWith('~') ? 1 : 0) - (b.key.startsWith('~') ? 1 : 0) || a.title.localeCompare(b.title, 'ko'))
   }

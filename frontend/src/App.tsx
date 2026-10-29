@@ -11,6 +11,7 @@ import GarmentDetailPage from './pages/GarmentDetail'
 import Register from './pages/Register'
 import SpaceMap from './pages/SpaceMap'
 import CareBoard from './pages/CareBoard'
+import Move from './pages/Move'
 import NotFound from './pages/NotFound'
 
 // 3D 화면은 용량이 커서 열 때 불러온다.
@@ -20,7 +21,7 @@ function RequireLogin({ children }: { children: ReactNode }) {
   const { me } = useSession()
   const location = useLocation()
   if (me === undefined) return <Loading />
-  if (me === null) return <Navigate to="/login" replace state={{ from: location.pathname }} />
+  if (me === null) return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />
   return <>{children}</>
 }
 
@@ -39,6 +40,7 @@ export default function App() {
             <Route path="/studio" element={<Suspense fallback={<Loading />}><Studio /></Suspense>} />
             <Route path="/map" element={<SpaceMap />} />
             <Route path="/care" element={<CareBoard />} />
+            <Route path="/move" element={<Move />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

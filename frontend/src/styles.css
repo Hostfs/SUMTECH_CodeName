@@ -533,3 +533,35 @@ a { color: inherit; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+/* ---------- 옮기기(R11) ---------- */
+
+.gcard-loc.away { color: var(--accent); font-weight: 600; }
+.chip-sm { min-height: 30px; padding: 0 12px; font-size: var(--t-small); }
+.chip svg { width: 16px; height: 16px; }
+.upload.upload-row { flex-direction: row; flex-wrap: wrap; padding: 16px; gap: 6px 10px; justify-content: flex-start; text-align: left; }
+.upload.upload-row svg { width: 24px; height: 24px; }
+.upload.upload-row .field-hint { flex-basis: 100%; }
+.pick-list { display: grid; gap: 8px; margin-top: 12px; }
+.pick-row {
+  display: grid; grid-template-columns: auto auto minmax(0, 1fr); align-items: center; gap: 12px;
+  padding: 8px 12px; border-radius: var(--r-card); border: 1.5px solid var(--line); background: var(--surface);
+  text-align: left; cursor: pointer; font: inherit; color: inherit;
+}
+.pick-row[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft-2); }
+.pick-check { width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid var(--line-strong); display: grid; place-items: center; color: transparent; }
+.pick-check svg { width: 16px; height: 16px; }
+.pick-row[aria-pressed="true"] .pick-check { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.pick-text { min-width: 0; }
+.move-done { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: start; margin-bottom: 16px; border-color: var(--accent); }
+.move-done > svg { width: 26px; height: 26px; color: var(--accent); }
+.move-submit { position: sticky; bottom: calc(var(--nav-h) + 12px + env(safe-area-inset-bottom, 0px)); margin-top: 16px; z-index: 5; }
+@media (min-width: 960px) { .move-submit { bottom: 24px; } }
+.qr-label { display: grid; justify-items: center; gap: 8px; padding: 16px; border: 1px dashed var(--line-strong); border-radius: var(--r-card); background: #fff; color: #111; }
+.qr-label img { width: 220px; height: 220px; image-rendering: pixelated; }
+.qr-label strong { font-size: 1.25rem; }
+@media print {
+  body * { visibility: hidden; }
+  .qr-label, .qr-label * { visibility: visible; }
+  .qr-label { position: fixed; inset: 0; margin: auto; width: 80mm; height: fit-content; border: 0; }
+}

@@ -55,6 +55,10 @@ export const IconNeedle = (p: P) => (
 export const IconPinQuestion = (p: P) => (
   <svg {...base} {...p}><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11Z" /><path d="M10.2 8.6a1.9 1.9 0 1 1 2.6 1.8c-.5.2-.8.6-.8 1.1v.5M12 14.2v.1" /></svg>
 )
+// 옮기기: 상자와 화살표
+export const IconMove = (p: P) => (
+  <svg {...base} {...p}><path d="M3.5 9h10v10.5h-10z" /><path d="M3.5 9 5.5 5h6l2 4" /><path d="M16 13h5M18.5 10.5 21 13l-2.5 2.5" /></svg>
+)
 export const IconBasket = (p: P) => (
   <svg {...base} {...p}><path d="M4 10h16l-1.6 9.2a1.5 1.5 0 0 1-1.5 1.3H7.1a1.5 1.5 0 0 1-1.5-1.3L4 10Z" /><path d="M8 10 11 4M16 10l-3-6" /></svg>
 )

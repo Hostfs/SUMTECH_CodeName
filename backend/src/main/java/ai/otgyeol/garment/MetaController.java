@@ -27,7 +27,7 @@ public class MetaController {
             Map.entry("seasons", "sort_order"),
             Map.entry("garment_statuses", "FIELD(code, 'STORED', 'PENDING', 'WASH_WAITING', 'WASHING', 'REPAIRING', 'RETURNED_UNPLACED')"),
             Map.entry("wear_frequencies", "sort_order"),
-            Map.entry("space_types", "FIELD(code, 'HANG', 'FOLD', 'LONG_TERM')"),
+            Map.entry("space_types", "FIELD(code, 'HANG', 'FOLD', 'LONG_TERM', 'BOX', 'OFFSITE')"),
             Map.entry("care_types", "code DESC"),
             Map.entry("care_places", "code"),
             Map.entry("material_parts", "FIELD(code, 'SHELL', 'LINING', 'TRIM', 'FILL')"),

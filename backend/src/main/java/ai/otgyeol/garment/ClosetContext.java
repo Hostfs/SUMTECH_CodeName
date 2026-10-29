@@ -12,6 +12,8 @@ import ai.otgyeol.image.GarmentCoverImageRepository;
 import ai.otgyeol.space.GarmentPlacement;
 import ai.otgyeol.space.GarmentPlacementRepository;
 import ai.otgyeol.space.LocationPaths;
+import ai.otgyeol.space.SpaceType;
+import ai.otgyeol.space.StorageSpaceRepository;
 
 /**
  * 한 사용자의 옷장을 보여 줄 때 필요한 연결 정보를 한 번에 읽은 것.
@@ -19,6 +21,7 @@ import ai.otgyeol.space.LocationPaths;
  */
 public record ClosetContext(
         Map<Long, String> paths,
+        Map<Long, SpaceType> spaceTypes,
         Map<Long, GarmentPlacement> placements,
         Map<Long, CareEvent> openCare,
         Map<Long, Instant> lastReturned,
@@ -54,6 +57,21 @@ public record ClosetContext(
         };
     }
 
+    /** 집 안·박스 속·집 밖·세탁소·미배치 중 어디인지. */
+    public LocationKind locationKind(Garment g) {
+        if (status(g).isAway()) {
+            return LocationKind.CARE;
+        }
+        if (!locationConfirmed(g)) {
+            return LocationKind.UNPLACED;
+        }
+        return switch (spaceTypes.get(placements.get(g.id).spaceId)) {
+            case BOX -> LocationKind.BOX;
+            case OFFSITE -> LocationKind.OFFSITE;
+            case HANG, FOLD, LONG_TERM -> LocationKind.HOME;
+        };
+    }
+
     /** 위치가 정해지지 않았고 집에 있는 옷. */
     public boolean needsPlacement(Garment g) {
         return !placements.containsKey(g.id) && !status(g).isAway();
@@ -67,9 +85,11 @@ public record ClosetContext(
         private final CareEventRepository careEvents;
         private final GarmentCoverImageRepository covers;
         private final ClosetCollectionRepository collections;
+        private final StorageSpaceRepository spaces;
 
         public Loader(LocationPaths locationPaths, GarmentPlacementRepository placements, CareEventRepository careEvents,
-                GarmentCoverImageRepository covers, ClosetCollectionRepository collections) {
+                GarmentCoverImageRepository covers, ClosetCollectionRepository collections, StorageSpaceRepository spaces) {
+            this.spaces = spaces;
             this.locationPaths = locationPaths;
             this.placements = placements;
             this.careEvents = careEvents;
@@ -93,7 +113,9 @@ public record ClosetContext(
             covers.findByOwner(userId).forEach(c -> coverMap.put(c.garmentId, c.imageId));
             Map<Long, String> names = new HashMap<>();
             collections.findByUserIdOrderByNameAsc(userId).forEach(c -> names.put(c.id, c.name));
-            return new ClosetContext(locationPaths.forUser(userId), placementMap, open, returned, coverMap, names);
+            Map<Long, SpaceType> types = new HashMap<>();
+            spaces.findByUserIdOrderByIdAsc(userId).forEach(s -> types.put(s.id, s.spaceType));
+            return new ClosetContext(locationPaths.forUser(userId), types, placementMap, open, returned, coverMap, names);
         }
     }
 }

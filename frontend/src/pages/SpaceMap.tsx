@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
+import QRCode from 'qrcode'
 import { api, errorMessage } from '../api'
 import GarmentArt from '../components/GarmentArt'
 import { IconPlus } from '../components/Icons'
@@ -171,6 +172,7 @@ function Mini({ g }: { g: GarmentSummary }) {
 }
 
 function SpaceCard({ s, isParent, onPut }: { s: SpaceView; isParent: boolean; onPut: () => void }) {
+  const [qr, setQr] = useState(false)
   const over = s.overBy > 0
   const pct = s.capacity ? Math.min(100, (s.count / s.capacity) * 100) : 0
   return (
@@ -186,11 +188,40 @@ function SpaceCard({ s, isParent, onPut }: { s: SpaceView; isParent: boolean; on
         : s.garments.length > 0 ? <div className="mini-list">{s.garments.map((g) => <Mini key={g.id} g={g} />)}</div>
           : <p className="field-hint" style={{ margin: 0 }}>비어 있어요</p>}
       {!isParent && (
-        <button type="button" className="btn btn-sm btn-outline" style={{ marginTop: 12 }} onClick={onPut} aria-label={`${s.path}에 옷 넣기`}>
-          <IconPlus />옷 넣기
-        </button>
+        <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+          <button type="button" className="btn btn-sm btn-outline" onClick={onPut} aria-label={`${s.path}에 옷 넣기`}>
+            <IconPlus />옷 넣기
+          </button>
+          {s.spaceType === 'BOX' && (
+            <button type="button" className="btn btn-sm btn-ghost" onClick={() => setQr(true)} aria-label={`${s.path} QR 라벨`}>QR 라벨</button>
+          )}
+        </div>
       )}
+      {qr && <QrLabelSheet s={s} onClose={() => setQr(false)} />}
     </article>
+  )
+}
+
+/** 박스에 붙일 QR 라벨. 휴대폰 카메라로 찍으면 이 박스가 골라진 '옮기기' 화면이 열린다. */
+function QrLabelSheet({ s, onClose }: { s: SpaceView; onClose: () => void }) {
+  const [src, setSrc] = useState('')
+  const url = `${window.location.origin}/move?to=${s.id}`
+  useEffect(() => {
+    QRCode.toDataURL(url, { margin: 1, width: 440, errorCorrectionLevel: 'M' }).then(setSrc).catch(() => setSrc(''))
+  }, [url])
+  return (
+    <Sheet title="QR 라벨" onClose={onClose}>
+      <div className="qr-label">
+        {src ? <img src={src} alt={`${s.path} 옮기기 QR`} /> : <Loading />}
+        <strong>{s.path}</strong>
+        <span style={{ fontSize: 12 }}>옷결 · 찍으면 이 박스로 옮기기</span>
+      </div>
+      <p className="field-hint">출력해서 박스에 붙여 두세요. 옷을 넣거나 꺼낼 때 휴대폰 카메라로 찍으면 바로 기록할 수 있어요.</p>
+      <div className="sheet-actions">
+        <button type="button" className="btn btn-outline" onClick={onClose}>닫기</button>
+        <button type="button" className="btn" onClick={() => window.print()} disabled={!src}>인쇄</button>
+      </div>
+    </Sheet>
   )
 }
 
