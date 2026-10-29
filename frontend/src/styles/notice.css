@@ -1,0 +1,21 @@
+/* ---------- 알림 ---------- */
+.head-actions { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+.head-actions .profile { margin-top: 2px; }
+.bell { position: relative; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: color-mix(in srgb, var(--fg) 7%, transparent); }
+.bell:active { background: color-mix(in srgb, var(--fg) 14%, transparent); }
+.bell-badge { position: absolute; top: -2px; right: -2px; min-width: 19px; height: 19px; padding: 0 5px; border-radius: 10px; background: var(--danger); color: #fff; font-size: 11px; font-weight: 800; display: grid; place-items: center; border: 2px solid var(--bg); }
+
+.notice-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font-size: 13px; font-weight: 700; color: var(--muted); }
+.notice-list { display: flex; flex-direction: column; gap: 8px; }
+.nt { display: flex; align-items: center; gap: 2px; border-radius: 18px; background: var(--tile-bg); }
+.nt[data-new='true'] { background: var(--tint); }
+.nt-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; padding: 12px 4px 12px 12px; text-align: left; }
+.nt-ico { flex: none; width: 40px; height: 40px; border-radius: 13px; display: grid; place-items: center; background: var(--surface); color: var(--accent-ink); }
+.nt-alert .nt-ico { background: var(--danger); color: #fff; }
+.nt-weather .nt-ico { color: #3a76c4; }
+.nt-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.nt-text b { font-size: 14.5px; line-height: 1.35; }
+.nt-text small { font-size: 12.5px; color: var(--muted); line-height: 1.4; }
+.nt-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+.nt-x { flex: none; width: 34px; height: 34px; margin-right: 4px; color: var(--muted); }
+.sheet-body .fine { margin-top: 16px; }
