@@ -63,8 +63,7 @@ public final class GarmentDtos {
             Set<GarmentField> aiFields,
             Long spaceId,
             /** 등록 화면에서 한 제품 검색(R02). 택 분석 없이 검색했어도 결과(후보·'검색 결과 없음')가 옷에 남는다. */
-            Long searchId,
-            @Size(max = 500, message = "메모는 500자까지 쓸 수 있어요.") String memo) {
+            Long searchId) {
     }
 
     public record StatusInput(@NotNull(message = "상태를 골라 주세요.") GarmentStatus status, Boolean usableWhenPending) {
@@ -114,7 +113,7 @@ public final class GarmentDtos {
             String categoryLabel, String subType, String subTypeLabel, String template, String templateLabel,
             List<String> seasons, List<String> collections, String status, String statusLabel, boolean usable,
             String wearFrequency, Long spaceId, String locationPath, String locationKind, String locationKindLabel,
-            String imageUrl, BigDecimal totalLengthCm, String sizeLabel, String memo, List<MaterialView> materials, Instant createdAt) {
+            String imageUrl, BigDecimal totalLengthCm) {
     }
 
     public record GarmentDetail(GarmentSummary summary, String productCode, String sizeLabel, String origin,

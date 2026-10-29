@@ -1,218 +1,160 @@
-import { useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Icon } from '../components/Icon';
-import { GarmentCard } from '../components/GarmentCard';
-import { LocationSheet } from '../components/LocationSheet';
-import { Sheet } from '../components/Sheet';
-import { useGarments } from '../data/store';
-import { CATEGORIES, STATUSES, fmtLoc, statusOf, type Category, type Garment, type Space, type StatusLabel } from '../data/garments';
-import { SEASONS, type Season } from '../lib/seasons';
-import { useToast } from '../lib/toast';
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
+import { api, errorMessage } from '../api'
+import GarmentCard from '../components/GarmentCard'
+import { IconSearch } from '../components/Icons'
+import { Loading, Notice } from '../components/Ui'
+import WeatherCard from '../components/WeatherCard'
+import { useLabel, useSession } from '../session'
+import type { GarmentSummary } from '../types'
 
-type Group = 'none' | 'season' | 'category' | 'place';
-type Sort = 'recent' | 'name' | 'place';
-interface Filters { seasons: Season[]; statuses: StatusLabel[]; group: Group }
-const EMPTY: Filters = { seasons: [], statuses: [], group: 'none' };
+const VIEWS = [
+  { value: 'category', label: '종류' },
+  { value: 'season', label: '계절' },
+  { value: 'brand', label: '브랜드' },
+  { value: 'location', label: '위치' },
+  { value: 'where', label: '집 밖/박스' },
+  { value: 'status', label: '상태' },
+  { value: 'collection', label: '컬렉션' },
+] as const
+type View = (typeof VIEWS)[number]['value']
 
-const GROUPS: [Group, string][] = [['none', '묶지 않기'], ['season', '계절별'], ['category', '종류별'], ['place', '위치별']];
-
-function groupItems(items: Garment[], by: Group, spaces: Space[]): { key: string; items: Garment[] }[] {
-  if (by === 'none') return [{ key: '', items }];
-  const keys: string[] =
-    by === 'season' ? [...SEASONS] : by === 'category' ? [...CATEGORIES] : [...spaces.map((s) => s.name), '미배치'];
-  return keys
-    .map((key) => ({
-      key,
-      items: items.filter((g) =>
-        by === 'season' ? g.seasons.includes(key as Season) : by === 'category' ? g.category === key : (g.loc?.space ?? '미배치') === key,
-      ),
-    }))
-    .filter((g) => g.items.length > 0);
-}
+type Group = { key: string; title: string; items: GarmentSummary[] }
 
 export default function Closet() {
-  const { garments, spaces, move } = useGarments();
-  const nav = useNavigate();
-  const toast = useToast();
+  const { meta } = useSession()
+  const label = useLabel()
+  const [params, setParams] = useSearchParams()
+  const view = (VIEWS.some((v) => v.value === params.get('view')) ? params.get('view') : 'category') as View
+  const category = params.get('category') ?? 'ALL'
+  const [query, setQuery] = useState(params.get('q') ?? '')
+  const [items, setItems] = useState<GarmentSummary[] | null>(null)
+  const [total, setTotal] = useState<number | null>(null)
+  const [allItems, setAllItems] = useState<GarmentSummary[] | null>(null)
+  const [error, setError] = useState('')
 
-  const [q, setQ] = useState('');
-  const [cat, setCat] = useState<'전체' | Category>('전체');
-  const [sort, setSort] = useState<Sort>('recent');
-  const [filters, setFilters] = useState<Filters>(EMPTY);
-  const [draft, setDraft] = useState<Filters>(EMPTY);
-  const [selecting, setSelecting] = useState(false);
-  const [sel, setSel] = useState<string[]>([]);
-  const [sheet, setSheet] = useState<'filter' | 'move' | null>(null);
+  // 검색어는 잠시 멈춘 뒤 서버에 보낸다(이름·브랜드·색상·종류·위치 경로에서 찾음).
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const q = query.trim()
+      api.get<GarmentSummary[]>(`/api/garments${q ? `?q=${encodeURIComponent(q)}` : ''}`)
+        .then((list) => { setItems(list); setError(''); if (!q) { setTotal(list.length); setAllItems(list) } })
+        .catch((e) => setError(errorMessage(e)))
+    }, query ? 250 : 0)
+    return () => clearTimeout(t)
+  }, [query])
 
-  const activeCount = filters.seasons.length + filters.statuses.length + (filters.group !== 'none' ? 1 : 0);
+  function setParam(key: string, value: string | null) {
+    const next = new URLSearchParams(params)
+    if (value === null) next.delete(key)
+    else next.set(key, value)
+    setParams(next, { replace: true })
+  }
 
-  const list = useMemo(() => {
-    const needle = q.trim().toLowerCase();
-    return garments
-      .filter((g) => cat === '전체' || g.category === cat)
-      .filter((g) => !needle || [g.name, g.color, g.brand ?? '', fmtLoc(g.loc), g.memo ?? ''].join(' ').toLowerCase().includes(needle))
-      .filter((g) => filters.seasons.length === 0 || g.seasons.some((s) => filters.seasons.includes(s)))
-      .filter((g) => filters.statuses.length === 0 || filters.statuses.includes(statusOf(g)))
-      .sort((a, b) =>
-        sort === 'name' ? a.name.localeCompare(b.name, 'ko') : sort === 'place' ? fmtLoc(a.loc).localeCompare(fmtLoc(b.loc), 'ko') : b.createdAt - a.createdAt,
-      );
-  }, [garments, q, cat, filters, sort]);
+  const filtered = useMemo(
+    () => (items ?? []).filter((g) => category === 'ALL' || g.category === category),
+    [items, category],
+  )
 
-  const groups = useMemo(() => groupItems(list, filters.group, spaces), [list, filters.group, spaces]);
-
-  const toggle = (id: string) => setSel((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
-  const endSelect = () => {
-    setSelecting(false);
-    setSel([]);
-  };
-  const reset = () => {
-    setQ('');
-    setCat('전체');
-    setFilters(EMPTY);
-  };
-
-  const openFilter = () => {
-    setDraft(filters);
-    setSheet('filter');
-  };
-  const flip = <T,>(arr: T[], v: T) => (arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
+  const groups = useMemo<Group[]>(() => groupBy(filtered, view, label, meta?.seasons.map((s) => s.value) ?? []), [filtered, view, label, meta])
 
   return (
-    <div className="page pinned closet">
-      <div className="pin">
-      <header className="page-head">
-        <h1>
-          내 옷장 <small>총 {garments.length}벌</small>
-        </h1>
-        {garments.length > 0 && (
-          <button className="link-btn" onClick={() => (selecting ? endSelect() : setSelecting(true))}>
-            {selecting ? '완료' : '선택'}
-          </button>
-        )}
-      </header>
+    <>
+      <div className="page-head">
+        <h1 className="page-title">내 옷장{total !== null && <small>총 {total}벌</small>}</h1>
+        <Link className="btn btn-sm btn-soft" to="/register">옷 등록</Link>
+      </div>
+
+      {allItems && allItems.length > 0 && <WeatherCard items={allItems} />}
 
       <label className="search">
-        <Icon name="search" size={20} />
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="이름·색상·위치로 검색" type="search" aria-label="옷 검색" />
+        <IconSearch />
+        <span className="sr-only">검색창</span>
+        <input type="search" placeholder="이름·색상·위치로 검색" aria-label="검색창" value={query}
+          onChange={(e) => { setQuery(e.target.value); setParam('q', e.target.value || null) }} />
       </label>
 
-      <div className="chips scroll" role="tablist" aria-label="종류">
-        {(['전체', ...CATEGORIES] as const).map((c) => (
-          <button key={c} className="chip" data-on={cat === c} onClick={() => setCat(c)} role="tab" aria-selected={cat === c}>
-            {c}
-          </button>
+      <div className="chips" role="group" aria-label="종류로 거르기">
+        <button type="button" className="chip" aria-pressed={category === 'ALL'} onClick={() => setParam('category', null)}>전체</button>
+        {meta?.categories.map((c) => (
+          <button key={c.value} type="button" className="chip" aria-pressed={category === c.value} onClick={() => setParam('category', c.value)}>{c.label}</button>
         ))}
       </div>
 
-      <div className="filter-row">
-        <button className="filter-btn" onClick={openFilter}>
-          <Icon name="filter" size={18} />필터{activeCount > 0 && <b>{activeCount}</b>}
-        </button>
-        <span className="result-count">{list.length !== garments.length ? `${list.length}벌` : ''}</span>
-        <label className="sort">
-          <select value={sort} onChange={(e) => setSort(e.target.value as Sort)} aria-label="정렬">
-            <option value="recent">최근 등록순</option>
-            <option value="name">이름순</option>
-            <option value="place">위치순</option>
+      <div className="toolbar">
+        <span className="field-hint">{items ? `${filtered.length}벌 보는 중` : ''}</span>
+        <label className="inline-select">
+          보기 기준
+          <select aria-label="보기 기준" value={view} onChange={(e) => setParam('view', e.target.value)}>
+            {VIEWS.map((v) => <option key={v.value} value={v.value}>{v.label}</option>)}
           </select>
-          <Icon name="chevronDown" size={16} />
         </label>
       </div>
-      </div>
 
-      {garments.length === 0 ? (
-        <div className="empty">
-          <p className="empty-title">등록된 옷이 0벌이에요</p>
-          <p>세탁 택을 찍으면 옷 정보와 세탁법이 자동으로 채워져요.</p>
-          <Link to="/register" className="btn btn-primary">옷 등록</Link>
-        </div>
-      ) : list.length === 0 ? (
-        <div className="empty">
-          <p className="empty-title">조건에 맞는 옷이 없어요</p>
-          <p>검색어나 필터를 바꿔 보세요.</p>
-          <button className="btn btn-ghost" onClick={reset}>조건 초기화</button>
-        </div>
-      ) : (
-        groups.map((grp) => (
-          <section key={grp.key || 'all'} className="group" aria-label={grp.key ? `${grp.key} 묶음` : undefined}>
-            {grp.key && (
-              <h2 className="group-title">
-                {grp.key} <small>{grp.items.length}벌</small>
-              </h2>
-            )}
-            <div className="grid">
-              {grp.items.map((g) => (
-                <GarmentCard
-                  key={`${grp.key}${g.id}`}
-                  garment={g}
-                  selecting={selecting}
-                  selected={sel.includes(g.id)}
-                  onClick={() => (selecting ? toggle(g.id) : nav(`/closet/${g.id}`))}
-                />
-              ))}
-            </div>
-          </section>
-        ))
-      )}
+      {error && <Notice>{error}</Notice>}
+      {!items && !error && <Loading />}
 
-      {selecting && (
-        <div className="selbar" role="region" aria-label="선택한 옷">
-          <b>{sel.length}개 선택됨</b>
-          <button className="link-btn muted" onClick={() => setSel([])} disabled={sel.length === 0}>선택 해제</button>
-          <button className="btn btn-primary" disabled={sel.length === 0} onClick={() => setSheet('move')}>위치 변경</button>
+      {items && total === 0 && !query && (
+        <div className="empty">
+          <strong>등록된 옷이 0벌이에요</strong>
+          <p>새로 산 옷이나 오늘 입은 옷부터 한 벌씩 등록해 보세요. 택을 찍으면 브랜드와 세탁법을 읽어 드려요.</p>
+          <Link className="btn" to="/register">옷 등록</Link>
         </div>
       )}
 
-      <Sheet
-        open={sheet === 'filter'}
-        onClose={() => setSheet(null)}
-        title="필터"
-        footer={
-          <div className="foot-row">
-            <button className="btn btn-ghost" onClick={() => setDraft(EMPTY)}>초기화</button>
-            <button className="btn btn-primary" onClick={() => { setFilters(draft); setSheet(null); }}>적용하기</button>
-          </div>
-        }
-      >
-        <div className="fields">
-          <div className="field">
-            <span>계절</span>
-            <div className="chips">
-              {SEASONS.map((s) => (
-                <button key={s} className="chip" data-on={draft.seasons.includes(s)} onClick={() => setDraft({ ...draft, seasons: flip(draft.seasons, s) })} aria-pressed={draft.seasons.includes(s)}>{s}</button>
-              ))}
-            </div>
-          </div>
-          <div className="field">
-            <span>상태</span>
-            <div className="chips">
-              {STATUSES.map((s) => (
-                <button key={s} className="chip" data-on={draft.statuses.includes(s)} onClick={() => setDraft({ ...draft, statuses: flip(draft.statuses, s) })} aria-pressed={draft.statuses.includes(s)}>{s}</button>
-              ))}
-            </div>
-          </div>
-          <div className="field">
-            <span>보기 기준</span>
-            <div className="chips">
-              {GROUPS.map(([id, label]) => (
-                <button key={id} className="chip" data-on={draft.group === id} onClick={() => setDraft({ ...draft, group: id })} aria-pressed={draft.group === id}>{label}</button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </Sheet>
+      {items && items.length === 0 && query && (
+        <div className="empty"><strong>‘{query}’와 맞는 옷이 없어요</strong><p>이름, 색상, 브랜드, 보관 위치로 찾을 수 있어요.</p></div>
+      )}
 
-      <LocationSheet
-        open={sheet === 'move'}
-        onClose={() => setSheet(null)}
-        count={sel.length}
-        onSubmit={(loc) => {
-          move(sel, loc);
-          toast(`${sel.length}벌을 ${fmtLoc(loc, ' › ')}(으)로 옮겼어요`);
-          setSheet(null);
-          endSelect();
-        }}
-      />
-    </div>
-  );
+      {groups.map((g) => (
+        <section className="group" key={g.key} aria-label={`${g.title} 묶음`}>
+          <h2 className="group-title">{g.title}<small>{g.items.length}벌</small></h2>
+          <div className="grid">
+            {g.items.map((item) => <GarmentCard key={`${g.key}-${item.id}`} g={item} />)}
+          </div>
+        </section>
+      ))}
+    </>
+  )
+}
+
+function groupBy(items: GarmentSummary[], view: View, label: ReturnType<typeof useLabel>, seasonOrder: string[]): Group[] {
+  const map = new Map<string, Group>()
+  const add = (key: string, title: string, g: GarmentSummary) => {
+    if (!map.has(key)) map.set(key, { key, title, items: [] })
+    map.get(key)!.items.push(g)
+  }
+  for (const g of items) {
+    switch (view) {
+      case 'category': add(g.category, g.categoryLabel, g); break
+      case 'season':
+        if (g.seasons.length === 0) add('~none', '계절 미지정', g)
+        g.seasons.forEach((s) => add(s, label('seasons', s), g))
+        break
+      case 'brand': add(g.brand ?? '~none', g.brand ?? '브랜드 미입력', g); break
+      case 'location': add(g.locationPath ?? `~${g.status}`, g.locationPath ?? (g.status === 'STORED' || g.status === 'PENDING' || g.status === 'WASH_WAITING' ? '미배치' : g.statusLabel), g); break
+      case 'where': add(g.locationKind, g.locationKindLabel, g); break
+      case 'status': add(g.status, g.statusLabel, g); break
+      case 'collection':
+        if (g.collections.length === 0) add('~none', '컬렉션 없음', g)
+        g.collections.forEach((c) => add(c, c, g))
+        break
+    }
+  }
+  const groups = [...map.values()]
+  if (view === 'season') {
+    groups.sort((a, b) => order(seasonOrder, a.key) - order(seasonOrder, b.key))
+  } else if (view === 'where') {
+    // 바로 꺼낼 수 없는 곳(박스·집 밖·세탁소)을 먼저 보여 준다.
+    const kinds = ['BOX', 'OFFSITE', 'CARE', 'UNPLACED', 'HOME']
+    groups.sort((a, b) => order(kinds, a.key) - order(kinds, b.key))
+  } else {
+    groups.sort((a, b) => (a.key.startsWith('~') ? 1 : 0) - (b.key.startsWith('~') ? 1 : 0) || a.title.localeCompare(b.title, 'ko'))
+  }
+  return groups
+}
+
+function order(list: string[], key: string): number {
+  const i = list.indexOf(key)
+  return i === -1 ? 99 : i
 }

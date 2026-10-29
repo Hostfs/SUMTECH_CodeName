@@ -65,7 +65,6 @@ public class Garment {
     public String colorHex;
     public String sizeLabel;
     public String origin;
-    public String memo;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "sub_type_code")

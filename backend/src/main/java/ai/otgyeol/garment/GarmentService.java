@@ -191,7 +191,11 @@ public class GarmentService {
         return new GarmentDetail(summary(g, ctx), g.productCode, g.sizeLabel, g.origin, g.homeStatus.name(),
                 g.usableWhenPending, g.aiFields.stream().map(Enum::name).sorted().toList(),
                 placement == null ? null : placement.placedAt,
-                materialViews(g),
+                g.materials.stream()
+                        .sorted(Comparator.comparing((Garment.Material m) -> m.part().ordinal())
+                                .thenComparing(m -> m.percent(), Comparator.reverseOrder()))
+                        .map(m -> new MaterialView(m.part().name(), m.part().label, m.fiber().name(), m.fiber().label, m.percent()))
+                        .toList(),
                 g.careLines.stream().sorted(Comparator.comparingInt(Garment.CareLine::lineNo)).map(Garment.CareLine::instruction).toList(),
                 g.measurements.stream()
                         .sorted(Comparator.comparing((Garment.Measurement m) -> m.part().ordinal()).thenComparing(m -> m.kind().ordinal()))
@@ -482,15 +486,7 @@ public class GarmentService {
                 placement == null ? null : placement.spaceId,
                 ctx.locationConfirmed(g) ? ctx.paths().get(placement.spaceId) : null,
                 ctx.locationKind(g).name(), ctx.locationKind(g).label,
-                ImageController.url(ctx.covers().get(g.id)), g.totalLengthCm(), g.sizeLabel, g.memo, materialViews(g), g.createdAt);
-    }
-
-    private static List<MaterialView> materialViews(Garment g) {
-        return g.materials.stream()
-                .sorted(Comparator.comparing((Garment.Material m) -> m.part().ordinal())
-                        .thenComparing(m -> m.percent(), Comparator.reverseOrder()))
-                .map(m -> new MaterialView(m.part().name(), m.part().label, m.fiber().name(), m.fiber().label, m.percent()))
-                .toList();
+                ImageController.url(ctx.covers().get(g.id)), g.totalLengthCm());
     }
 
     public static ExtractionView extractionView(LabelExtraction e) {
@@ -546,7 +542,6 @@ public class GarmentService {
         g.colorHex = blankToNull(in.colorHex());
         g.sizeLabel = blankToNull(in.sizeLabel());
         g.origin = blankToNull(in.origin());
-        g.memo = blankToNull(in.memo());
         g.subType = in.subType();
         if (in.wearFrequency() != null) {
             g.wearFrequency = in.wearFrequency();

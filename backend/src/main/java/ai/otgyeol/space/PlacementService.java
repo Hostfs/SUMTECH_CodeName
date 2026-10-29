@@ -176,9 +176,6 @@ public class PlacementService {
     }
 
     static SpaceType preferredType(Garment g, Season current) {
-        if (g.category() == Category.SHOES) {
-            return SpaceType.SHELF;
-        }
         if (!g.seasons.isEmpty() && !g.seasons.contains(current)) {
             return SpaceType.LONG_TERM;
         }
@@ -213,8 +210,7 @@ public class PlacementService {
             case LONG_TERM -> "이번 계절(" + season.label + ") 옷이 아니어서 장기보관 공간을 우선했어요.";
             case HANG -> "형태 유지가 필요한 옷이라 걸기 공간을 우선했어요.";
             case FOLD -> "접어서 보관해도 되는 옷이라 접기 공간을 우선했어요.";
-            case SHELF -> "신발이라 선반 공간을 우선했어요.";
-            // preferredType()은 위 네 유형만 돌려준다.
+            // preferredType()은 위 세 유형만 돌려준다.
             case BOX, OFFSITE -> "";
         };
         if (!fits(chosen.spaceType, preferred)) {
