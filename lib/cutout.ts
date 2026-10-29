@@ -303,6 +303,39 @@ async function compute(src: string): Promise<Cutout | null> {
           clearRow(y);
           cut++;
         }
+        // 아래에서부터: 옷보다 훨씬 어두운 줄(모델이 신은 신발)이 이어지면 지운다. 신발은 따로 입히므로 바지에는 필요 없다.
+        const lum = (r: number, g: number, b: number) => 0.299 * r + 0.587 * g + 0.114 * b;
+        const medLum = lum(med[0], med[1], med[2]);
+        if (medLum > 45) {
+          const darkRow = (y: number) => {
+            let n = 0;
+            let sum = 0;
+            for (let x = 0; x < w; x++) {
+              const i = (y * w + x) * 4;
+              if (d[i + 3] < ALPHA_MIN) continue;
+              n++;
+              sum += lum(d[i], d[i + 1], d[i + 2]);
+            }
+            return n === 0 ? null : sum / n < medLum * 0.72;
+          };
+          const maxDark = Math.round(h * 0.18);
+          // 줄 하나는 들쭉날쭉해서, 아래 5줄 평균으로 판단한다
+          const vals: (boolean | null)[] = [];
+          for (let y = h - 1; y >= Math.max(0, h - maxDark); y--) vals.push(darkRow(y));
+          // 맨 아래의 밝은 테두리(신발 밑창 가장자리 등) 몇 줄은 건너뛰고, 어두운 줄이 이어지는 끝까지를 신발로 본다
+          let lastDark = -1;
+          for (let k = 0; k < vals.length; k++) {
+            if (vals[k] === null) continue;
+            const win = vals.slice(k, k + 5).filter((v) => v !== null);
+            const mostlyDark = win.filter(Boolean).length * 2 > win.length;
+            if (mostlyDark) lastDark = k;
+            else if (lastDark >= 0 || k > 8) break;
+          }
+          const found: number[] = [];
+          for (let k = 0; k <= lastDark; k++) found.push(h - 1 - k);
+          // 3줄 미만이면 그림자·솔기로 보고 둔다.
+          if (found.length >= 3) found.forEach(clearRow);
+        }
         cut = 0;
         for (let y = h - 1; y >= 0 && cut < limit; y--) {
           const s = isSkinRow(y);
