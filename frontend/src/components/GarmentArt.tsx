@@ -1,107 +1,142 @@
-// 옷 종류별 평면 일러스트. 실제 옷 색(colorHex)으로 칠한다. 사진이 없을 때 대표 이미지 대신 쓴다.
+import type { Shape } from '../data/garments';
 
-type Props = { subType: string; colorHex?: string | null; title?: string }
-
-const FALLBACK = '#d9d3c9'
-
-function shade(hex: string, amount: number): string {
-  const n = parseInt(hex.slice(1), 16)
-  const ch = (shift: number) => Math.max(0, Math.min(255, Math.round(((n >> shift) & 255) * (1 + amount))))
-  return `#${[16, 8, 0].map((s) => ch(s).toString(16).padStart(2, '0')).join('')}`
+/** hex 를 amt(-1~1) 만큼 어둡게/밝게 */
+export function shade(hex: string, amt: number): string {
+  const n = parseInt(hex.slice(1), 16);
+  const f = (v: number) => Math.round(amt < 0 ? v * (1 + amt) : v + (255 - v) * amt);
+  return '#' + [n >> 16, (n >> 8) & 255, n & 255].map((v) => f(v).toString(16).padStart(2, '0')).join('');
 }
 
-function luminance(hex: string): number {
-  const n = parseInt(hex.slice(1), 16)
-  return (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255
+const SLEEVE_BODY = 'M36 12 L20 18 L8 64 L22 68 L28 42 V84 H68 V42 L74 68 L88 64 L76 18 L60 12 Q48 24 36 12Z';
+const COAT_BODY = 'M34 10 L48 22 L62 10 L78 18 L90 66 L76 69 L69 38 V92 H27 V38 L20 69 L6 66 L18 18Z';
+
+function parts(shape: Shape, hex: string, line: string) {
+  const light = shade(hex, 0.28);
+  switch (shape) {
+    case 'tee':
+      return <path d="M36 12 L18 20 L6 40 L20 47 L27 37 V84 H69 V37 L76 47 L90 40 L78 20 L60 12 Q48 24 36 12Z" />;
+    case 'knit':
+      return (
+        <>
+          <path d={SLEEVE_BODY} />
+          <path d="M28 78H68" strokeDasharray="1.6 2.2" />
+          <path d="M36 12 Q48 24 60 12" fill="none" />
+        </>
+      );
+    case 'shirt':
+      return (
+        <>
+          <path d={SLEEVE_BODY.replace('V84 H68', 'V86 H68')} />
+          <path d="M36 12 L44 28 L48 20 L52 28 L60 12 Q48 24 36 12Z" fill={light} />
+          <path d="M48 20 V86" fill="none" />
+          <circle cx="48" cy="44" r="1.2" fill={line} stroke="none" />
+          <circle cx="48" cy="58" r="1.2" fill={line} stroke="none" />
+          <circle cx="48" cy="72" r="1.2" fill={line} stroke="none" />
+        </>
+      );
+    case 'coat':
+      return (
+        <>
+          <path d={COAT_BODY} />
+          <path d="M34 10 L45 38 L48 22Z M62 10 L51 38 L48 22Z" fill={light} />
+          <path d="M48 22 V92" fill="none" />
+          <circle cx="54" cy="54" r="1.4" fill={line} stroke="none" />
+          <circle cx="54" cy="68" r="1.4" fill={line} stroke="none" />
+        </>
+      );
+    case 'blazer':
+      return (
+        <>
+          <path d={COAT_BODY.replace('V92 H27', 'V78 H27')} />
+          <path d="M34 10 L45 38 L48 22Z M62 10 L51 38 L48 22Z" fill={light} />
+          <path d="M48 22 V78 M32 66h10M54 66h10" fill="none" />
+          <circle cx="53" cy="52" r="1.4" fill={line} stroke="none" />
+        </>
+      );
+    case 'puffer':
+      return (
+        <>
+          <path d="M36 12 Q48 20 60 12 L78 18 L90 64 L76 68 L69 40 V86 H27 V40 L20 68 L6 64 L18 18Z" />
+          <path d="M28 34H68M28 50H68M28 66H68M48 18V86" fill="none" />
+        </>
+      );
+    case 'pants':
+      return (
+        <>
+          <path d="M28 8H68L73 90H54L48 40L42 90H23Z" />
+          <path d="M28 16H68M48 16V40" fill="none" />
+        </>
+      );
+    case 'shorts':
+      return (
+        <>
+          <path d="M28 20H68L74 64H53L48 42L43 64H22Z" />
+          <path d="M28 27H68" fill="none" />
+        </>
+      );
+    case 'skirt':
+      return (
+        <>
+          <path d="M33 16H63L84 82H12Z" />
+          <path d="M33 22H63" fill="none" />
+        </>
+      );
+    case 'pleated':
+      return (
+        <>
+          <path d="M33 16H63L84 82H12Z" />
+          <path d="M33 22H63M38 22L22 82M43 22L35 82M48 22V82M53 22L61 82M58 22L74 82" fill="none" />
+        </>
+      );
+    case 'loafer':
+      return (
+        <>
+          <path d="M8 64 Q10 54 24 52 L44 50 Q54 58 74 60 Q92 62 92 70 V74 H8Z" />
+          <path d="M8 70H92M44 50 L52 56" fill="none" />
+        </>
+      );
+    case 'boots':
+      return (
+        <>
+          <path d="M30 12 H58 V52 Q58 58 70 60 Q92 62 92 72 V78 H16 V66 Q30 64 30 54Z" />
+          <path d="M16 72H92M30 24H58" fill="none" />
+        </>
+      );
+    case 'sneaker':
+      return (
+        <>
+          <path d="M8 60 Q8 48 20 46 L34 44 Q40 54 52 54 L76 56 Q92 58 92 68 V74 H8Z" />
+          <path d="M8 68H92M36 44 L40 38M44 48 L48 42" fill="none" />
+        </>
+      );
+  }
 }
 
-type Kind = 'tee' | 'long' | 'knit' | 'shirt' | 'jacket' | 'coat' | 'pants' | 'jeans' | 'shorts' | 'skirt' | 'dress' | 'etc'
-
-const KIND: Record<string, Kind> = {
-  SHORT_SLEEVE_TEE: 'tee', LONG_SLEEVE_TEE: 'long', KNIT: 'knit', SHIRT: 'shirt', TOP_ETC: 'long',
-  JACKET: 'jacket', COAT: 'coat', OUTER_ETC: 'jacket',
-  PANTS: 'pants', JEANS: 'jeans', SHORTS: 'shorts', SKIRT: 'skirt', BOTTOM_ETC: 'pants',
-  DRESS: 'dress', ETC: 'etc',
+interface Props {
+  shape: Shape;
+  hex: string;
+  size?: number | string;
+  className?: string;
 }
 
-const LONG_BODY = 'M44 24 L31 30 L23 60 L19 86 L29 88 L37 62 L37 100 L83 100 L83 62 L91 88 L101 86 L97 60 L89 30 L76 24 Q60 34 44 24 Z'
-
-export default function GarmentArt({ subType, colorHex, title }: Props) {
-  const fill = colorHex && /^#[0-9a-fA-F]{6}$/.test(colorHex) ? colorHex : FALLBACK
-  const dark = luminance(fill) < 0.35
-  const stroke = dark ? shade(fill, 0.55) : shade(fill, -0.38)
-  const detail = dark ? shade(fill, 0.35) : shade(fill, -0.22)
-  const s = { fill, stroke, strokeWidth: 2, strokeLinejoin: 'round' as const }
-  const line = { fill: 'none', stroke: detail, strokeWidth: 1.6, strokeLinecap: 'round' as const }
-  const kind = KIND[subType] ?? 'etc'
-
+export function GarmentArt({ shape, hex, size = '100%', className }: Props) {
+  const line = shade(hex, -0.38);
   return (
-    <svg viewBox="0 0 120 120" role="img" aria-label={title ?? '옷 그림'}>
-      {kind === 'tee' && (
-        <>
-          <path {...s} d="M44 26 L31 32 L19 49 L29 58 L37 50 L37 99 L83 99 L83 50 L91 58 L101 49 L89 32 L76 26 Q60 37 44 26 Z" />
-          <path {...line} d="M47 27 Q60 35 73 27" />
-        </>
-      )}
-      {(kind === 'long' || kind === 'knit') && (
-        <>
-          <path {...s} d={LONG_BODY} />
-          <path {...line} d="M47 25 Q60 33 73 25" />
-          {kind === 'knit' && <path {...line} d="M38 94 H82 M42 94 V100 M48 94 V100 M54 94 V100 M60 94 V100 M66 94 V100 M72 94 V100 M78 94 V100 M20 82 L29 84 M92 84 L100 82" />}
-        </>
-      )}
-      {kind === 'shirt' && (
-        <>
-          <path {...s} d={LONG_BODY} />
-          <path {...s} d="M45 23 L60 37 L75 23 L71 18 L60 27 L49 18 Z" />
-          <path {...line} d="M60 37 V100" />
-          {[46, 58, 70, 82, 94].map((y) => <circle key={y} cx="63.5" cy={y} r="1.5" fill={detail} />)}
-        </>
-      )}
-      {(kind === 'jacket' || kind === 'coat') && (
-        <>
-          <path {...s} d={kind === 'coat'
-            ? 'M44 20 L31 26 L23 58 L19 86 L29 88 L37 60 L35 110 L85 110 L83 60 L91 88 L101 86 L97 58 L89 26 L76 20 Q60 26 44 20 Z'
-            : LONG_BODY} />
-          <path {...s} d="M45 21 L52 44 L60 64 L56 40 Z" />
-          <path {...s} d="M75 21 L68 44 L60 64 L64 40 Z" />
-          <path {...line} d={kind === 'coat' ? 'M60 64 V110' : 'M60 64 V100'} />
-          <circle cx="60" cy="74" r="1.8" fill={detail} />
-          <circle cx="60" cy="86" r="1.8" fill={detail} />
-          <path {...line} d={kind === 'coat' ? 'M41 92 H52 M68 92 H79' : 'M42 86 H52 M68 86 H78'} />
-        </>
-      )}
-      {(kind === 'pants' || kind === 'jeans') && (
-        <>
-          <path {...s} d="M38 18 L82 18 L87 106 L66 106 L60 50 L54 106 L33 106 Z" />
-          <path {...line} d="M38 27 H82 M60 27 V50" />
-          {kind === 'jeans' && <path {...line} strokeDasharray="2.5 2.5" d="M42 31 Q48 40 56 34 M78 31 Q72 40 64 34 M36 100 H54 M66 100 H84" />}
-        </>
-      )}
-      {kind === 'shorts' && (
-        <>
-          <path {...s} d="M36 34 L84 34 L89 78 L65 78 L60 54 L55 78 L31 78 Z" />
-          <path {...line} d="M36 42 H84 M60 42 V54" />
-        </>
-      )}
-      {kind === 'skirt' && (
-        <>
-          <path {...s} d="M45 24 L75 24 L92 98 Q60 104 28 98 Z" />
-          <path {...line} d="M45 31 H75 M52 31 L44 100 M60 31 V102 M68 31 L76 100" />
-        </>
-      )}
-      {kind === 'dress' && (
-        <>
-          <path {...s} d="M48 18 L54 18 L60 28 L66 18 L72 18 L74 46 L92 102 Q60 108 28 102 L46 46 Z" />
-          <path {...line} d="M46 46 H74" />
-        </>
-      )}
-      {kind === 'etc' && (
-        <>
-          <path {...s} d="M34 30 H74 L92 60 L74 90 H34 Z" />
-          <circle cx="76" cy="60" r="4" fill="#fff" stroke={stroke} strokeWidth="2" />
-        </>
-      )}
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 96 96"
+      width={size}
+      height={size}
+      className={className}
+      data-art=""
+      fill={hex}
+      stroke={line}
+      strokeWidth="2"
+      strokeLinejoin="round"
+      strokeLinecap="round"
+      aria-hidden="true"
+    >
+      {parts(shape, hex, line)}
     </svg>
-  )
+  );
 }

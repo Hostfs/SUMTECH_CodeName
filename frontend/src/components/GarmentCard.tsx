@@ -1,42 +1,53 @@
-import { Link } from 'react-router-dom'
-import type { GarmentSummary } from '../types'
-import GarmentArt from './GarmentArt'
-import { IconPin, IconPinQuestion } from './Icons'
-import StatusPill from './StatusPill'
+import { Icon } from './Icon';
+import { GarmentImage } from './GarmentImage';
+import { fmtLoc, isOverdue, statusOf, type Garment } from '../data/garments';
 
-export function GarmentTile({ g }: { g: GarmentSummary }) {
-  return (
-    <div className="gcard-tile">
-      {g.imageUrl ? <img src={g.imageUrl} alt="" loading="lazy" /> : <GarmentArt subType={g.subType} colorHex={g.colorHex} title={`${g.name} 그림`} />}
-      <StatusPill status={g.status} label={g.statusLabel} />
-    </div>
-  )
+interface Props {
+  garment: Garment;
+  selecting: boolean;
+  selected: boolean;
+  onClick: () => void;
 }
 
-/** 위치 줄: 확정 위치, 미배치, 집에 없음, 확인 필요를 구분한다. */
-export function LocationLine({ g }: { g: GarmentSummary }) {
-  if (g.locationPath) {
-    // 박스 속·집 밖이면 바로 꺼낼 수 없다는 것을 앞에 붙인다.
-    const prefix = g.locationKind === 'BOX' || g.locationKind === 'OFFSITE' ? `${g.locationKindLabel} · ` : ''
-    return <div className={`gcard-loc${prefix ? ' away' : ''}`}><IconPin /><span>{prefix}{g.locationPath}</span></div>
-  }
-  if (g.status === 'WASHING' || g.status === 'REPAIRING') {
-    return <div className="gcard-loc"><IconPin /><span>지금 집에 없어요</span></div>
-  }
-  if (g.status === 'RETURNED_UNPLACED') {
-    return <div className="gcard-loc unplaced"><IconPinQuestion /><span>위치 확인 필요</span></div>
-  }
-  return <div className="gcard-loc unplaced"><IconPinQuestion /><span>미배치</span></div>
-}
-
-export default function GarmentCard({ g }: { g: GarmentSummary }) {
+/** 옷 카드. 상태는 색만으로 구분하지 않고 아이콘과 문구를 함께 쓴다 (계획서 8장). */
+export function GarmentCard({ garment: g, selecting, selected, onClick }: Props) {
+  const status = statusOf(g);
+  const overdue = isOverdue(g);
   return (
-    <Link to={`/closet/${g.id}`} className="gcard" data-testid="garment-card">
-      <GarmentTile g={g} />
-      <div className="gcard-body">
-        <p className="gcard-name">{g.name}</p>
-        <LocationLine g={g} />
-      </div>
-    </Link>
-  )
+    <button
+      className="gcard"
+      data-selected={selected}
+      data-selecting={selecting}
+      onClick={onClick}
+      aria-pressed={selecting ? selected : undefined}
+      aria-label={`${g.name}, ${status}${overdue ? ', 회수 기한 지남' : ''}, ${fmtLoc(g.loc)}`}
+    >
+      <span className="gtile">
+        {selecting && (
+          <span className="gcheck" aria-hidden="true">
+            {selected && <Icon name="check" size={14} stroke={2.6} />}
+          </span>
+        )}
+        <span className="gbadges">
+          {status !== '보관 중' && (
+            <span className={`badge badge-${status === '미배치' ? 'none' : 'care'}`}>
+              <Icon name={status === '세탁 중' ? 'drop' : status === '수선 중' ? 'scissors' : 'pin'} size={11} stroke={2.2} />
+              {status}
+            </span>
+          )}
+          {overdue && (
+            <span className="badge badge-late">
+              <Icon name="alert" size={11} stroke={2.2} />기한 지남
+            </span>
+          )}
+        </span>
+        <GarmentImage g={g} size="64%" />
+      </span>
+      <span className="gname">{g.name}</span>
+      <span className="gloc">
+        <Icon name="pin" size={13} stroke={2} />
+        {g.loc ? fmtLoc(g.loc) : '위치를 정해 주세요'}
+      </span>
+    </button>
+  );
 }
