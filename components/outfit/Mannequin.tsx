@@ -65,7 +65,7 @@ function FrontShoe({ cutout, cx, bottom, d, tw0 }: { cutout: Cutout; cx: number;
     box: toe === "left" ? { ...box, x1: box.x0 + bw * keep } : { ...box, x0: box.x1 - bw * keep },
   };
   const sp = balance("shoes", cropped, tw0);
-  const tw = sp.tw * 0.8; // 정면이라 폭을 좁힌다
+  const tw = sp.tw * 0.9; // 정면이라 폭을 좁힌다
   const th = sp.th;
   const cb = cropped.box;
   const toeRight = toe !== "left";
@@ -193,9 +193,9 @@ export function Mannequin({
           if (!shoes) return null;
           // 옆모습 신발(가로로 긴 사진)은 정면 신발처럼 다시 구성해서 놓는다
           if (ratioOf(shoes) < 0.75) {
-            return <FrontShoe key={d} cutout={shoes} cx={100 + d * (legX + 2)} bottom={433} d={d as -1 | 1} tw0={44} />;
+            return <FrontShoe key={d} cutout={shoes} cx={100 + d * (legX + 9)} bottom={433} d={d as -1 | 1} tw0={54} />;
           }
-          return <Fit key={d} cutout={shoes} cx={100 + d * (legX - 2)} bottom={433} flip={d === -1} {...plan("shoes", shoes, 44)} />;
+          return <Fit key={d} cutout={shoes} cx={100 + d * (legX - 2)} bottom={433} flip={d === -1} {...plan("shoes", shoes, 52)} />;
         })}
         <Fit cutout={bottom} cx={100} top={172} {...plan("bottom", bottom, 2 * hw + 8)} />
         <Fit cutout={top} cx={100} top={70} {...plan("top", top, 2 * armOuter + 4)} />

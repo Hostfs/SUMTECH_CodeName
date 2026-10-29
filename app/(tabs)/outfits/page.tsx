@@ -58,7 +58,7 @@ export default function OutfitsPage() {
       header={
         <>
           <div className="flex h-12 items-center px-5 pt-1.5">
-            <h1 className="text-2xl font-semibold tracking-[-0.02em]">코디</h1>
+            <h1 className="text-2xl font-semibold tracking-[-0.02em]">코디 스튜디오</h1>
           </div>
           <div className="mx-4 mt-1 flex h-[42px] rounded-full bg-[#ECEAE5] p-1" role="tablist">
             {(
