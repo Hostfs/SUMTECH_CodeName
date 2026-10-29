@@ -90,82 +90,88 @@ export default function ClosetPage() {
   }, [selected, garments]);
 
   return (
-    <Screen withTabBar>
-      <div className="flex h-12 items-center justify-between px-5 pt-1.5">
-        <h1 className="text-2xl font-semibold tracking-[-0.02em]">
-          내 옷장
-          <small className="ml-2 text-sm font-normal tracking-[-0.01em] text-sub">총 {garments.length}벌</small>
-        </h1>
-        {garments.length > 0 && (
-          <button
-            type="button"
-            className="px-1 py-2 text-[15px] font-semibold text-deep"
-            onClick={() => (selecting ? endSelecting() : setSelecting(true))}
-          >
-            {selecting ? "완료" : "선택"}
-          </button>
-        )}
-      </div>
+    <Screen
+      withTabBar
+      // 제목·검색·칩·필터 줄은 위에 고정하고 카드 목록만 스크롤한다
+      header={
+        <div>
+          <div className="flex h-12 items-center justify-between px-5 pt-1.5">
+            <h1 className="text-2xl font-semibold tracking-[-0.02em]">
+              내 옷장
+              <small className="ml-2 text-sm font-normal tracking-[-0.01em] text-sub">총 {garments.length}벌</small>
+            </h1>
+            {garments.length > 0 && (
+              <button
+                type="button"
+                className="px-1 py-2 text-[15px] font-semibold text-deep"
+                onClick={() => (selecting ? endSelecting() : setSelecting(true))}
+              >
+                {selecting ? "완료" : "선택"}
+              </button>
+            )}
+          </div>
 
-      <SearchBox value={query.q} onChange={(q) => update({ q })} />
+          <SearchBox value={query.q} onChange={(q) => update({ q })} />
 
-      <div className="no-scrollbar flex gap-2 overflow-x-auto px-4 pt-3">
-        <Chip selected={query.category === "all"} onClick={() => update({ category: "all" })}>
-          전체
-        </Chip>
-        {CATEGORIES.map((c) => (
-          <Chip key={c} selected={query.category === c} onClick={() => update({ category: c })}>
-            {CATEGORY_LABEL[c]}
-          </Chip>
-        ))}
-      </div>
+          <div className="no-scrollbar flex gap-2 overflow-x-auto px-4 pt-3">
+            <Chip selected={query.category === "all"} onClick={() => update({ category: "all" })}>
+              전체
+            </Chip>
+            {CATEGORIES.map((c) => (
+              <Chip key={c} selected={query.category === c} onClick={() => update({ category: c })}>
+                {CATEGORY_LABEL[c]}
+              </Chip>
+            ))}
+          </div>
 
-      <div className="relative flex h-[38px] items-center justify-between px-5 pt-2.5">
-        <button
-          type="button"
-          className={"flex items-center gap-1.5 text-sm font-medium " + (filterCount ? "text-deep" : "text-ink")}
-          onClick={() => setFilterOpen(true)}
-        >
-          <FilterIcon />
-          필터{filterCount > 0 && ` ${filterCount}`}
-        </button>
-        <button
-          type="button"
-          className="flex items-center gap-0.5 text-sm text-sub"
-          aria-haspopup="menu"
-          aria-expanded={sortOpen}
-          onClick={() => setSortOpen((o) => !o)}
-        >
-          {SORT_LABEL[query.sort]}
-          <ChevronDownIcon />
-        </button>
-        {sortOpen && (
-          <>
-            <div className="fixed inset-0 z-10" onClick={() => setSortOpen(false)} />
-            <ul role="menu" className="absolute top-11 right-4 z-20 w-36 overflow-hidden rounded-[14px] border border-line bg-card">
-              {(Object.keys(SORT_LABEL) as SortKey[]).map((k) => (
-                <li key={k}>
-                  <button
-                    type="button"
-                    role="menuitemradio"
-                    aria-checked={query.sort === k}
-                    className={
-                      "h-11 w-full px-4 text-left text-sm " + (query.sort === k ? "font-semibold text-deep" : "text-ink")
-                    }
-                    onClick={() => {
-                      update({ sort: k });
-                      setSortOpen(false);
-                    }}
-                  >
-                    {SORT_LABEL[k]}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
-      </div>
-
+          <div className="relative flex h-[38px] items-center justify-between px-5 pt-2.5">
+            <button
+              type="button"
+              className={"flex items-center gap-1.5 text-sm font-medium " + (filterCount ? "text-deep" : "text-ink")}
+              onClick={() => setFilterOpen(true)}
+            >
+              <FilterIcon />
+              필터{filterCount > 0 && ` ${filterCount}`}
+            </button>
+            <button
+              type="button"
+              className="flex items-center gap-0.5 text-sm text-sub"
+              aria-haspopup="menu"
+              aria-expanded={sortOpen}
+              onClick={() => setSortOpen((o) => !o)}
+            >
+              {SORT_LABEL[query.sort]}
+              <ChevronDownIcon />
+            </button>
+            {sortOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setSortOpen(false)} />
+                <ul role="menu" className="absolute top-11 right-4 z-20 w-36 overflow-hidden rounded-[14px] border border-line bg-card">
+                  {(Object.keys(SORT_LABEL) as SortKey[]).map((k) => (
+                    <li key={k}>
+                      <button
+                        type="button"
+                        role="menuitemradio"
+                        aria-checked={query.sort === k}
+                        className={
+                          "h-11 w-full px-4 text-left text-sm " + (query.sort === k ? "font-semibold text-deep" : "text-ink")
+                        }
+                        onClick={() => {
+                          update({ sort: k });
+                          setSortOpen(false);
+                        }}
+                      >
+                        {SORT_LABEL[k]}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </div>
+        </div>
+      }
+    >
       {garments.length === 0 ? (
         <EmptyState
           action={
