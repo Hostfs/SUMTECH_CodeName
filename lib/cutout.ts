@@ -50,6 +50,7 @@ async function compute(src: string): Promise<Cutout | null> {
     const image = ctx.getImageData(0, 0, w, h);
     const d = image.data;
     const isSvg = src.startsWith("data:image/svg");
+    let holeTol = HOLE_TOL;
 
     // 사진: 가장자리에서부터 배경을 걷어낸다. 배경이 한 가지 색이 아니어도(벽+바닥, 그라데이션) 되도록,
     // 모서리 색과 비슷한 가장자리 픽셀을 씨앗으로 삼아 '이웃과 색이 비슷하게 이어지는 동안'만 번져 나간다.
@@ -73,6 +74,30 @@ async function compute(src: string): Promise<Cutout | null> {
         return n ? [r / n, g / n, b / n] : null;
       };
       const corners = [patch(1, 1), patch(w - 2, 1), patch(1, h - 2), patch(w - 2, h - 2)].filter((c): c is number[] => !!c);
+      // 스튜디오 사진(흰 신발+연회색 배경처럼 옷과 배경 색이 비슷한 경우): 가장자리가 거의 한 색이면 배경 판정을 아주 빡빡하게 해서
+      // 옷이 배경으로 번지지 않게 한다. 배경이 얼룩덜룩한 사진은 기존 기준을 쓴다.
+      let borderSpread = 0;
+      let borderN = 0;
+      const refC = corners.length ? [0, 1, 2].map((c) => corners.reduce((a, k) => a + k[c], 0) / corners.length) : [0, 0, 0];
+      for (let x = 0; x < w; x += 3) {
+        for (const y of [0, h - 1]) {
+          const i = (y * w + x) * 4;
+          borderSpread += Math.hypot(d[i] - refC[0], d[i + 1] - refC[1], d[i + 2] - refC[2]);
+          borderN++;
+        }
+      }
+      for (let y = 0; y < h; y += 3) {
+        for (const x of [0, w - 1]) {
+          const i = (y * w + x) * 4;
+          borderSpread += Math.hypot(d[i] - refC[0], d[i + 1] - refC[1], d[i + 2] - refC[2]);
+          borderN++;
+        }
+      }
+      const studio = borderN > 0 && borderSpread / borderN < 9 && corners.every((c) => Math.hypot(c[0] - refC[0], c[1] - refC[1], c[2] - refC[2]) < 14);
+      const seedTol = studio ? 26 : SEED_TOL;
+      const stepTol = studio ? 8 : STEP_TOL;
+      const farTol = studio ? 30 : FAR_TOL;
+      holeTol = studio ? 22 : HOLE_TOL;
       const seen = new Uint8Array(w * h);
       const queue = new Int32Array(w * h);
       const sr = new Uint8Array(w * h); // 번지기 시작한 씨앗의 색
@@ -85,7 +110,7 @@ async function compute(src: string): Promise<Cutout | null> {
         if (seen[p]) return;
         seen[p] = 1;
         const i = p * 4;
-        if (d[i + 3] >= ALPHA_MIN && !corners.some((c) => dist(d, i, c) < SEED_TOL)) return;
+        if (d[i + 3] >= ALPHA_MIN && !corners.some((c) => dist(d, i, c) < seedTol)) return;
         sr[p] = d[i];
         sg[p] = d[i + 1];
         sb[p] = d[i + 2];
@@ -97,8 +122,8 @@ async function compute(src: string): Promise<Cutout | null> {
         const i = q * 4;
         const j = from * 4;
         if (d[i + 3] >= ALPHA_MIN) {
-          if (Math.hypot(d[i] - d[j], d[i + 1] - d[j + 1], d[i + 2] - d[j + 2]) > STEP_TOL) return;
-          if (Math.hypot(d[i] - sr[from], d[i + 1] - sg[from], d[i + 2] - sb[from]) > FAR_TOL) return;
+          if (Math.hypot(d[i] - d[j], d[i + 1] - d[j + 1], d[i + 2] - d[j + 2]) > stepTol) return;
+          if (Math.hypot(d[i] - sr[from], d[i + 1] - sg[from], d[i + 2] - sb[from]) > farTol) return;
         }
         sr[q] = sr[from];
         sg[q] = sg[from];
@@ -151,7 +176,7 @@ async function compute(src: string): Promise<Cutout | null> {
         for (let p = 0; p < w * h; p++) {
           const i = p * 4;
           if (d[i + 3] < ALPHA_MIN) continue;
-          if (palette.some((c) => dist(d, i, c) < HOLE_TOL)) bgLike[p] = 1;
+          if (palette.some((c) => dist(d, i, c) < holeTol)) bgLike[p] = 1;
         }
         const seen = new Uint8Array(w * h);
         const stack = new Int32Array(w * h);
@@ -370,6 +395,40 @@ async function compute(src: string): Promise<Cutout | null> {
           if (!s) break;
           clearRow(y);
           cut++;
+        }
+        ctx.putImageData(image, 0, 0);
+      }
+    }
+
+    // 옆모습 신발·샌들처럼 가로로 긴 옷은 한 줄 안이 비어 있을 리 없으니, 줄마다 왼쪽 끝~오른쪽 끝 사이를 채운다.
+    // 흰 신발처럼 배경과 색이 비슷해 윗부분이 파먹힌 경우를 되살린다. (바지·윗옷은 가로로 길지 않아 해당 없음)
+    if (!isSvg) {
+      let bx0 = w;
+      let bx1 = -1;
+      let by0 = h;
+      let by1 = -1;
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          if (d[(y * w + x) * 4 + 3] >= ALPHA_MIN) {
+            if (x < bx0) bx0 = x;
+            if (x > bx1) bx1 = x;
+            if (y < by0) by0 = y;
+            if (y > by1) by1 = y;
+          }
+        }
+      }
+      if (bx1 > bx0 && by1 > by0 && (bx1 - bx0) / (by1 - by0) >= 1.5) {
+        for (let y = by0; y <= by1; y++) {
+          let lo = -1;
+          let hi = -1;
+          for (let x = bx0; x <= bx1; x++) {
+            if (d[(y * w + x) * 4 + 3] >= ALPHA_MIN) {
+              if (lo < 0) lo = x;
+              hi = x;
+            }
+          }
+          if (lo < 0) continue;
+          for (let x = lo; x <= hi; x++) d[(y * w + x) * 4 + 3] = 255;
         }
         ctx.putImageData(image, 0, 0);
       }

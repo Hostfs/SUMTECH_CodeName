@@ -1,6 +1,6 @@
 "use client";
 
-import { balance, type WornSlot } from "@/lib/balance";
+import { balance, ratioOf, type WornSlot } from "@/lib/balance";
 import { bodyShape, DEFAULT_BODY } from "@/lib/body";
 import { useCutout, type Cutout } from "@/lib/cutout";
 import type { Body, Garment } from "@/lib/types";
@@ -154,9 +154,13 @@ export function Mannequin({
 
         {/* 옷: 하의 → 신발 → 상의 → 아우터 순으로 겹친다 */}
         <Fit cutout={bottom} cx={100} top={172} {...plan("bottom", bottom, 2 * hw + 8)} />
-        {[-1, 1].map((d) => (
-          <Fit key={d} cutout={shoes} cx={100 + d * (legX - 2)} bottom={433} flip={d === -1} {...plan("shoes", shoes, 44)} />
-        ))}
+        {[-1, 1].map((d) => {
+          // 앞모습 신발은 발 위에 그대로, 옆모습 신발(가로로 긴 사진)은 뒤꿈치를 발목 쪽에 두고 앞코가 바깥을 향하게 놓는다
+          const side = shoes ? ratioOf(shoes) < 0.75 : false;
+          const sp = plan("shoes", shoes, side ? 50 : 44);
+          const cx = side ? 100 + d * (legX - sp.tw * 0.2 + sp.tw / 2) : 100 + d * (legX - 2);
+          return <Fit key={d} cutout={shoes} cx={cx} bottom={433} flip={d === -1} {...sp} />;
+        })}
         <Fit cutout={top} cx={100} top={70} {...plan("top", top, 2 * armOuter + 4)} />
         <Fit cutout={outer} cx={100} top={64} {...plan("outer", outer, 2 * armOuter + 20)} />
         {/* 가방·소품은 오른손 쪽에 늘어뜨리고, 모자는 머리 위에 씌운다 */}
