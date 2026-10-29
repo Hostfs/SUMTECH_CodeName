@@ -100,7 +100,15 @@ public class ProductSearchController {
         String message = null;
         List<ProductCandidate> found = new ArrayList<>();
         try {
-            JsonNode answer = AiGateway.parseObject(ai.complete(request(brand, code, blankToNull(in.name())), Duration.ofSeconds(45)));
+            JsonNode answer;
+            try {
+                answer = AiGateway.parseObject(ai.complete(request(brand, code, blankToNull(in.name()), true), Duration.ofSeconds(25)));
+            } catch (ApiException toolEx) {
+                if (!ai.configured()) {
+                    throw toolEx;
+                }
+                answer = AiGateway.parseObject(ai.complete(request(brand, code, blankToNull(in.name()), false), Duration.ofSeconds(25)));
+            }
             found = verify(answer.path("candidates"), brand, code);
             s.status = ProductSearch.Status.SUCCEEDED;
         } catch (ApiException e) {
@@ -120,7 +128,7 @@ public class ProductSearchController {
         return new SearchResult(s.id, s.status.name(), views, message);
     }
 
-    private ObjectNode request(String brand, String code, String name) {
+    private ObjectNode request(String brand, String code, String name, boolean usePerplexityTool) {
         String query = String.join(" ", List.of(brand == null ? "" : brand, code == null ? "" : code, code == null && name != null ? name : "")).trim();
         ObjectNode req = ai.newRequest(1200);
         ArrayNode messages = (ArrayNode) req.get("messages");
@@ -135,11 +143,13 @@ public class ProductSearchController {
                 """.formatted(MAX_CANDIDATES));
         AiGateway.message(messages, "user").put("content", "찾을 옷: 브랜드 " + (brand == null ? "모름" : brand)
                 + ", 품번 " + (code == null ? "모름" : code) + (name != null ? ", 이름 " + name : ""));
-        ArrayNode tools = req.putArray("tools");
-        ObjectNode tool = tools.addObject();
-        tool.put("type", "vercel:perplexity_search");
-        tool.putObject("config").put("query", query + " 상품").put("max_results", 6);
-        req.put("tool_choice", "required");
+        if (usePerplexityTool) {
+            ArrayNode tools = req.putArray("tools");
+            ObjectNode tool = tools.addObject();
+            tool.put("type", "vercel:perplexity_search");
+            tool.putObject("config").put("query", query + " 상품").put("max_results", 6);
+            req.put("tool_choice", "required");
+        }
         return req;
     }
 

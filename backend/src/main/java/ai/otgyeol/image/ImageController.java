@@ -1,6 +1,7 @@
 package ai.otgyeol.image;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.Set;
 
 import org.springframework.http.CacheControl;
@@ -32,9 +33,11 @@ public class ImageController {
     }
 
     private final ImageAssetRepository images;
+    private final ImageProcessingRepository processings;
 
-    public ImageController(ImageAssetRepository images) {
+    public ImageController(ImageAssetRepository images, ImageProcessingRepository processings) {
         this.images = images;
+        this.processings = processings;
     }
 
     @PostMapping
@@ -43,6 +46,30 @@ public class ImageController {
     public Uploaded upload(@RequestParam("file") MultipartFile file) throws IOException {
         ImageAsset asset = store(CurrentUser.id(), file, null);
         return new Uploaded(asset.id, url(asset.id));
+    }
+
+    @PostMapping("/{id}/processed")
+    @ResponseStatus(HttpStatus.CREATED)
+    @Transactional
+    public Uploaded uploadProcessed(@PathVariable long id,
+            @RequestParam(value = "file", required = false) MultipartFile file) throws IOException {
+        long userId = CurrentUser.id();
+        ImageAsset source = images.findByIdAndUserId(id, userId).orElseThrow(() -> ApiException.notFound("원본 사진"));
+        ImageProcessing proc = processings.findById(source.id).orElseGet(() -> {
+            ImageProcessing p = new ImageProcessing();
+            p.sourceImageId = source.id;
+            return p;
+        });
+        proc.processedAt = Instant.now();
+        if (file == null || file.isEmpty()) {
+            proc.resultImageId = null;
+            processings.save(proc);
+            return new Uploaded(source.id, url(source.id));
+        }
+        ImageAsset result = store(userId, file, null);
+        proc.resultImageId = result.id;
+        processings.save(proc);
+        return new Uploaded(result.id, url(result.id));
     }
 
     @GetMapping("/{id}")

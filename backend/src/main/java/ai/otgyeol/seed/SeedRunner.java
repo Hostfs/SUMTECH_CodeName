@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -60,11 +61,12 @@ public class SeedRunner implements ApplicationRunner {
     private final GarmentPlacementRepository placements;
     private final CareEventRepository careEvents;
     private final PasswordEncoder passwordEncoder;
+    private final JdbcTemplate jdbc;
 
     public SeedRunner(@Value("${app.seed.email:}") String email, @Value("${app.seed.password:}") String password,
             UserRepository users, StorageSpaceRepository spaces, StorageSpaceParentRepository parents,
             GarmentRepository garments, GarmentPlacementRepository placements, CareEventRepository careEvents,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder, JdbcTemplate jdbc) {
         this.email = email;
         this.password = password;
         this.users = users;
@@ -74,6 +76,7 @@ public class SeedRunner implements ApplicationRunner {
         this.placements = placements;
         this.careEvents = careEvents;
         this.passwordEncoder = passwordEncoder;
+        this.jdbc = jdbc;
     }
 
     @Override
@@ -90,8 +93,28 @@ public class SeedRunner implements ApplicationRunner {
         user.email = normalized;
         user.passwordHash = passwordEncoder.encode(password);
         users.save(user);
-        long userId = user.id;
+        populateSeedData(user.id);
+        log.info("시드 계정과 예시 옷장을 만들었습니다: {}", normalized);
+    }
 
+    /** 시드 계정으로 다시 로그인할 때 이전 흐름에서 바뀐 시드 데이터를 초기 상태로 되돌린다. */
+    @Transactional
+    public void resetIfSeedUser(User user) {
+        if (email.isBlank() || user == null || !user.email.equalsIgnoreCase(email.trim())) {
+            return;
+        }
+        jdbc.update("DELETE FROM outfits WHERE user_id = ?", user.id);
+        jdbc.update("DELETE FROM product_searches WHERE user_id = ?", user.id);
+        jdbc.update("DELETE FROM label_extractions WHERE user_id = ?", user.id);
+        jdbc.update("DELETE FROM garments WHERE user_id = ?", user.id);
+        jdbc.update("DELETE FROM collections WHERE user_id = ?", user.id);
+        jdbc.update("DELETE FROM images WHERE user_id = ?", user.id);
+        jdbc.update("DELETE FROM storage_spaces WHERE user_id = ?", user.id);
+        jdbc.update("DELETE FROM body_profiles WHERE user_id = ?", user.id);
+        populateSeedData(user.id);
+    }
+
+    private void populateSeedData(long userId) {
         StorageSpace closet = space(userId, null, "옷장 A", SpaceType.HANG, null);
         StorageSpace leftHanger = space(userId, closet.id, "왼쪽 행거", SpaceType.HANG, 8);
         StorageSpace drawer = space(userId, null, "서랍장", SpaceType.FOLD, null);
@@ -136,7 +159,6 @@ public class SeedRunner implements ApplicationRunner {
         LocalDate today = Dates.today();
         care(knit.id, CareEvent.CareType.WASH, "한빛 세탁소", "드라이클리닝", today.minusDays(4), today.minusDays(1));
         care(chino.id, CareEvent.CareType.REPAIR, "미싱 수선실", "밑단 3cm 줄임", today.minusDays(2), today);
-        log.info("시드 계정과 예시 옷장을 만들었습니다: {}", normalized);
     }
 
     private StorageSpace space(long userId, Long parentId, String name, SpaceType type, Integer capacity) {

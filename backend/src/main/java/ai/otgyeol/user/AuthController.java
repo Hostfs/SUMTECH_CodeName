@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import ai.otgyeol.common.ApiException;
+import ai.otgyeol.seed.SeedRunner;
 
 /** 이메일·비밀번호 회원가입과 로그인. 역할은 '사용자' 하나다. */
 @RestController
@@ -48,11 +49,14 @@ public class AuthController {
     private final UserRepository users;
     private final PasswordEncoder passwordEncoder;
     private final SecurityContextRepository contextRepository;
+    private final SeedRunner seedRunner;
 
-    public AuthController(UserRepository users, PasswordEncoder passwordEncoder, SecurityContextRepository contextRepository) {
+    public AuthController(UserRepository users, PasswordEncoder passwordEncoder,
+            SecurityContextRepository contextRepository, SeedRunner seedRunner) {
         this.users = users;
         this.passwordEncoder = passwordEncoder;
         this.contextRepository = contextRepository;
+        this.seedRunner = seedRunner;
     }
 
     @PostMapping("/signup")
@@ -75,6 +79,7 @@ public class AuthController {
         User user = users.findByEmail(normalize(body.email()))
                 .filter(u -> passwordEncoder.matches(body.password(), u.passwordHash))
                 .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "이메일 또는 비밀번호가 맞지 않아요."));
+        seedRunner.resetIfSeedUser(user);
         startSession(user, request, response);
         return new Me(user.id, user.email);
     }

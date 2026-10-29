@@ -234,13 +234,25 @@ public class LabelAnalysisController {
         return out;
     }
 
+    /** 코드(SHIRT) 또는 한국어 이름(셔츠)을 도메인 코드로 바꾼다. 둘 다 아니면 null(확인 필요). */
     static <E extends Enum<E>> String enumValue(Class<E> type, String value) {
         if (value == null) {
             return null;
         }
+        String trimmed = value.trim();
         try {
-            return Enum.valueOf(type, value.trim().toUpperCase()).name();
+            return Enum.valueOf(type, trimmed.toUpperCase()).name();
         } catch (IllegalArgumentException e) {
+            for (E constant : type.getEnumConstants()) {
+                try {
+                    Object label = type.getField("label").get(constant);
+                    if (label != null && trimmed.equals(label.toString())) {
+                        return constant.name();
+                    }
+                } catch (ReflectiveOperationException ignored) {
+                    return null;
+                }
+            }
             return null;
         }
     }
