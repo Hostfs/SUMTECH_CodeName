@@ -261,6 +261,34 @@ class OtgyeolApplicationTests {
     }
 
     @Test
+    void newScreensShoesShelfMemoAndImageProxy() throws Exception {
+        Client c = new Client();
+        c.post("/api/auth/signup", "{\"email\":\"screen" + System.nanoTime() + "@example.com\",\"password\":\"password123\"}");
+        long shelf = c.post("/api/spaces", "{\"name\":\"신발장\",\"spaceType\":\"SHELF\",\"capacity\":6}").body()
+                .get("spaces").get(0).get("id").asLong();
+
+        // 신발 종류와 메모, 목록에서 바로 보이는 사이즈·소재·등록 시각(새 화면은 목록 한 번으로 카드·상세를 그린다)
+        JsonNode created = c.post("/api/garments", "{\"name\":\"흰 운동화\",\"subType\":\"SNEAKERS\",\"sizeLabel\":\"270\","
+                + "\"memo\":\"데일리\",\"materials\":[{\"part\":\"SHELL\",\"fiber\":\"LEATHER\",\"percent\":100}],\"spaceId\":" + shelf + "}").body();
+        assertThat(created.get("summary").get("category").asString()).isEqualTo("SHOES");
+        JsonNode listed = find(c.get("/api/garments").body(), "흰 운동화");
+        assertThat(listed.get("memo").asString()).isEqualTo("데일리");
+        assertThat(listed.get("sizeLabel").asString()).isEqualTo("270");
+        assertThat(listed.get("materials").get(0).get("fiber").asString()).isEqualTo("LEATHER");
+        assertThat(listed.get("createdAt").isNull()).isFalse();
+        assertThat(listed.get("locationKind").asString()).isEqualTo("HOME");
+
+        // 메모는 수정에서 지울 수 있다
+        long id = listed.get("id").asLong();
+        assertThat(c.send("PUT", "/api/garments/" + id, "{\"name\":\"흰 운동화\",\"subType\":\"SNEAKERS\",\"memo\":\" \"}").body()
+                .get("summary").get("memo").isNull()).isTrue();
+
+        // 이미지 프록시: 로그인 필요, 내부 주소는 열지 않는다
+        assertThat(new Client().get("/api/image-proxy?url=https://example.com/a.png").status()).isEqualTo(401);
+        assertThat(c.get("/api/image-proxy?url=http://127.0.0.1:3000/__health").status()).isEqualTo(400);
+    }
+
+    @Test
     void userCorrectionsAreKeptBesideWhatTheTagSaid() throws Exception {
         Client c = new Client();
         String email = "fix" + System.nanoTime() + "@example.com";

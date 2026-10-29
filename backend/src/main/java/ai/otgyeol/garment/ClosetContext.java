@@ -68,7 +68,7 @@ public record ClosetContext(
         return switch (spaceTypes.get(placements.get(g.id).spaceId)) {
             case BOX -> LocationKind.BOX;
             case OFFSITE -> LocationKind.OFFSITE;
-            case HANG, FOLD, LONG_TERM -> LocationKind.HOME;
+            case HANG, FOLD, LONG_TERM, SHELF -> LocationKind.HOME;
         };
     }
 

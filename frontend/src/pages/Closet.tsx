@@ -134,7 +134,7 @@ export default function Closet() {
         </div>
       ) : (
         groups.map((grp) => (
-          <section key={grp.key || 'all'} className="group">
+          <section key={grp.key || 'all'} className="group" aria-label={grp.key ? `${grp.key} 묶음` : undefined}>
             {grp.key && (
               <h2 className="group-title">
                 {grp.key} <small>{grp.items.length}벌</small>

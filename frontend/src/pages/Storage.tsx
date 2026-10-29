@@ -11,8 +11,8 @@ import { useToast } from '../lib/toast';
 import { eul } from '../lib/josa';
 
 type View = 'map' | 'care';
-const KIND_ICON: Record<SpaceKind, IconName> = { 걸기: 'hanger', 서랍: 'box', 선반: 'box', 상자: 'box' };
-const KIND_HINT: Record<SpaceKind, string> = { 걸기: '행거·옷걸이', 서랍: '접어서 넣는 서랍', 선반: '신발장·선반', 상자: '계절 옷 보관 상자' };
+const KIND_ICON: Record<SpaceKind, IconName> = { 걸기: 'hanger', 서랍: 'box', 선반: 'box', 상자: 'box', '집 밖': 'home' };
+const KIND_HINT: Record<SpaceKind, string> = { 걸기: '행거·옷걸이', 서랍: '접어서 넣는 서랍', 선반: '신발장·선반', 상자: '계절 옷 보관 상자', '집 밖': '본가·창고처럼 집 밖' };
 
 /** 겹쳐 놓은 작은 옷 썸네일 */
 function Thumbs({ items, max = 5 }: { items: Garment[]; max?: number }) {
@@ -122,8 +122,8 @@ export default function Storage() {
     if (proposals.length === ok.length) setSheet(null);
   };
 
-  const submitSpace = () => {
-    const err = addSpace({
+  const submitSpace = async () => {
+    const err = await addSpace({
       name: nf.name,
       kind: nf.kind,
       capacity: Number(nf.capacity),
@@ -197,7 +197,7 @@ export default function Storage() {
           <div className="space-list">
             {spaces.map((sp) => (
               <SpaceCard key={sp.name} space={sp} garments={garments}
-                onRemove={() => { const e = removeSpace(sp.name); toast(e ?? `${eul(sp.name)} 지웠어요`); }} />
+                onRemove={async () => { const e = await removeSpace(sp.name); toast(e ?? `${eul(sp.name)} 지웠어요`); }} />
             ))}
           </div>
         </>
@@ -206,15 +206,15 @@ export default function Storage() {
           {active.length === 0 && (
             <div className="empty"><p className="empty-title">맡겨 둔 옷이 없어요</p><p>옷 정보에서 ‘세탁·수선 맡기기’를 누르면 여기에 나타나요.</p></div>
           )}
-          {late.length > 0 && (<><h2 className="section-title danger">기한 지남 <small>{late.length}</small></h2><ul className="care-list">{late.map((g) => careRow(g, 'late'))}</ul></>)}
-          {today.length > 0 && (<><h2 className="section-title">오늘 회수 예정 <small>{today.length}</small></h2><ul className="care-list">{today.map((g) => careRow(g, 'today'))}</ul></>)}
-          {going.length > 0 && (<><h2 className="section-title">진행 중 <small>{going.length}</small></h2><ul className="care-list">{going.map((g) => careRow(g, 'go'))}</ul></>)}
+          {late.length > 0 && (<><h2 className="section-title danger">기한 지남 <small>{late.length}</small></h2><ul className="care-list" aria-label="기한 지남">{late.map((g) => careRow(g, 'late'))}</ul></>)}
+          {today.length > 0 && (<><h2 className="section-title">오늘 회수 예정 <small>{today.length}</small></h2><ul className="care-list" aria-label="오늘 회수 예정">{today.map((g) => careRow(g, 'today'))}</ul></>)}
+          {going.length > 0 && (<><h2 className="section-title">진행 중 <small>{going.length}</small></h2><ul className="care-list" aria-label="진행 중">{going.map((g) => careRow(g, 'go'))}</ul></>)}
 
           <h2 className="section-title">완료 이력</h2>
           {careLog.length === 0 ? (
             <p className="muted-text">아직 회수한 기록이 없어요.</p>
           ) : (
-            <ul className="history">
+            <ul className="history" aria-label="완료 이력">
               {careLog.slice(0, 8).map((c) => (
                 <li key={c.id}>
                   <Icon name="check" size={15} stroke={2.4} />
@@ -271,7 +271,7 @@ export default function Storage() {
 
       {/* 회수 예정일 변경 */}
       <Sheet open={sheet === 'due'} onClose={() => setSheet(null)} title="회수 예정일 변경"
-        footer={<button className="btn btn-primary btn-block" onClick={() => { if (!dueFor) return; const e = setDue(dueFor.id, dueVal); if (e) setDueErr(e); else { setSheet(null); toast('예정일을 바꿨어요'); } }}>변경</button>}>
+        footer={<button className="btn btn-primary btn-block" onClick={async () => { if (!dueFor) return; const e = await setDue(dueFor.id, dueVal); if (e) setDueErr(e); else { setSheet(null); toast('예정일을 바꿨어요'); } }}>변경</button>}>
         <div className="fields">
           <p className="hint" style={{ margin: 0 }}>{dueFor?.name} · {dueFor?.care?.kind}</p>
           <label className="field"><span>회수 예정일</span>

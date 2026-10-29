@@ -1,5 +1,7 @@
 package ai.otgyeol.seed;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -13,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -30,6 +33,12 @@ import ai.otgyeol.garment.GarmentRepository;
 import ai.otgyeol.garment.Season;
 import ai.otgyeol.garment.SubType;
 import ai.otgyeol.garment.WearFrequency;
+import ai.otgyeol.image.GarmentCoverImage;
+import ai.otgyeol.image.GarmentCoverImageRepository;
+import ai.otgyeol.image.GarmentImage;
+import ai.otgyeol.image.GarmentImageRepository;
+import ai.otgyeol.image.ImageAsset;
+import ai.otgyeol.image.ImageAssetRepository;
 import ai.otgyeol.space.GarmentPlacement;
 import ai.otgyeol.space.GarmentPlacementRepository;
 import ai.otgyeol.space.SpaceType;
@@ -41,7 +50,8 @@ import ai.otgyeol.user.User;
 import ai.otgyeol.user.UserRepository;
 
 /**
- * docker 첫 기동 때 시드 계정('사용자' 역할)과 흐름 S2~S8에 필요한 선행 데이터를 만든다(옷 11벌, 공간 8곳, 세탁·수선 2건).
+ * docker 첫 기동 때 시드 계정('사용자' 역할)과 흐름 S2~S8에 필요한 선행 데이터를 만든다(옷 14벌, 공간 9곳, 세탁·수선 2건).
+ * 화면의 예시 사진(static/samples, 프런트 빌드에 포함)이 있으면 사진 옷 3벌에 붙인다. 없으면 일러스트로 보인다.
  * SEED_USER_EMAIL이 비어 있으면(배포 환경) 아무것도 만들지 않는다. 이미 계정이 있으면 건너뛴다.
  */
 @Component
@@ -60,12 +70,16 @@ public class SeedRunner implements ApplicationRunner {
     private final GarmentRepository garments;
     private final GarmentPlacementRepository placements;
     private final CareEventRepository careEvents;
+    private final ImageAssetRepository images;
+    private final GarmentImageRepository garmentImages;
+    private final GarmentCoverImageRepository covers;
     private final PasswordEncoder passwordEncoder;
     private final JdbcTemplate jdbc;
 
     public SeedRunner(@Value("${app.seed.email:}") String email, @Value("${app.seed.password:}") String password,
             UserRepository users, StorageSpaceRepository spaces, StorageSpaceParentRepository parents,
             GarmentRepository garments, GarmentPlacementRepository placements, CareEventRepository careEvents,
+            ImageAssetRepository images, GarmentImageRepository garmentImages, GarmentCoverImageRepository covers,
             PasswordEncoder passwordEncoder, JdbcTemplate jdbc) {
         this.email = email;
         this.password = password;
@@ -75,6 +89,9 @@ public class SeedRunner implements ApplicationRunner {
         this.garments = garments;
         this.placements = placements;
         this.careEvents = careEvents;
+        this.images = images;
+        this.garmentImages = garmentImages;
+        this.covers = covers;
         this.passwordEncoder = passwordEncoder;
         this.jdbc = jdbc;
     }
@@ -119,10 +136,11 @@ public class SeedRunner implements ApplicationRunner {
         StorageSpace drawer = space(userId, null, "서랍장", SpaceType.FOLD, null);
         StorageSpace secondDrawer = space(userId, drawer.id, "2단", SpaceType.FOLD, 4);
         StorageSpace underBed = space(userId, null, "침대 아래", SpaceType.LONG_TERM, null);
-        space(userId, underBed.id, "겨울 박스", SpaceType.LONG_TERM, 10);
+        StorageSpace winterBox = space(userId, underBed.id, "겨울 박스", SpaceType.LONG_TERM, 10);
         // 옮기는 단위 묶음 기록(R11)의 목적지: 라벨을 붙인 박스와 집 밖(본가).
         space(userId, null, "여름 박스", SpaceType.BOX, 12);
         space(userId, null, "본가", SpaceType.OFFSITE, null);
+        StorageSpace shoeShelf = space(userId, null, "신발장", SpaceType.SHELF, 6);
 
         // 위치를 정한 지 일주일 된 옷장. 세탁·수선 중인 옷도 원래 자리는 남아 있어 회수 후 그 자리를 제안한다.
         Instant placedAt = Instant.now().minus(7, ChronoUnit.DAYS);
@@ -174,6 +192,29 @@ public class SeedRunner implements ApplicationRunner {
         place(flannel, leftHanger, placedAt);
         place(hoodie, leftHanger, placedAt);
 
+        // 새 화면의 예시 사진 옷(누끼 사진 + 핏 기준점은 화면이 사진에서 찾는다)
+        Garment henley = garment(userId, "SUARE 헨리넥 울 니트", "다크브라운", "#4A382E", SubType.KNIT,
+                Set.of(Season.AUTUMN, Season.WINTER), List.of(new M(MaterialPart.SHELL, Fiber.WOOL, 100)), 66, WearFrequency.MEDIUM);
+        henley.brand = "SUARE";
+        henley.sizeLabel = "M";
+        henley.memo = "헨리넥 단추 3개";
+        Garment cargo = garment(userId, "와이드 카고 팬츠", "다크카키", "#54523F", SubType.PANTS, Set.of(Season.SPRING, Season.AUTUMN),
+                List.of(new M(MaterialPart.SHELL, Fiber.COTTON, 100)), 104, WearFrequency.MEDIUM);
+        cargo.sizeLabel = "M";
+        cargo.memo = "오버핏 와이드 · 지퍼 포켓";
+        Garment af1 = garment(userId, "나이키 에어포스 1 로우", "화이트", "#F2F1EE", SubType.SNEAKERS,
+                Set.of(Season.SPRING, Season.SUMMER, Season.AUTUMN), List.of(new M(MaterialPart.SHELL, Fiber.LEATHER, 100)), 30,
+                WearFrequency.HIGH);
+        af1.brand = "Nike";
+        af1.sizeLabel = "270";
+        af1.memo = "올화이트 · 데일리";
+        place(henley, winterBox, placedAt);
+        place(cargo, leftHanger, placedAt);
+        place(af1, shoeShelf, placedAt);
+        photo(henley, "henley-knit");
+        photo(cargo, "cargo-pants");
+        photo(af1, "air-force-1");
+
         LocalDate today = Dates.today();
         care(knit.id, CareEvent.CareType.WASH, "한빛 세탁소", "드라이클리닝", today.minusDays(4), today.minusDays(1));
         care(chino.id, CareEvent.CareType.REPAIR, "미싱 수선실", "밑단 3cm 줄임", today.minusDays(2), today);
@@ -206,6 +247,25 @@ public class SeedRunner implements ApplicationRunner {
                 BigDecimal.valueOf(totalLengthCm), "직접 측정", true));
         g.wearFrequency = frequency;
         return garments.save(g);
+    }
+
+    /** static/samples/{name}.png 가 있으면 그 옷의 사진(대표)으로 붙인다. */
+    private void photo(Garment g, String name) {
+        ClassPathResource file = new ClassPathResource("static/samples/" + name + ".png");
+        if (!file.exists()) {
+            return;
+        }
+        try (InputStream in = file.getInputStream()) {
+            ImageAsset asset = new ImageAsset();
+            asset.userId = g.userId;
+            asset.contentType = "image/png";
+            asset.data = in.readAllBytes();
+            images.save(asset);
+            garmentImages.save(new GarmentImage(asset.id, g.id));
+            covers.save(new GarmentCoverImage(g.id, asset.id));
+        } catch (IOException e) {
+            log.warn("예시 사진을 읽지 못해 일러스트로 둡니다: {}", name);
+        }
     }
 
     private void place(Garment g, StorageSpace s, Instant at) {

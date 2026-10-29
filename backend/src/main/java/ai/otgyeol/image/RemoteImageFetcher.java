@@ -30,7 +30,23 @@ public class RemoteImageFetcher {
         this.images = images;
     }
 
+    /** 내려받은 이미지(저장 전). */
+    public record Downloaded(String contentType, byte[] data) {
+    }
+
     public Optional<ImageAsset> fetch(long userId, String url) {
+        return download(url).map(d -> {
+            ImageAsset asset = new ImageAsset();
+            asset.userId = userId;
+            asset.contentType = d.contentType();
+            asset.data = d.data();
+            asset.sourceUrl = url;
+            return images.save(asset);
+        });
+    }
+
+    /** 저장하지 않고 내려받기만 한다. 공인 주소·JPG/PNG/WEBP·10MB 검사는 fetch와 같다. */
+    public Optional<Downloaded> download(String url) {
         if (url == null || url.length() > 1000) {
             return Optional.empty();
         }
@@ -65,12 +81,7 @@ public class RemoteImageFetcher {
             if (!ImageController.ALLOWED_TYPES.contains(type) || body.length == 0 || body.length > ImageController.MAX_BYTES) {
                 return Optional.empty();
             }
-            ImageAsset asset = new ImageAsset();
-            asset.userId = userId;
-            asset.contentType = type;
-            asset.data = body;
-            asset.sourceUrl = url;
-            return Optional.of(images.save(asset));
+            return Optional.of(new Downloaded(type, body));
         } catch (IOException | IllegalArgumentException e) {
             return Optional.empty();
         } catch (InterruptedException e) {

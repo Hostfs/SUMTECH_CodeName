@@ -8,36 +8,55 @@ async function login(page: Page) {
   await page.getByLabel('이메일').fill(SEED_EMAIL)
   await page.getByLabel('비밀번호').fill(SEED_PASSWORD)
   await page.getByRole('button', { name: '로그인', exact: true }).click()
-  await expect(page).toHaveURL(/\/closet/)
+  await expect(menu(page, '내 옷장')).toBeVisible()
 }
 
 function menu(page: Page, name: string) {
   return page.locator('nav[aria-label="주 메뉴"]:visible').getByRole('link', { name: new RegExp(`^${name}`) })
 }
 
-test('S8 사용자가 기한이 지난 세탁물을 회수하고 보관 위치를 다시 확인한다', async ({ page }) => {
+test('S8 사용자가 기한이 지난 세탁물을 회수하고 보관 위치를 다시 정한다', async ({ page }) => {
   await login(page)
 
-  // 메뉴에서 '관리함'을 누른다
-  await menu(page, '관리함').click()
+  // 메뉴에서 '보관함'을 누른다
+  await menu(page, '보관함').click()
+
+  // '관리함' 탭을 누른다
+  await page.getByRole('tab', { name: /^관리함/ }).click()
 
   // '기한 지남' 목록에서 '베이지 니트'의 '회수 완료'를 누른다
-  // 관리함은 기한 지난 기록이 있으면 '기한 지남' 목록을 먼저 연다
-  const overdue = page.getByRole('tabpanel', { name: '기한 지남' })
-  await overdue.getByLabel('베이지 니트 세탁', { exact: true }).getByRole('button', { name: '회수 완료' }).click()
-  await expect(page.getByText('회수 완료했어요')).toBeVisible()
-  await expect(overdue.getByLabel('베이지 니트 세탁', { exact: true })).toHaveCount(0)
+  const late = () => page.getByRole('list', { name: '기한 지남' }).getByRole('listitem').filter({ hasText: '베이지 니트' })
+  await late().getByRole('button', { name: '회수 완료' }).click()
+  await expect(late()).toHaveCount(0)
 
-  // '베이지 니트'를 눌러 옷 상세를 연다
-  await page.getByRole('link', { name: '베이지 니트' }).first().click()
+  // 메뉴에서 '내 옷장'을 누른다
+  await menu(page, '내 옷장').click()
 
-  // 제안된 위치를 확인하고 '재배치 확인'을 누른다
-  await expect(page.getByText(/제안 위치: /)).toBeVisible()
-  const suggested = (await page.getByText(/제안 위치: /).innerText()).replace('제안 위치: ', '').trim()
-  await page.getByRole('button', { name: '재배치 확인' }).click()
+  // 회수 직후에는 위치 미확인(미배치)이다
+  const c = page.getByRole('button', { name: /^베이지 니트,/ })
+  await expect(c).toHaveAccessibleName(/미배치/)
 
-  // 상태 '보관 중'과 확정 위치, 관리 이력에 회수 완료('기한 지남'에서 사라진 것은 위에서 확인)
-  await expect(page.locator('.info-row', { hasText: '상태' }).locator('dd')).toHaveText('보관 중')
-  await expect(page.locator('.loc-card')).toContainText(suggested)
-  await expect(page.getByRole('list', { name: '관리 이력' })).toContainText('회수 완료')
+  // 목록에서 '베이지 니트'를 연다
+  await c.click()
+  await expect(page.getByRole('heading', { name: '베이지 니트' })).toBeVisible()
+
+  // '위치 변경'을 누르고 '서랍장'의 '2단'을 골라 '서랍장 › 2단(으)로 변경'을 누른다
+  await page.getByRole('button', { name: '위치 변경' }).click()
+  const sheet = page.getByRole('dialog', { name: '보관 위치 변경' })
+  await sheet.getByRole('radio', { name: '2단', exact: true }).click()
+  await sheet.getByRole('button', { name: '서랍장 › 2단(으)로 변경' }).click()
+  await expect(sheet).toBeHidden()
+
+  // 옷 정보: 상태 표시 없이(보관 중) 확정된 위치
+  await expect(page.locator('.loc-card b')).toHaveText('서랍장 › 2단')
+  await expect(page.locator('.title-row .badge')).toHaveCount(0)
+
+  // '뒤로'를 누르고 메뉴에서 '보관함'을 누른 뒤 '관리함' 탭을 누른다
+  await page.getByRole('button', { name: '뒤로' }).click()
+  await menu(page, '보관함').click()
+  await page.getByRole('tab', { name: /^관리함/ }).click()
+
+  // '기한 지남'에서 사라지고 '완료 이력'에 회수 기록이 남는다
+  await expect(late()).toHaveCount(0)
+  await expect(page.getByRole('list', { name: '완료 이력' })).toContainText('베이지 니트 세탁 회수')
 })

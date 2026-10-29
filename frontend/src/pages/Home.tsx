@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Icon, type IconName } from '../components/Icon';
 import { GarmentImage } from '../components/GarmentImage';
 import { Precip, Sky } from '../components/Sky';
-import { ProfileMenu, USER } from '../components/ProfileMenu';
+import { ProfileMenu, useUserName } from '../components/ProfileMenu';
 import { NoticeBell } from '../components/NoticeBell';
 import { useGarments } from '../data/store';
 import { fmtLoc } from '../data/garments';
@@ -26,6 +26,7 @@ export default function Home() {
   const { weather, source } = useWeather();
   const { garments } = useGarments();
   const { season } = useTheme();
+  const name = useUserName();
 
   const loading = source === 'loading';
   const w = weather ?? SAMPLES['cloudy-day'];
@@ -44,7 +45,7 @@ export default function Home() {
         <div>
           <p className="home-date">{today()}</p>
           <p className="home-hello">안녕하세요,</p>
-          <h1 className="home-name">{USER.name}<span>님</span></h1>
+          <h1 className="home-name">{name}<span>님</span></h1>
         </div>
         <div className="head-actions">
           <NoticeBell />

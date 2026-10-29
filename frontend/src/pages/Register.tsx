@@ -8,13 +8,17 @@ import { FitEditor } from '../components/FitEditor';
 import { Sheet } from '../components/Sheet';
 import { Studio2D } from '../components/Studio2D';
 import { useGarments } from '../data/store';
-import { useImages } from '../data/images';
 import { useOutfits } from '../data/outfits';
 import { colorHex, fmtLoc, type Category, type Garment, type Loc, type Photo, type Shape } from '../data/garments';
 import { cutOut, loadCanvas, nearestColorName, type CutMode, type Cutout, type PhotoKind, type Points } from '../lib/cutout';
 import { DEFAULT_FIT, type Fit } from '../lib/fit';
-import { NotConnected, fetchImage, lookupProduct, reconstructWithAI, type ProductHit } from '../lib/importImage';
+import { NotConnected, fetchImage, lookupProduct, readLabels, reconstructWithAI, type ProductHit } from '../lib/importImage';
+import { errorText } from '../lib/api';
+import { parseMaterials } from '../data/convert';
 import { useToast } from '../lib/toast';
+
+/** 저장할 때 서버 소재 표로 바꿀 수 있는 글자인지 */
+const readable = (material: string) => { try { parseMaterials(material); return true; } catch { return false; } };
 
 const KIND_OF: Record<Category, PhotoKind> = { 상의: 'top', 아우터: 'outer', 하의: 'bottom', 신발: 'shoes', 기타: 'top' };
 const SHAPES: Record<Category, [Shape, string][]> = {
@@ -62,7 +66,6 @@ export default function Register() {
   const nav = useNavigate();
   const toast = useToast();
   const { add } = useGarments();
-  const images = useImages();
   const { body } = useOutfits();
   const fileInput = useRef<HTMLInputElement>(null);
   const tagInput = useRef<HTMLInputElement>(null);
@@ -93,7 +96,11 @@ export default function Register() {
   const [brand, setBrand] = useState('');
   const [code, setCode] = useState('');
   const [hits, setHits] = useState<ProductHit[] | null>(null);
-  const [tags, setTags] = useState<{ url: string; name: string }[]>([]);
+  const [tags, setTags] = useState<{ url: string; name: string; file: File }[]>([]);
+  // 택 분석·제품 검색 기록(R01·R02). 저장할 때 옷에 연결한다
+  const [extractionId, setExtractionId] = useState<number>();
+  const [searchId, setSearchId] = useState<number>();
+  const [candidateId, setCandidateId] = useState<number>();
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -148,6 +155,7 @@ export default function Register() {
   const begin = async (src: Blob | string, from: Photo['source'], cat: Category | null = picked) => {
     if (!cat) return setError('먼저 어떤 종류의 옷인지 골라 주세요');
     if (cat !== picked) pick(cat);
+    if (from !== 'code') setCandidateId(undefined);
     setStage('busy');
     setBusy('사진을 불러오는 중이에요');
     setError('');
@@ -185,15 +193,35 @@ export default function Register() {
   const find = async () => {
     setNote('');
     setHits(null);
-    if (!code.trim()) return setNote('제품 코드(품번)를 입력해 주세요');
+    let b = brand.trim();
+    let c = code.trim();
+    let ext = extractionId;
+    // 택 사진이 있으면 먼저 글자를 읽어(R01) 비어 있는 브랜드·품번과 옷 정보를 채운다
+    if (tags.length && ext === undefined) {
+      try {
+        setNote('택 사진의 글자를 읽는 중이에요');
+        const read = await readLabels(tags.map((t) => t.file));
+        ext = read.extractionId;
+        setExtractionId(ext);
+        const v = read.values;
+        if (!b && v.BRAND) setBrand((b = v.BRAND));
+        if (!c && v.PRODUCT_CODE) setCode((c = v.PRODUCT_CODE));
+        // 소재는 저장할 때 표로 바꿀 수 있는 글자만 채운다(못 읽는 형식이면 비워 두고 직접 입력)
+        const material = v.MATERIAL && readable(v.MATERIAL) ? v.MATERIAL : '';
+        setFields((f) => ({ ...f, brand: f.brand || v.BRAND || '', size: f.size || v.SIZE_LABEL || '', material: f.material || material }));
+        setNote(read.failed ? `${read.failed} 브랜드와 품번을 직접 입력해 주세요.` : '');
+      } catch (e) {
+        setNote(`${errorText(e, '택 글자를 읽지 못했어요')} 브랜드와 품번을 직접 입력해 주세요.`);
+      }
+    }
+    if (!c) return setNote((n) => n || '제품 코드(품번)를 입력해 주세요');
     try {
-      const r = await lookupProduct(brand.trim(), code.trim());
-      setHits(r);
-      if (!r.length) setNote('같은 코드의 사진을 찾지 못했어요. 상품 페이지의 이미지 주소를 붙여 넣거나, 사진을 직접 올려 주세요.');
+      const r = await lookupProduct(b, c, ext);
+      setSearchId(r.searchId);
+      setHits(r.hits);
+      if (!r.hits.length) setNote(r.message ?? '같은 코드의 사진을 찾지 못했어요. 상품 페이지의 이미지 주소를 붙여 넣거나, 사진을 직접 올려 주세요.');
     } catch (e) {
-      setNote(e instanceof NotConnected
-        ? '인터넷 상품 검색은 서버(R02)가 연결돼야 해요. 지금은 상품 페이지의 이미지 주소를 붙여 넣거나 사진을 직접 올리면, 아래와 같은 방식으로 누끼를 따서 정리해 드려요.'
-        : '검색하지 못했어요. 잠시 뒤 다시 시도해 주세요.');
+      setNote(errorText(e, '검색하지 못했어요. 잠시 뒤 다시 시도해 주세요.'));
     }
   };
 
@@ -222,12 +250,16 @@ export default function Register() {
     }
     setSaving(true);
     try {
+      // 서버에는 원본 사진과 누끼 정리본을 함께 올린다(R03: 정리본이 대표, 원본도 남김)
       let photo: Photo | undefined;
+      let png: Blob | null = null;
+      let original: Blob | null = null;
       if (cut) {
-        const png = await new Promise<Blob | null>((r) => cut.canvas.toBlob(r, 'image/png'));
-        if (png) photo = { src: await images.save(png), w: cut.canvas.width, h: cut.canvas.height, kind, points, fit, source: source ?? 'upload' };
+        png = await new Promise<Blob | null>((r) => cut.canvas.toBlob(r, 'image/png'));
+        if (raw) original = await new Promise<Blob | null>((r) => raw.toBlob(r, 'image/jpeg', 0.9));
+        if (png) photo = { src: '', w: cut.canvas.width, h: cut.canvas.height, kind, points, fit, source: source ?? 'upload' };
       }
-      const g = add({
+      const g = await add({
         name: fields.name.trim(),
         category: fields.category,
         shape,
@@ -241,9 +273,11 @@ export default function Register() {
         memo: fields.memo.trim() || undefined,
         warmth: WARMTH[shape] ?? 2,
         photo,
-      });
+      }, { photo: png ?? undefined, original: original ?? undefined, searchId, candidateId, extractionId });
       toast('옷을 등록했어요');
       nav(`/closet/${g.id}`, { replace: true });
+    } catch (e) {
+      toast(errorText(e, '등록하지 못했어요'));
     } finally {
       setSaving(false);
     }
@@ -329,8 +363,8 @@ export default function Register() {
                   {tags.map((t) => <div key={t.url} className="photo"><img src={t.url} alt={t.name} /></div>)}
                   <button className="photo add" onClick={() => tagInput.current?.click()} aria-label="택 사진 추가"><Icon name="camera" size={22} /><span>택 사진</span></button>
                 </div>
-                <input ref={tagInput} type="file" accept="image/*" multiple hidden onChange={(e) => { Array.from(e.target.files ?? []).slice(0, 4).forEach((f) => setTags((t) => [...t, { url: URL.createObjectURL(f), name: f.name }].slice(0, 4))); e.target.value = ''; }} />
-                <small className="muted-text">택 사진의 글자 읽기는 서버가 연결되면 품번을 자동으로 채워 줘요.</small>
+                <input ref={tagInput} type="file" accept="image/*" multiple hidden onChange={(e) => { Array.from(e.target.files ?? []).slice(0, 4).forEach((f) => setTags((t) => [...t, { url: URL.createObjectURL(f), name: f.name, file: f }].slice(0, 4))); setExtractionId(undefined); e.target.value = ''; }} />
+                <small className="muted-text">택 사진을 넣으면 AI가 글자를 읽어 브랜드·품번을 채워 줘요.</small>
               </div>
               <button className="btn btn-primary btn-block" onClick={() => void find()}><Icon name="search" size={16} /> 사진 찾기</button>
               {note && <p className="notice"><Icon name="alert" size={16} />{note}</p>}
@@ -338,7 +372,7 @@ export default function Register() {
                 <ul className="hits">
                   {hits.map((h) => (
                     <li key={h.imageUrl}>
-                      <button onClick={() => void begin(h.imageUrl, 'code')}><img src={h.imageUrl} alt="" /><span><b>{h.title}</b><small>{h.source}</small></span></button>
+                      <button onClick={() => { setCandidateId(h.candidateId); void begin(h.imageUrl, 'code'); }}><img src={h.imageUrl} alt="" /><span><b>{h.title}</b><small>{h.source}</small></span></button>
                     </li>
                   ))}
                 </ul>

@@ -19,7 +19,12 @@ public enum SubType {
     SKIRT("치마", Category.BOTTOM, null),
     BOTTOM_ETC("기타 하의", Category.BOTTOM, null),
     DRESS("원피스", Category.DRESS, null),
-    ETC("기타", Category.ETC, null);
+    ETC("기타", Category.ETC, null),
+    PADDING("패딩", Category.OUTER, null),
+    PLEATED_SKIRT("플리츠 스커트", Category.BOTTOM, null),
+    SNEAKERS("스니커즈", Category.SHOES, null),
+    LOAFERS("로퍼", Category.SHOES, null),
+    BOOTS("부츠", Category.SHOES, null);
 
     public final String label;
     public final Category category;

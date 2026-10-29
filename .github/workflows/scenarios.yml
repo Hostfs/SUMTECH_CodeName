@@ -44,11 +44,11 @@ jobs:
       - name: 배포 commit 확인
         run: curl -sf http://localhost:3000/__health | grep -q "${RELEASE_ID}"
 
-      # 화면 주소를 직접 열거나 새로고침해도(QR 라벨 링크 포함) 200이어야 한다. App.tsx의 Route와 SpaController 목록이 어긋나면 실패.
+      # 화면 주소를 직접 열거나 새로고침해도 200이어야 한다. App.tsx의 Route(상대 경로 path="closet" 포함)와 SpaController 목록이 어긋나면 실패.
       - name: 화면 주소 직접 열기
         run: |
           fail=0
-          for p in $(grep -oE 'path="/[^"*]*"' frontend/src/App.tsx | sed -E 's/path="([^"]*)"/\1/; s/:[a-zA-Z]+/1/g'); do
+          for p in / $(grep -oE 'path="[^"*]+"' frontend/src/App.tsx | sed -E 's/path="\/?([^"]*)"/\/\1/; s/:[a-zA-Z]+/1/g'); do
             code=$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:3000$p")
             echo "$p $code"
             [ "$code" = 200 ] || fail=1

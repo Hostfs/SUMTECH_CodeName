@@ -11,6 +11,7 @@ import './styles/outfit.css';
 import './styles/storage.css';
 import './styles/notice.css';
 import './styles/register.css';
+import './styles/auth.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

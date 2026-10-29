@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { HashRouter, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Outlet, Route, Routes } from 'react-router-dom';
 import Layout from './components/Layout';
 import Home from './pages/Home';
 import Closet from './pages/Closet';
@@ -8,6 +8,8 @@ import Register from './pages/Register';
 import Outfit from './pages/Outfit';
 import Storage from './pages/Storage';
 import NotFound from './pages/NotFound';
+import Auth from './pages/Auth';
+import { AuthProvider, RequireAuth } from './lib/auth';
 import { ThemeProvider } from './lib/theme';
 import { ToastProvider } from './lib/toast';
 import { WeatherProvider } from './lib/WeatherProvider';
@@ -31,7 +33,7 @@ function useFitDevice() {
   }, []);
 }
 
-// HashRouter: 서버 설정 없이 정적 파일만으로 동작한다. Spring 이 index.html 폴백을 제공하게 되면 BrowserRouter 로 바꿔도 된다.
+// 주소는 Spring 이 index.html 로 넘겨 준다(SpaController). 로그인·회원가입 말고는 모두 로그인해야 볼 수 있다.
 export default function App() {
   useFitDevice();
   return (
@@ -40,23 +42,25 @@ export default function App() {
         <ToastProvider>
           <WeatherProvider>
             <ImagesProvider>
-            <GarmentsProvider>
-             <OutfitsProvider>
-              <HashRouter>
-                <Routes>
-                  <Route element={<Layout />}>
-                    <Route index element={<Home />} />
-                    <Route path="closet" element={<Closet />} />
-                    <Route path="closet/:id" element={<GarmentDetail />} />
-                    <Route path="register" element={<Register />} />
-                    <Route path="outfit" element={<Outfit />} />
-                    <Route path="storage" element={<Storage />} />
-          <Route path="*" element={<NotFound />} />
-                  </Route>
-                </Routes>
-              </HashRouter>
-             </OutfitsProvider>
-            </GarmentsProvider>
+              <BrowserRouter>
+                <AuthProvider>
+                  <Routes>
+                    <Route element={<Layout />}>
+                      <Route path="login" element={<Auth mode="login" />} />
+                      <Route path="signup" element={<Auth mode="signup" />} />
+                      <Route element={<RequireAuth><GarmentsProvider><OutfitsProvider><Outlet /></OutfitsProvider></GarmentsProvider></RequireAuth>}>
+                        <Route index element={<Home />} />
+                        <Route path="closet" element={<Closet />} />
+                        <Route path="closet/:id" element={<GarmentDetail />} />
+                        <Route path="register" element={<Register />} />
+                        <Route path="outfit" element={<Outfit />} />
+                        <Route path="storage" element={<Storage />} />
+                        <Route path="*" element={<NotFound />} />
+                      </Route>
+                    </Route>
+                  </Routes>
+                </AuthProvider>
+              </BrowserRouter>
             </ImagesProvider>
           </WeatherProvider>
         </ToastProvider>

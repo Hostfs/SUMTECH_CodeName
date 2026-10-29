@@ -8,8 +8,13 @@ import { useWeather } from '../lib/WeatherProvider';
 import { useToast } from '../lib/toast';
 import { useGarments } from '../data/store';
 import { statusOf } from '../data/garments';
+import { useAuth } from '../lib/auth';
 
-export const USER = { name: 'CodeName', email: 'student@example.com' };
+/** 화면에 부르는 이름: 따로 정한 이름이 없어서 로그인한 이메일의 앞부분을 쓴다 */
+export function useUserName() {
+  const { me } = useAuth();
+  return me?.email.split('@')[0] ?? '';
+}
 
 /** 홈 우측 상단 프로필 사진 + 메뉴 (프로필·알림·앱 테마·로그아웃) */
 export function ProfileMenu() {
@@ -18,6 +23,8 @@ export function ProfileMenu() {
   const { mode, setMode } = useTheme();
   const { scenario, setScenario, source } = useWeather();
   const { garments } = useGarments();
+  const { logout } = useAuth();
+  const name = useUserName();
   const toast = useToast();
 
   useEffect(() => {
@@ -58,7 +65,7 @@ export function ProfileMenu() {
           <div className="pm-me">
             <span className="pm-photo"><Portrait /></span>
             <div>
-              <b>{USER.name}</b>
+              <b>{name}</b>
               <small>내 옷 {garments.length}벌 · 관리 중 {managing}벌</small>
             </div>
           </div>
@@ -88,7 +95,7 @@ export function ProfileMenu() {
           </div>
 
           <div className="pm-sep" />
-          {row('logout', '로그아웃', () => { setOpen(false); toast('로그아웃은 로그인 화면과 함께 연결돼요'); }, true)}
+          {row('logout', '로그아웃', () => { setOpen(false); void logout(); }, true)}
         </div>
       )}
     </div>

@@ -17,8 +17,8 @@ export default function Layout() {
   const { pathname } = useLocation();
   const { weather } = useWeather();
   const onHome = pathname === '/';
-  // 상세·등록은 하나의 흐름에 집중하도록 하단 탭을 숨긴다 (시안과 동일).
-  const focused = pathname.startsWith('/closet/') || pathname === '/register';
+  // 상세·등록·로그인은 하나의 흐름에 집중하도록 하단 탭을 숨긴다 (시안과 동일).
+  const focused = pathname.startsWith('/closet/') || pathname === '/register' || pathname === '/login' || pathname === '/signup';
   // 밤에는 홈만이 아니라 앱 전체가 어두운 톤이다 (화면을 오갈 때 밝기가 튀지 않게). 날씨가 오기 전에는 시각으로 가늠한다.
   const dark = (weather ?? sampleForNow()).isNight;
 

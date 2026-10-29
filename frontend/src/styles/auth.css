@@ -1,0 +1,10 @@
+/* 로그인·회원가입. 다른 화면과 같은 토큰(색·입력칸·버튼)을 쓴다. */
+.auth { padding-top: calc(var(--safe-top) + 72px); }
+.auth-brand { text-align: center; margin-bottom: 36px; }
+.auth-logo { width: 64px; height: 64px; border-radius: 22px; display: inline-grid; place-items: center; background: var(--tint); color: var(--accent-ink); }
+.auth-brand h1 { margin-top: 14px; font-size: 28px; font-weight: 800; letter-spacing: -0.8px; }
+.auth-brand p { margin-top: 6px; color: var(--muted); font-size: 14.5px; }
+.auth .notice { margin-top: 0; }
+.auth .btn-block { margin-top: 6px; }
+.auth-switch { margin-top: 22px; display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); font-size: 14px; }
+.auth-switch .link-btn { font-size: 14.5px; }
