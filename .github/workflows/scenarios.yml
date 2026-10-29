@@ -1,0 +1,65 @@
+name: scenarios
+
+# 빈 DB에서 docker compose로 앱을 띄우고 docs/scenarios.yaml의 흐름(e2e/scenarios/S*.spec.ts)을 PC·휴대폰 화면으로 실행한다.
+# S2(택 AI 분석)는 실제 AI 응답이 필요해서 저장소 Secrets의 AI_GATEWAY_API_KEY를 쓴다. 키 값은 로그에 남지 않는다.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: scenarios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      RELEASE_ID: ${{ github.sha }}
+      AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 빈 DB에서 앱 띄우기
+        run: |
+          docker compose down -v
+          start=$(date +%s)
+          docker compose up -d --build
+          until curl -sf http://localhost:3000/__health; do
+            if [ $(( $(date +%s) - start )) -gt 600 ]; then docker compose logs app; exit 1; fi
+            sleep 3
+          done
+          echo
+          echo "앱 준비까지 $(( $(date +%s) - start ))초(이미지 빌드 포함)"
+
+      - name: 배포 commit 확인
+        run: curl -sf http://localhost:3000/__health | grep -q "${RELEASE_ID}"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+
+      - name: Playwright 설치
+        working-directory: e2e
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
+      - name: 흐름 E2E
+        working-directory: e2e
+        run: npx playwright test
+
+      - name: 실패 시 앱 로그
+        if: failure()
+        run: docker compose logs app | tail -200
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: e2e/playwright-report
+          retention-days: 7

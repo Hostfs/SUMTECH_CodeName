@@ -34,6 +34,11 @@ export default function AppShell() {
       </nav>
 
       <main className={`app-main${hasActionbar ? ' has-actionbar' : ''}`}>
+        {/* 휴대폰에는 왼쪽 메뉴가 없어서 로그인한 계정과 로그아웃을 화면 위에 둔다. */}
+        <div className="account-bar" aria-label="로그인한 계정">
+          <span>{me?.email}</span>
+          <button type="button" onClick={logout}>로그아웃</button>
+        </div>
         <Outlet />
       </main>
 

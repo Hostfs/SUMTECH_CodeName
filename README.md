@@ -154,8 +154,9 @@
 
 `사용자` 시드 계정에 들어가는 데이터:
 
-- **의류 7벌**(소재·총장 포함): 네이비 옥스퍼드 셔츠, 화이트 반소매 티셔츠, 그레이 울 재킷, 블랙 슬랙스, 연청 데님 팬츠(미배치), 베이지 니트(세탁 중, 예정일 어제 → 기한 지남), 카키 치노 팬츠(수선 중, 예정일 오늘)
-- **공간 3곳**: 옷장 A > 왼쪽 행거, 서랍장 > 2단, 침대 아래 > 겨울 박스
+- **의류 11벌**(소재·총장 포함): 네이비 옥스퍼드 셔츠, 화이트 반소매 티셔츠, 그레이 울 재킷, 블랙 슬랙스, 연청 데님 팬츠(미배치), 베이지 니트(세탁 중, 예정일 어제 → 기한 지남), 카키 치노 팬츠(수선 중, 예정일 오늘), 묶음 기록(S4·S5)용 린넨 반소매 셔츠·네이비 반바지·체크 플란넬 셔츠·그레이 후드티
+- **공간 8곳**: 옷장 A > 왼쪽 행거, 서랍장 > 2단, 침대 아래 > 겨울 박스, 여름 박스(박스), 본가(집 밖)
+- 시드 계정으로 다시 로그인하면 시드 데이터가 처음 상태로 돌아간다(흐름마다 같은 시작 상태)
 
 날짜는 기동 시점을 기준으로 계산한다.
 
@@ -225,7 +226,27 @@ CREATE USER 'otgyeol'@'localhost' IDENTIFIED BY 'otgyeol';
 GRANT ALL ON otgyeol.* TO 'otgyeol'@'localhost';
 ```
 
-E2E 테스트는 `e2e/` 폴더에서 `npm install`, `npx playwright install chromium`, `npx playwright test`로 실행한다(구현 단계에서 추가).
+흐름 E2E(`docs/scenarios.yaml`의 S1~S8, 흐름마다 `e2e/scenarios/<id>.spec.ts`)는 docker 앱을 띄운 뒤 PC·휴대폰 화면 두 가지로 실행한다.
+S2(택 AI 분석)는 실제 AI 응답이 필요해서 `AI_GATEWAY_API_KEY`가 설정된 상태로 앱을 띄워야 한다. CI는 `.github/workflows/scenarios.yml`이 같은 순서로 실행한다.
+
+```bash
+docker compose down -v && docker compose up -d --build
+cd e2e
+npm ci
+npx playwright install chromium
+npx playwright test              # BASE_URL로 다른 주소 지정 가능(기본 http://localhost:3000)
+```
+
+`e2e/fixtures/tag-care.jpg`, `tag-brand.jpg`는 화면에서 그려 만든 예시 택 사진이다. 실제 택 사진으로 바꿔도 된다.
+
+백엔드 통합 테스트는 로컬 JDK·MariaDB 없이 docker로도 돌릴 수 있다.
+
+```bash
+docker network create otg-test
+docker run -d --name otg-test-db --network otg-test -e MARIADB_ROOT_PASSWORD=root -e MARIADB_DATABASE=otgyeol_test mariadb:11.4
+docker run --rm --network otg-test -v "$PWD/backend:/src" -w /src maven:3.9-eclipse-temurin-21 \
+  bash -c "TEST_DATABASE_URL=jdbc:mariadb://otg-test-db:3306/otgyeol_test TEST_DATABASE_USERNAME=root TEST_DATABASE_PASSWORD=root mvn -B test"
+```
 
 ## 환경변수
 

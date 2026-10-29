@@ -565,3 +565,9 @@ a { color: inherit; }
   .qr-label, .qr-label * { visibility: visible; }
   .qr-label { position: fixed; inset: 0; margin: auto; width: 80mm; height: fit-content; border: 0; }
 }
+
+/* 휴대폰 계정 줄(PC는 왼쪽 메뉴 아래에 같은 내용이 있다) */
+.account-bar { display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin: -8px 0 10px; color: var(--ink-3); font-size: var(--t-small); min-width: 0; }
+.account-bar span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.account-bar button { background: none; border: 0; padding: 0; color: var(--ink-2); text-decoration: underline; cursor: pointer; flex: none; }
+@media (min-width: 960px) { .account-bar { display: none; } }

@@ -24,7 +24,8 @@ Agent가 서비스 저장소 루트의 `progress.md`로 복사해 이어 쓴다(
   - scenarios.yaml S4·S5를 R11 흐름(박스로 묶어 옮기기, 세탁소 묶음 맡기기)으로 교체, ERD.md에 2.1절 추가
   - 검사: 프런트 lint·build 통과. 백엔드 통합 테스트 1개 추가(박스·집 밖·세탁소 묶음, 409·400·404) — 로컬에 JDK 21·MariaDB가 없어 CI 결과로 확인
   - 남은 것: 영수증 글자 읽기(업체·날짜 자동 입력)는 하지 않음(직접 입력·최근값 기본), features 문서의 R05·R06 화면(/studio)을 지울지 팀 결정
-  - 운영 미완: e2e/ 없음, workflows/scenarios.yml 없음(backend·frontend CI만), 배포 URL 없음, AI 키 연결 실요청 미확인
+  - R11 main 반영 720f44a
+  - 운영 미완: 배포 URL 없음, AI 키 연결 실요청 미확인(S2 E2E도 키 필요). e2e/·workflows/scenarios.yml은 추가함(6장)
 - 2026-10-29 학생 결정: 백엔드 Spring, DB MariaDB, 프런트 Vite+React. DB는 5NF까지 정규화하고 ER 다이어그램과 교차 검증 결과를 제공(docs/db/ERD.md). 이 PC에 Docker 없음 → docker 검증은 GitHub Actions로
 - 로컬 테스트용 일회용 MariaDB 10.4 인스턴스: 127.0.0.1:3399(root, 비밀번호 없음, 데이터는 세션 scratchpad). 학생 PC의 MariaDB 서비스(3307)는 건드리지 않음
 - 학생에게 확인할 내용: 팀원 실제 경험(experiences E1 when/workaround/quote 학생 답 대기), sources(학생 요청 시 검색), S2용 실제 택 사진 2장(e2e/fixtures)
@@ -69,15 +70,15 @@ Agent가 서비스 저장소 루트의 `progress.md`로 복사해 이어 쓴다(
 
 ## 3. 최소 화면 docker 실행·CI·첫 배포
 
-- [ ] 설계에 맞는 최소 화면과 서버 실행 구성 준비, Dockerfile 작성(빌드는 Dockerfile에서 끝내고 시작 명령은 서버 실행만)
-- [ ] docker-compose.example.yml을 docker-compose.yml로 복사: app·db, app만 ports "3000:3000", 앱은 컨테이너 안 3000에서 받음, 앱 설정에 localhost:3000 같은 절대 주소 없음
-- [ ] app 말고는 ports·container_name이 없고, 어느 서비스에도 env_file 없음
-- [ ] 환경변수 이름 그대로(RELEASE_ID·SEED_USER_*·AI_GATEWAY_API_KEY), 시드 계정 값은 `${}` 없이 직접 적음
-- [ ] 빈 DB에서 `docker compose up --build`만으로 앱·시드 데이터가 2분 안에 뜸(docker를 못 쓰면 GitHub Actions 결과로 확인)
-- [ ] README 설치·빌드·실행 안내와 환경변수 표(이름·용도·설정 위치)
-- [ ] GET /__health가 인증·리다이렉트 없이 200 응답(docker 앱·배포 둘 다, Next.js는 app/%5F%5Fhealth), 실제 배포 commit을 releaseId로 제공
+- [x] 설계에 맞는 최소 화면과 서버 실행 구성 준비, Dockerfile 작성(빌드는 Dockerfile에서 끝내고 시작 명령은 서버 실행만)
+- [x] docker-compose.example.yml을 docker-compose.yml로 복사: app·db, app만 ports "3000:3000", 앱은 컨테이너 안 3000에서 받음, 앱 설정에 localhost:3000 같은 절대 주소 없음 (키트 예시 파일은 이 PC에 없어 규칙대로 직접 작성)
+- [x] app 말고는 ports·container_name이 없고, 어느 서비스에도 env_file 없음
+- [x] 환경변수 이름 그대로(RELEASE_ID·SEED_USER_*·AI_GATEWAY_API_KEY), 시드 계정 값은 `${}` 없이 직접 적음
+- [x] 빈 DB에서 `docker compose up --build`만으로 앱·시드 데이터가 2분 안에 뜸 → 2026-10-29 이 PC Docker Desktop에서 확인: 이미지 빌드 포함 168초(첫 빌드), DB healthy 후 앱 기동 약 6초, V1·V2 마이그레이션·시드 생성 로그 확인
+- [x] README 설치·빌드·실행 안내와 환경변수 표(이름·용도·설정 위치)
+- [x] GET /__health가 인증·리다이렉트 없이 200 응답(docker 앱에서 `{"releaseId":"dev"}` 확인, 배포는 미확인), 실제 배포 commit을 releaseId로 제공
 - [ ] 공개 HTTPS URL 첫 배포(발표용, 배포용 DB는 학생 확인 후 무료 등급)
-- [ ] CI 실제 검사(workflows/scenarios.yml 복사)와 성공 뒤 자동 배포 연결, 실제 push로 확인
+- [ ] CI 실제 검사(workflows/scenarios.yml 복사)와 성공 뒤 자동 배포 연결, 실제 push로 확인 → `.github/workflows/scenarios.yml` 직접 작성(키트 원본 없음): 빈 DB compose 기동 → /__health의 releaseId=commit 확인 → Playwright PC·휴대폰. 자동 배포는 배포처가 정해지지 않아 미연결
 - [ ] Agent가 대시보드 배포 URL 저장, UP·배포 commit 일치 확인
 - 배포 URL / CI·배포 링크 / 첫 배포 commit SHA:
 
@@ -108,19 +109,21 @@ Agent가 서비스 저장소 루트의 `progress.md`로 복사해 이어 쓴다(
 
 ## 6. 흐름 E2E
 
-- [ ] 키트 e2e/를 저장소 e2e/로 복사, platform에 맞는 project만 남김
-- [ ] 흐름마다 e2e/scenarios/<id>.spec.ts 하나(id와 같은 파일 이름), 파일마다 test 하나
-- [ ] steps를 같은 순서의 화면 조작으로 spec 본문에 옮김(API 호출 없음), 다른 역할 단계는 새 창(context)으로 로그인, 회원가입 이메일은 실행마다 다르게
-- [ ] page.goto는 창마다 처음 한 번만(로그인 화면으로 가는 goto만 예외), 회원가입은 첫 화면에서 눌러 가거나 회원가입 주소 하나만, 도우미 함수는 test보다 위에
-- [ ] 마지막에 expected 결과를 expect로 확인(화면이 열렸는지만 보지 않음)
-- [ ] test.skip·test.fixme·test.only·조건부 return·실패를 삼키는 try/catch 없음
-- [ ] page.route·route.fulfill·routeFromHAR·routeWebSocket·addInitScript·화면 글자를 바꾸는 page.evaluate 없음
-- [ ] 흐름에 필요한 선행 데이터는 앱 시드로, 업로드 자료는 e2e/fixtures/에 커밋, 앞 흐름이 만든 데이터에 기대지 않음
-- [ ] AI 기능은 실제 응답을 기다려 확인, 흐름 하나가 로컬에서 1분 안
-- [ ] viewport를 spec에서 바꾸지 않음, platform의 화면(both면 둘 다)에서 통과
-- [ ] globalSetup·storageState 등 playwright.config.ts에만 있는 설정에 기대지 않음
-- [ ] `docker compose down -v`, `docker compose up -d --build` 뒤 `npx playwright test`로 모든 흐름 통과
-- 흐름별 E2E 결과(통과 / 실패 단계와 이유):
+- [x] 키트 e2e/를 저장소 e2e/로 복사, platform에 맞는 project만 남김 → 키트 원본을 이 PC에서 찾지 못해 규칙대로 직접 작성(Playwright 1.63.0, project desktop·mobile). 키트를 받으면 config를 키트 것으로 맞출 것
+- [x] 흐름마다 e2e/scenarios/<id>.spec.ts 하나(id와 같은 파일 이름), 파일마다 test 하나
+- [x] steps를 같은 순서의 화면 조작으로 spec 본문에 옮김(API 호출 없음), 회원가입 이메일은 실행마다 다르게
+- [x] page.goto는 창마다 처음 한 번만(로그인 화면으로 가는 goto만 예외), 회원가입은 첫 화면에서 눌러 감, 도우미 함수는 test보다 위에
+- [x] 마지막에 expected 결과를 expect로 확인
+- [x] test.skip·test.fixme·test.only·조건부 return·실패를 삼키는 try/catch 없음
+- [x] page.route·route.fulfill·routeFromHAR·routeWebSocket·addInitScript·화면 글자를 바꾸는 page.evaluate 없음(S6에서 선택된 추천 공간 이름을 읽기만 함)
+- [x] 선행 데이터는 앱 시드로(로그인 때 시드 초기화), 업로드 자료는 e2e/fixtures/(화면에서 그린 예시 택 2장 — 실제 택 사진으로 바꾸면 더 좋음)
+- [ ] AI 기능은 실제 응답을 기다려 확인, 흐름 하나가 로컬에서 1분 안 → S2는 AI_GATEWAY_API_KEY가 있어야 함(이 PC 환경에 키 없음, 학생이 설정)
+- [x] viewport를 spec에서 바꾸지 않음, platform both → PC·휴대폰 두 화면에서 실행
+- [x] globalSetup·storageState 등에 기대지 않음(workers 1만 설정: 같은 시드 계정을 쓰므로)
+- [ ] `docker compose down -v`, `docker compose up -d --build` 뒤 `npx playwright test`로 모든 흐름 통과 → S2 제외 통과
+- 흐름별 E2E 결과(2026-10-29, 이 PC docker, 빈 DB): S1·S3·S4·S5·S6·S7·S8 desktop·mobile 14/14 통과(25초). S2는 AI 키 없음 → '택 분석하기' 뒤 '택을 읽었어요'를 기다리다 실패(사진 2장 올리기까지 통과)
+- 발견해 고친 것: 휴대폰 화면에 로그인한 계정·로그아웃이 없었음 → 화면 위 계정 줄 추가(S1 기대 결과). S5·S7 steps에 "'진행 중' 탭을 누른다" 추가(관리함은 기한 지남 탭이 먼저 열림)
+- 백엔드 통합 테스트: 2026-10-29 docker(maven:3.9-temurin-21 + mariadb:11.4)에서 `mvn test` 통과(R03·배치 수정·R11 테스트 포함)
 
 ## 7. 최종 검증
 
