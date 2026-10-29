@@ -1,0 +1,74 @@
+/* ---------- 코디 스튜디오(우리 화면에만 필요한 것) ----------
+   초안 outfit.css(무대·말풍선·트레이·저장한 코디)를 그대로 쓰고, 여기에는 원피스 자리·고른 옷과 위치·
+   저장한 코디의 지금 입을 수 있는지·휴대폰 트레이 고정·PC 두 단 배치만 더한다. 색은 초안 토큰만 쓴다. */
+
+.outfit-error { margin-top: 12px; }
+
+/* 말풍선 묶음(자리 탭): 무대 전체를 덮되 말풍선만 눌린다. 넓은 화면에서도 모형 가까이 둔다 */
+.outfit .bubbles { position: absolute; inset: 0; z-index: 5; max-width: 520px; margin: 0 auto; pointer-events: none; }
+.outfit .bubble { pointer-events: auto; }
+.outfit .bubble[data-slot='dress'] { top: 56%; }
+.outfit .bub-ico img, .outfit .pick-art img, .outfit .mini-pair img, .outfit .worn-art img { display: block; object-fit: cover; border-radius: 8px; }
+
+/* 추천 이유: 마네킹 카드 아래 줄 */
+.outfit .vbar-bot { justify-content: flex-start; align-items: flex-start; gap: 7px; margin: 0; color: var(--accent-ink); }
+.outfit .vbar-bot svg { flex: none; margin-top: 2px; }
+.outfit .vbar-bot small { font-size: 12.5px; font-weight: 600; line-height: 1.5; color: var(--fg); }
+.outfit .seg .spinner { width: 13px; height: 13px; border-width: 2px; }
+
+/* 휴대폰: 초안처럼 아래에서 올라오는 낮은 트레이(모형은 계속 보인다). 닫혀 있으면 숨기고, 열려 있으면 그만큼 아래를 비운다 */
+.outfit .tray { position: fixed; }
+.outfit .tray[data-open='false'] { display: none; }
+.outfit[data-tray='open'] { padding-bottom: calc(250px + var(--safe-bottom)); }
+.outfit .tray-empty { margin: 0; }
+
+/* 숨긴 옷 */
+.outfit-hidden { display: flex; align-items: center; gap: 8px; margin: 14px 2px 0; font-size: 12.5px; line-height: 1.45; color: var(--muted); }
+.outfit-hidden svg { flex: none; }
+.outfit-hidden b {
+  flex: none; margin-left: auto; padding: 4px 10px; border-radius: 999px; white-space: nowrap;
+  background: var(--tint); color: var(--accent-ink); font-size: 12px; font-weight: 800;
+}
+
+/* 고른 옷과 꺼낼 자리 */
+.worn-list { display: flex; flex-direction: column; gap: 8px; }
+.worn { display: flex; align-items: center; gap: 4px; padding: 8px 4px 8px 8px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); }
+.worn-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; text-align: left; border-radius: 12px; }
+.worn-art { flex: none; width: 52px; height: 52px; border-radius: 14px; display: grid; place-items: center; background: var(--art-bg); overflow: hidden; }
+.worn-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.worn-text small { font-size: 11.5px; font-weight: 700; color: var(--accent-ink); }
+.worn-text b { font-size: 14.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.worn-loc { display: flex; align-items: center; gap: 4px; min-width: 0; font-size: 12.5px; font-weight: 600; color: var(--muted); }
+.worn-loc svg { flex: none; color: var(--accent-ink); }
+
+/* 저장한 코디: 지금 입을 수 있는지(열 때마다 서버가 다시 계산) */
+.outfit .saved.look { flex-wrap: wrap; row-gap: 6px; }
+.look-state {
+  flex-basis: 100%; display: flex; align-items: flex-start; gap: 6px; margin: 0 4px 2px 0; padding: 8px 10px;
+  border-radius: 12px; font-size: 12.5px; font-weight: 650; line-height: 1.5;
+}
+.look-state svg { flex: none; margin-top: 2px; }
+.look-state.ok { background: var(--tint); color: var(--accent-ink); }
+.look-state.warn { background: color-mix(in srgb, var(--danger) 12%, var(--surface)); color: var(--danger-ink); }
+.look-state ul { margin-top: 2px; font-weight: 600; }
+.look-state li b { font-weight: 800; }
+
+/* ---------- PC: 마네킹 왼쪽(따라 내려옴), 고르기·고른 옷·저장한 코디 오른쪽 ---------- */
+@media (min-width: 960px) {
+  .outfit .seg { max-width: 440px; }
+  .outfit-studio { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; align-items: start; }
+  /* 위에 고정된 제목·방식 줄(.pin)과 그 아래 흐림 띠에 걸리지 않게 */
+  .outfit .viewer2 { position: sticky; top: 184px; }
+  .outfit .vstage { height: clamp(440px, calc(100vh - 320px), 640px); }
+  .outfit .bubble[aria-selected='true'] { border-color: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent), 0 4px 12px rgba(0, 0, 0, 0.1); }
+  .outfit .bubble[aria-selected='true']::after { border-color: var(--accent); }
+
+  /* 트레이는 오른쪽 단에 늘 펼친다 */
+  .outfit .tray, .outfit .tray[data-open='false'] {
+    display: block; position: static; margin-top: 14px; padding: 8px 0 12px;
+    border-radius: 26px; border: 1px solid var(--line); box-shadow: none; animation: none;
+  }
+  .outfit .tray-done { display: none; }
+  .outfit .tray .rail { flex-wrap: wrap; overflow: visible; padding: 4px 16px 6px; }
+  .outfit[data-tray='open'] { padding-bottom: 72px; }
+}

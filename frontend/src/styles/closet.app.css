@@ -1,0 +1,162 @@
+/* 내 옷장·옷 정보: 디자인 초안(closet.css·detail.css)에 없는 우리 기능의 부품과 PC 배치.
+   초안의 색 토큰(--bg·--surface·--fg·--muted·--line·--accent·--tint…)만 써서 낮·밤 톤을 함께 따른다. */
+
+/* ---------- 내 옷장 ---------- */
+/* 화면 위 오른쪽에 떠 있는 알림·프로필과 겹치지 않게 제목 줄 오른쪽을 비운다 */
+.with-float .closet .page-head { padding-right: 116px; }
+.closet .page-head .link-btn { flex: none; }
+
+.closet .filter-btn { cursor: pointer; }
+/* 보기 기준 고르기: 고른 이름 길이만큼만 차지하고 화살표 바로 옆에 붙인다(초안 .sort 정렬 고르기 자리) */
+.closet .sort select { field-sizing: content; text-align-last: right; }
+
+/* 위치 줄: 긴 경로는 말줄임 */
+.gloc-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+
+/* 박스·집 밖 옷 카드의 '꺼내기': 그림 칸 왼쪽 위에 붙는 작은 버튼(카드는 링크라 버튼을 형제로 겹친다) */
+.gcard-wrap { position: relative; display: flex; min-width: 0; }
+.gcard-wrap > .gcard { flex: 1; }
+.gtakeout {
+  position: absolute; top: 21px; left: 21px; z-index: 1;
+  display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 11px 0 9px; border-radius: 999px;
+  background: var(--accent); color: var(--on-accent); font-size: 12.5px; font-weight: 700;
+  box-shadow: 0 4px 12px var(--accent-sh); transition: transform 0.12s;
+}
+.gtakeout:active { transform: scale(0.96); }
+
+/* 휴대폰 가로·태블릿: 카드 칸을 늘리고, 옷 정보 그림은 너무 커지지 않게 높이를 묶는다 */
+@media (min-width: 600px) {
+  .closet .grid { grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); }
+}
+@media (min-width: 600px) and (max-width: 959.98px) {
+  .detail .hero-tile { max-height: 380px; }
+}
+
+/* ---------- 시트 안 공간 고르기 ---------- */
+.sheet-lead { margin-bottom: 6px; font-size: 14px; }
+.sheet-empty { padding: 28px 8px 12px; }
+.loc-row:has(> .loc-row-main) { padding-top: 6px; padding-bottom: 6px; }
+.loc-row-main { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.loc-row-main small { font-size: 12px; font-weight: 500; color: var(--muted); }
+.loc-row:has(> .loc-row-main) em { flex: none; }
+.loc-row:has(> .loc-row-main):focus-visible { outline-offset: -2px; }
+
+/* ---------- 옷 정보 ---------- */
+/* 휴대폰은 하단 탭(높이 75px + 안전 영역)이 계속 보이므로(내 옷장 메뉴로 돌아가기) 아래 버튼 줄을 탭 바로 위에 붙인다 */
+.page.detail { padding-bottom: calc(75px + var(--safe-bottom)); }
+.detail .action-bar { bottom: calc(75px + var(--safe-bottom)); padding-bottom: 12px; }
+.detail .action-bar .btn-ghost { white-space: nowrap; }
+.detail .topbar h1 { white-space: nowrap; }
+/* 제목은 가운데. 오른쪽 칸은 비어 있어 떠 있는 알림·프로필과 겹치지 않는다 */
+.with-float .detail .topbar { padding-right: 0; }
+
+.detail-notice { margin-top: 12px; }
+
+/* 그림 아래 사진 고르기(대표 이미지·택 사진·제품 이미지…) */
+.hero-thumbs { display: flex; gap: 8px; margin-top: 12px; overflow-x: auto; scrollbar-width: none; }
+.hero-thumbs::-webkit-scrollbar { display: none; }
+.hero-thumb {
+  position: relative; flex: none; width: 58px; height: 58px; padding: 0; overflow: hidden;
+  border-radius: 14px; background: var(--art-bg); border: 2px solid transparent; transition: border-color 0.15s;
+}
+.hero-thumb[aria-pressed='true'] { border-color: var(--accent); }
+.hero-thumb > img { width: 100%; height: 100%; object-fit: cover; }
+.hero-photo { max-width: 100%; max-height: 100%; object-fit: contain; }
+
+/* 정보 칸: 종류·소재처럼 긴 값은 한 줄을 다 쓰고, 줄 구분선은 마지막 칸만 뺀다 */
+.detail .info-grid > .cell { border-bottom: 1px solid var(--line); }
+.detail .info-grid > .cell:last-child { border-bottom: 0; }
+.detail .info-grid > .cell.wide { grid-column: 1 / -1; }
+.info-swatch { display: inline-block; width: 12px; height: 12px; margin-right: 6px; border-radius: 4px; vertical-align: -1px; border: 1px solid var(--line-strong); }
+
+/* 위치 카드: 경로가 길면 줄을 바꾸고, 재배치 확인·옷장 지도 버튼은 오른쪽에 둔다 */
+.detail .loc-card > div { flex: 1; min-width: 0; }
+.detail .loc-card b { overflow-wrap: anywhere; word-break: keep-all; }
+.detail .loc-card.away b, .detail .loc-card.suggest b { font-size: 18px; letter-spacing: -0.4px; line-height: 1.3; }
+.detail .loc-card .loc-action { flex: none; }
+.detail .care-banner .btn-sm { flex: none; }
+
+/* 세탁·관리 정보(택에 적힌 세탁법) */
+.care-lines { padding: 4px 20px; border-radius: 22px; background: var(--surface); border: 1px solid var(--line); }
+.care-lines li {
+  display: flex; align-items: center; gap: 10px; padding: 14px 0; border-bottom: 1px solid var(--line);
+  font-size: 15px; font-weight: 600; line-height: 1.45; word-break: keep-all;
+}
+.care-lines li:last-child { border-bottom: 0; }
+.care-lines svg { flex: none; color: var(--accent-ink); }
+.detail .care-card:has(> p:only-child) { grid-template-columns: 1fr; }
+
+/* 세탁·수선 이력, 제품 후보: 초안 보관함의 줄(.row-link) */
+.care-history { margin-top: 12px; }
+.detail .mini-tile { overflow: hidden; color: var(--accent-ink); }
+.detail .mini-tile img { width: 100%; height: 100%; object-fit: cover; }
+:root[data-tone='dark'] .detail .mini-tile { color: #4f4a44; }
+.detail a.row-link { transition: border-color 0.15s; }
+.detail a.row-link:hover { border-color: var(--line-strong); }
+.detail .row-link > svg:last-child { flex: none; color: var(--muted); }
+.detail .row-main b { overflow-wrap: anywhere; }
+.text-link { color: var(--accent-ink); font-weight: 650; text-decoration: underline; text-underline-offset: 2px; }
+.hint.cand-hint, .hint.cover-hint { margin: 0; }
+
+/* 대표 이미지 정리: 정리본(투명 바탕)과 원본 */
+.cover-card { padding: 14px; border-radius: 22px; background: var(--surface); border: 1px solid var(--line); }
+.cover-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.cover-compare figure { margin: 0; }
+.cover-img { display: grid; place-items: center; aspect-ratio: 1; overflow: hidden; border-radius: 16px; background: var(--art-bg); }
+.cover-img img { width: 100%; height: 100%; object-fit: contain; }
+.cover-img.is-cut { background: repeating-conic-gradient(#e3dfd7 0 25%, #f3f0ea 0 50%) 50% / 16px 16px; }
+.cover-compare figcaption { margin-top: 6px; text-align: center; font-size: 12.5px; font-weight: 600; color: var(--muted); }
+.cover-card > .btn { margin-top: 12px; }
+
+/* 택에서 읽은 정보 */
+.read-card { padding: 4px 20px 6px; border-radius: 22px; background: var(--surface); border: 1px solid var(--line); }
+.read-grid > .cell { border-bottom: 1px solid var(--line); }
+.read-grid > .cell:last-child { border-bottom: 0; }
+.read-grid .cell dt { width: 78px; }
+.read-grid .cell dd { font-size: 15px; }
+.read-flag {
+  display: inline-flex; align-items: center; height: 20px; margin-left: 6px; padding: 0 8px; border-radius: 999px; vertical-align: 1px;
+  background: color-mix(in srgb, var(--danger) 12%, var(--surface)); color: var(--danger-ink); font-size: 11px; font-weight: 700;
+}
+.read-orig { color: var(--muted); font-size: 13px; font-weight: 500; }
+.read-raw { padding: 12px 0 8px; border-top: 1px solid var(--line); }
+.read-raw summary { cursor: pointer; color: var(--muted); font-size: 13.5px; font-weight: 600; }
+.read-raw-text {
+  margin-top: 10px; padding: 12px 14px; border-radius: 14px; background: var(--tile-bg);
+  font-size: 13px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere;
+}
+
+/* 정보 수정 시트의 '집 안 상태'(세탁·수선 중에는 고를 수 없다) */
+.home-status .chip:disabled { opacity: 0.45; }
+.home-status small { color: var(--muted); font-size: 12.5px; line-height: 1.45; }
+
+/* ---------- PC: 같은 부품을 넓게 ---------- */
+@media (min-width: 960px) {
+  /* 내 옷장: 검색과 보기 기준을 한 줄에, 카드는 여러 칸 */
+  .closet-tools { display: grid; grid-template-columns: minmax(280px, 440px) auto; justify-content: space-between; column-gap: 20px; align-items: center; margin-top: 18px; }
+  .closet-tools .search { margin-top: 0; }
+  .closet-tools .chips.scroll { grid-column: 1 / -1; grid-row: 2; margin: 14px -48px 0; padding: 4px 48px; }
+  .closet-tools .filter-row { grid-column: 2; grid-row: 1; gap: 14px; margin: 0; padding: 0 6px 0 16px; height: 52px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); }
+  .closet-tools .result-count { margin-left: 0; }
+  .closet-tools .result-count:empty { display: none; }
+  .closet-tools .sort { margin-left: 0; }
+  .closet .grid { grid-template-columns: repeat(auto-fill, minmax(196px, 1fr)); gap: 16px; }
+  .closet .group-title { margin-top: 30px; }
+  .closet .selbar { bottom: 24px; max-width: 560px; margin-left: auto; margin-right: auto; }
+  .closet .gcard { transition: border-color 0.15s, transform 0.12s, box-shadow 0.15s; }
+  .closet a.gcard:hover { border-color: var(--line-strong); box-shadow: 0 10px 24px rgba(0, 0, 0, 0.06); }
+
+  /* 옷 정보: 왼쪽 그림(따라 내려옴), 오른쪽 정보 */
+  .page.detail { padding-bottom: 24px; }
+  /* PC는 넓어서 제목을 뒤로 버튼 옆에 붙인다 */
+  .detail .topbar { display: flex; align-items: center; gap: 6px; }
+  .detail .topbar h1 { font-size: 18px; text-align: left; }
+  .detail .topbar .topbar-gap { display: none; }
+  .detail-body { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); column-gap: 44px; align-items: start; margin-top: 14px; }
+  .detail-media { position: sticky; top: 104px; }
+  .detail .hero-tile { aspect-ratio: 1 / 0.9; }
+  .detail-info .title-row { margin-top: 4px; }
+  .detail-info .title-row h2 { font-size: 32px; }
+  .detail .action-bar { bottom: 0; margin: 28px -20px 0; padding: 26px 20px 20px; }
+  .detail .action-bar .btn-primary { flex: 1.35; }
+}

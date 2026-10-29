@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
-import StorageTabs from '../components/StorageTabs'
 import { Link } from 'react-router-dom'
 import { api, errorMessage } from '../api'
-import GarmentArt from '../components/GarmentArt'
+import { downloadCareIcs } from '../calendar'
+import { Icon } from '../components/Icon'
+import StorageTabs, { GarmentThumb } from '../components/StorageTabs'
 import { Loading, Notice, Sheet, Spinner, Toast } from '../components/Ui'
 import { formatDate } from '../format'
 import { useSession } from '../session'
 import type { Board, BoardItem } from '../types'
-import { downloadCareIcs } from '../calendar'
+import '../styles/storage.app.css'
 
 type Tab = 'overdue' | 'dueToday' | 'inProgress' | 'history'
 const TABS: { key: Tab; label: string }[] = [
@@ -17,7 +18,18 @@ const TABS: { key: Tab; label: string }[] = [
   { key: 'history', label: '완료 이력' },
 ]
 
-/** 관리함: 세탁·수선 맡긴 옷과 회수 예정일. 목록은 열 때마다 오늘 날짜로 다시 계산된다. */
+/** 초안 dueLabel처럼 회수 예정일까지 남은 날을 짧게(서버의 오늘 기준): '2일 지남' · '오늘' · '내일' · '3일 뒤'. */
+function dueWord(today: string, due: string) {
+  const d = Math.round((new Date(`${due}T00:00:00`).getTime() - new Date(`${today}T00:00:00`).getTime()) / 86400000)
+  return d < 0 ? `${-d}일 지남` : d === 0 ? '오늘' : d === 1 ? '내일' : `${d}일 뒤`
+}
+
+const whereOf = (it: BoardItem) => (it.care.place === 'SHOP' ? it.care.shopName ?? '업체' : '자택')
+
+/**
+ * 관리함(디자인 초안 보관함의 '관리함'): 세탁·수선 맡긴 옷과 회수 예정일. 목록은 열 때마다 오늘 날짜로 다시 계산된다.
+ * 초안은 기한 지남·오늘·진행 중·완료 이력을 한 줄로 이어 보이지만, 우리는 같은 부품(.care-item·.history)을 목록 탭(.chips)으로 나눠 담는다.
+ */
 export default function CareBoard() {
   const { refreshBadge } = useSession()
   const [board, setBoard] = useState<Board | null>(null)
@@ -36,6 +48,8 @@ export default function CareBoard() {
     }).catch((e) => setError(errorMessage(e)))
   }, [])
   useEffect(load, [load])
+  const closeEdit = useCallback(() => setEditing(null), [])
+  const clearToast = useCallback(() => setToast(''), [])
 
   async function complete(item: BoardItem) {
     setBusy(item.care.id)
@@ -51,76 +65,106 @@ export default function CareBoard() {
     }
   }
 
-  if (!board || !tab) return <><StorageTabs />{error ? <Notice>{error}</Notice> : <Loading />}</>
+  if (!board || !tab) {
+    return (
+      <div className="page pinned storage">
+        <StorageTabs />
+        {error ? <Notice>{error}</Notice> : <Loading />}
+      </div>
+    )
+  }
   const items = board[tab]
+  const label = TABS.find((t) => t.key === tab)!.label
+
+  const careRow = (it: BoardItem) => (
+    <li key={it.care.id} className={`care-item ${it.overdue ? 'late' : it.dueToday ? 'today' : 'go'}`} aria-label={`${it.garment.name} ${it.care.careTypeLabel}`}>
+      <Link to={`/closet/${it.garment.id}`} className="care-top">
+        <span className="care-art"><GarmentThumb g={it.garment} /></span>
+        <span className="care-main">
+          <b>{it.garment.name}</b>
+          {/* 옷의 지금 상태(세탁 중·수선 중)를 앞에 두고 맡긴 곳을 잇는다. */}
+          <small>{it.garment.statusLabel} · {whereOf(it)}{it.care.description ? ` · ${it.care.description}` : ''}</small>
+          <small className="st-care-date">{it.care.dueOn ? `${formatDate(it.care.dueOn)} 회수 예정` : '회수 예정일 미정'}</small>
+        </span>
+        {it.care.dueOn && <span className="care-due">{dueWord(board.today, it.care.dueOn)}</span>}
+      </Link>
+      <div className="care-actions">
+        <button type="button" className="btn btn-sm" onClick={() => complete(it)} disabled={busy !== null}>{busy === it.care.id && <Spinner />}회수 완료</button>
+        <span className="st-care-more">
+          {/* 앱을 열지 않는 날을 위해 회수 예정일을 휴대폰 달력으로 넘긴다(지난 날짜는 넘기지 않는다). */}
+          {it.care.dueOn && !it.overdue && (
+            <button type="button" className="btn-text" onClick={() => { downloadCareIcs(it); setToast('달력 파일을 받았어요. 열면 달력에 추가돼요') }}>달력에 넣기</button>
+          )}
+          <button type="button" className="btn-text" onClick={() => setEditing(it)}>예정일 변경</button>
+        </span>
+      </div>
+    </li>
+  )
 
   return (
-    <>
-      <StorageTabs />
-      <p className="page-lead">세탁소·수선집에 맡긴 옷과 돌려받을 날을 모아 봐요. 옮기기에서 세탁소로 묶어 보낸 옷도 여기에 모여요.</p>
-      {error && <div style={{ marginBottom: 16 }}><Notice>{error}</Notice></div>}
+    <div className="page pinned storage">
+      <StorageTabs>
+        <div className="chips scroll st-tabs" role="tablist" aria-label="관리함 목록">
+          {TABS.map((t) => {
+            const on = tab === t.key
+            const n = board[t.key].length
+            return (
+              <button key={t.key} type="button" role="tab" className="chip" data-on={on} aria-selected={on} onClick={() => setTab(t.key)}>
+                {t.label}
+                {(t.key === 'overdue' || t.key === 'dueToday') && n > 0 && <b className="seg-dot">{n}</b>}
+                {t.key === 'inProgress' && <small>{n}</small>}
+              </button>
+            )
+          })}
+        </div>
+      </StorageTabs>
+
+      {error && <Notice>{error}</Notice>}
       {returned.map((it) => (
-        <div key={it.garment.id} style={{ marginBottom: 12 }}>
+        <div key={it.garment.id} className="st-returned">
           <Notice kind="ok">
-            회수 완료했어요. <Link to={`/closet/${it.garment.id}`} style={{ fontWeight: 700 }}>{it.garment.name}</Link>을(를) 눌러 보관 위치를 확인해 주세요.
+            회수 완료했어요. <Link to={`/closet/${it.garment.id}`}>{it.garment.name}</Link>을(를) 눌러 보관 위치를 확인해 주세요.
           </Notice>
         </div>
       ))}
 
-      <div className="tabs" role="tablist" aria-label="관리함 목록">
-        {TABS.map((t) => (
-          <button key={t.key} type="button" role="tab" aria-selected={tab === t.key} onClick={() => setTab(t.key)}>
-            {t.label}{(t.key === 'overdue' || t.key === 'dueToday') && board[t.key].length > 0 && <span className="count">{board[t.key].length}</span>}
-            {t.key === 'inProgress' && <span className="row-sub"> {board.inProgress.length}</span>}
-          </button>
-        ))}
-      </div>
-
-      <section role="tabpanel" aria-label={TABS.find((t) => t.key === tab)!.label}>
-        {items.length === 0 && (
+      <section className="st-panel" role="tabpanel" aria-label={label}>
+        <h2 className={`section-title${tab === 'overdue' && items.length > 0 ? ' danger' : ''}`}>
+          {label}{tab !== 'history' && <> <small>{items.length}</small></>}
+        </h2>
+        {items.length === 0 ? (
           <div className="empty">
-            <strong>{tab === 'overdue' ? '기한이 지난 옷이 없어요' : tab === 'dueToday' ? '오늘 돌려받을 옷이 없어요' : tab === 'inProgress' ? '맡긴 옷이 없어요' : '아직 완료된 기록이 없어요'}</strong>
-            {tab === 'inProgress' && <p>옷 정보에서 ‘세탁·수선 맡기기’를 누르면 여기에 모여요.</p>}
+            <p className="empty-title">{tab === 'overdue' ? '기한이 지난 옷이 없어요' : tab === 'dueToday' ? '오늘 돌려받을 옷이 없어요' : tab === 'inProgress' ? '맡긴 옷이 없어요' : '아직 완료된 기록이 없어요'}</p>
+            {tab === 'inProgress' && <p>옷 정보에서 ‘세탁·수선 맡기기’를 누르거나 옮기기에서 세탁소로 묶어 보내면 여기에 모여요.</p>}
           </div>
+        ) : tab === 'history' ? (
+          <ul className="history st-history-grid">
+            {items.map((it) => (
+              <li key={it.care.id} aria-label={`${it.garment.name} ${it.care.careTypeLabel}`}>
+                <Icon name="check" size={15} stroke={2.4} />
+                <span>
+                  <Link to={`/closet/${it.garment.id}`}><b>{it.garment.name}</b></Link> {it.care.careTypeLabel} 회수 · {whereOf(it)}
+                  <em className="st-history-sub">{formatDate(it.care.droppedOn)} 맡김{it.care.description ? ` · ${it.care.description}` : ''}</em>
+                </span>
+                <small>{formatDate(it.care.completedAt)}</small>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <ul className="care-list st-care-grid">{items.map(careRow)}</ul>
         )}
-        {items.map((it) => (
-          <div className={`row-item care-row${it.overdue ? ' late' : it.dueToday ? ' today' : ''}`} key={it.care.id} aria-label={`${it.garment.name} ${it.care.careTypeLabel}`}>
-            <div className="row-thumb">{it.garment.imageUrl ? <img src={it.garment.imageUrl} alt="" /> : <GarmentArt subType={it.garment.subType} colorHex={it.garment.colorHex} title={it.garment.name} />}</div>
-            <div className="row-main">
-              <Link className="row-title" to={`/closet/${it.garment.id}`}>{it.garment.name}</Link>
-              {/* 진행 중이면 옷의 지금 상태(세탁 중·수선 중)를, 끝났으면 맡긴 종류를 앞에 둔다. */}
-              <div className="row-sub">
-                {it.care.completedAt ? it.care.careTypeLabel : <strong className="care-status">{it.garment.statusLabel}</strong>}
-                , {it.care.place === 'SHOP' ? it.care.shopName ?? '업체' : '자택'}{it.care.description ? `, ${it.care.description}` : ''}
-              </div>
-              {it.care.completedAt ? (
-                <div className="row-sub">{formatDate(it.care.droppedOn)} 맡김, {formatDate(it.care.completedAt)} 회수 완료</div>
-              ) : (
-                <div className={`row-sub${it.overdue ? ' danger' : ''}`}>
-                  {it.care.dueOn ? `${formatDate(it.care.dueOn)} 회수 예정` : '회수 예정일 미정'}{it.overdue ? ', 기한 지남' : it.dueToday ? ', 오늘' : ''}
-                </div>
-              )}
-            </div>
-            {!it.care.completedAt && (
-              <div className="row-actions">
-                {/* 앱을 열지 않는 날을 위해 회수 예정일을 휴대폰 달력으로 넘긴다(지난 날짜는 넘기지 않는다). */}
-                {it.care.dueOn && !it.overdue && (
-                  <button type="button" className="btn btn-sm btn-ghost" onClick={() => { downloadCareIcs(it); setToast('달력 파일을 받았어요. 열면 달력에 추가돼요') }}>달력에 넣기</button>
-                )}
-                <button type="button" className="btn btn-sm btn-ghost" onClick={() => setEditing(it)}>예정일 변경</button>
-                <button type="button" className="btn btn-sm" onClick={() => complete(it)} disabled={busy !== null}>{busy === it.care.id && <Spinner />}회수 완료</button>
-              </div>
-            )}
-          </div>
-        ))}
       </section>
 
-      {editing && <DueSheet item={editing} onClose={() => setEditing(null)} onSaved={(b) => { setBoard(b); setEditing(null); refreshBadge(); setToast('회수 예정일을 바꿨어요') }} />}
-      {toast && <Toast message={toast} onDone={() => setToast('')} />}
-    </>
+      {editing && (
+        <DueSheet item={editing} onClose={closeEdit}
+          onSaved={(b) => { setBoard(b); setEditing(null); refreshBadge(); setToast('회수 예정일을 바꿨어요') }} />
+      )}
+      {toast && <Toast message={toast} onDone={clearToast} />}
+    </div>
   )
 }
 
+/** 회수 예정일 변경(초안 시트): 종류(세탁·수선)와 회수 예정일. 예정일은 맡긴 날보다 앞설 수 없다. */
 function DueSheet({ item, onClose, onSaved }: { item: BoardItem; onClose: () => void; onSaved: (b: Board) => void }) {
   const [dueOn, setDueOn] = useState(item.care.dueOn ?? '')
   const [careType, setCareType] = useState(item.care.careType)
@@ -138,24 +182,21 @@ function DueSheet({ item, onClose, onSaved }: { item: BoardItem; onClose: () => 
     }
   }
   return (
-    <Sheet title={`${item.garment.name} 기록 바꾸기`} onClose={onClose}>
-      <div className="form-grid">
+    <Sheet title="회수 예정일 변경" onClose={onClose}
+      footer={<button type="button" className="btn btn-primary btn-block" onClick={save} disabled={busy}>{busy && <Spinner />}변경</button>}>
+      <div className="fields">
+        <p className="hint">{item.garment.name} · {item.care.careTypeLabel} · {whereOf(item)}, {formatDate(item.care.droppedOn)} 맡김</p>
         <div className="field">
-          <span className="field-label" id="due-type">종류</span>
-          <div className="chips wrap" role="group" aria-labelledby="due-type" style={{ marginTop: 0 }}>
-            <button type="button" className="chip" aria-pressed={careType === 'WASH'} onClick={() => setCareType('WASH')}>세탁</button>
-            <button type="button" className="chip" aria-pressed={careType === 'REPAIR'} onClick={() => setCareType('REPAIR')}>수선</button>
+          <span id="st-due-type">종류</span>
+          <div className="chips" role="group" aria-labelledby="st-due-type">
+            <button type="button" className="chip" data-on={careType === 'WASH'} aria-pressed={careType === 'WASH'} onClick={() => setCareType('WASH')}>세탁</button>
+            <button type="button" className="chip" data-on={careType === 'REPAIR'} aria-pressed={careType === 'REPAIR'} onClick={() => setCareType('REPAIR')}>수선</button>
           </div>
         </div>
-        <div className="field">
-          <label htmlFor="due-date">회수 예정일</label>
-          <input id="due-date" className="input" type="date" value={dueOn} min={item.care.droppedOn} onChange={(e) => setDueOn(e.target.value)} />
-        </div>
-        {error && <Notice>{error}</Notice>}
-      </div>
-      <div className="sheet-actions">
-        <button type="button" className="btn btn-outline" onClick={onClose}>취소</button>
-        <button type="button" className="btn" onClick={save} disabled={busy}>{busy && <Spinner />}저장</button>
+        <label className="field"><span>회수 예정일</span>
+          <input type="date" value={dueOn} min={item.care.droppedOn} onChange={(e) => { setDueOn(e.target.value); setError('') }} aria-invalid={!!error} />
+          {error && <small className="field-error">{error}</small>}
+        </label>
       </div>
     </Sheet>
   )

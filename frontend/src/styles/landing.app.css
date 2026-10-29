@@ -1,0 +1,159 @@
+/* 첫 화면(로그인 전 '/'). 디자인 초안(otgyeol-frontend)에는 없는 화면이라 초안 홈의 구성과 값을 그대로 가져와 만든다.
+   - 위: 배경색 위 인사 글자(초안 .home-date 13px · .home-hello 22px · .home-name 31px)
+   - 아래: 초안 하늘(Sky)이 배경색에서 부드럽게 이어지고(.home-fade-top), 그 위에 유리 카드(.rec)와 위치 카드(.loc-card)
+   - 버튼·입력·칩은 초안 부품(.btn-primary · .btn-ghost · .link-btn · .chip) 그대로
+   홈 전용 클래스(.home-*, .rec*)는 로그인 후 홈의 PC 배치가 덮어쓰므로, 같은 값을 이 화면의 이름으로 옮겨 둔다.
+   휴대폰은 초안 홈처럼 하늘이 화면 너비 가득, PC(960px 이상)는 왼쪽 소개 · 오른쪽 하늘 카드. */
+
+.landing { min-height: 100dvh; background: var(--bg); color: var(--fg); overflow-x: hidden; }
+
+/* ---------- 머리: 로고 + 로그인(초안 옷장 화면의 오른쪽 위 글자 버튼 .link-btn) ---------- */
+.landing-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: calc(var(--safe-top) + 22px) 24px 0;
+}
+.landing-brand { display: block; margin-left: -2px; }
+.landing-brand img { display: block; height: 30px; width: auto; }
+/* 밝은 배경에는 갈색 로고, 밤(어두운 톤)에는 밝은 글자판 로고 */
+.landing-brand .brand-light { display: none; }
+:root[data-tone='dark'] .landing-brand .brand-ink { display: none; }
+:root[data-tone='dark'] .landing-brand .brand-light { display: block; }
+.landing-head .link-btn { font-size: 15px; padding: 8px 2px; }
+
+/* ---------- 소개: 초안 홈 인사와 같은 글자 크기·굵기·자간 ---------- */
+.landing-intro { padding: 30px 24px 0; }
+.landing-kicker { font-size: 13px; color: var(--muted); font-weight: 500; }                       /* = .home-date */
+.landing-title { font-weight: inherit; }
+.landing-title > span { display: block; margin-top: 8px; font-size: 22px; font-weight: 500; letter-spacing: -0.5px; } /* = .home-hello */
+.landing-title > b { display: block; font-size: 31px; font-weight: 800; letter-spacing: -1px; line-height: 1.2; }       /* = .home-name */
+.landing-lead { margin-top: 14px; color: var(--muted); font-size: 15px; line-height: 1.6; word-break: keep-all; text-wrap: pretty; }
+/* 핵심 말에 초안 홈 '옷결의 한마디'(.advice-text em)와 같은 형광펜 밑줄 */
+.landing-lead em {
+  color: var(--fg); font-weight: 700;
+  background: linear-gradient(transparent 60%, var(--hl) 60%, var(--hl) 92%, transparent 92%);
+  padding: 0 1px;
+}
+
+/* 시작하기(주 버튼) 한 줄, 그 아래 로그인 · 게스트 체험(보조 버튼)을 나란히 */
+.landing-cta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+.landing-cta .btn { flex: 1 1 0; min-width: 0; padding: 0 14px; }
+.landing-cta .btn-primary { flex-basis: 100%; }
+.landing-cta .notice { flex-basis: 100%; }
+
+/* ---------- 하늘: 초안 홈 .home-sky(흐림·어둡게 깔기)와 .home-fade-top(배경색에서 하늘로) ---------- */
+.landing-sky { position: relative; margin-top: 26px; padding: 80px 24px 84px; color: #fff; }
+.landing-sky-bg { position: absolute; inset: 0; z-index: 0; overflow: hidden; animation: fade 0.6s; }
+.landing-sky::before,
+.landing-sky::after { content: ''; position: absolute; left: 0; right: 0; z-index: 1; pointer-events: none; }
+.landing-sky::before {
+  top: -2px; height: 104px;
+  background: linear-gradient(to bottom, var(--bg) 0%, color-mix(in srgb, var(--bg) 85%, transparent) 22%, color-mix(in srgb, var(--bg) 40%, transparent) 55%, transparent 100%);
+}
+/* 아래는 초안 홈의 하단 탭 뒤 그라데이션처럼 다시 배경색으로 */
+.landing-sky::after {
+  bottom: -2px; height: 140px;
+  background: linear-gradient(to bottom, transparent 0%, color-mix(in srgb, var(--bg) 12%, transparent) 22%, color-mix(in srgb, var(--bg) 42%, transparent) 44%, color-mix(in srgb, var(--bg) 86%, transparent) 70%, var(--bg) 88%);
+}
+.landing-preview { position: relative; z-index: 2; }
+
+/* 예시 옷장 머리: 초안 .recs-head */
+.landing-preview-head {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 0 4px;
+  font-size: 13.5px; font-weight: 700; text-shadow: 0 1px 10px rgba(0, 0, 0, 0.25);
+}
+.landing-preview-head small { font-size: 12px; font-weight: 500; opacity: 0.88; white-space: nowrap; }
+
+/* 보기 기준 칩: 초안 .chip 을 하늘 위 유리처럼 */
+.landing-chips.chips.scroll { margin: 12px -24px 0; padding: 4px 24px; }
+.landing-chips .chip {
+  background: var(--glass-card); border-color: var(--glass-line); color: var(--fg);
+  -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+}
+.landing-chips .chip[data-on='true'] { background: var(--accent); color: var(--on-accent); border-color: transparent; }
+
+/* 예시 옷: 초안 홈 '옷장에서 바로 꺼내기' 카드(.rec)와 같은 유리 카드. 위치가 핵심이라 휴대폰에서는 한 줄에 한 벌씩 위치까지 다 보인다 */
+.landing-items { list-style: none; display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 12px; }
+.landing-item {
+  display: flex; align-items: center; gap: 10px; min-width: 0; padding: 9px; border-radius: 18px;
+  background: var(--glass-card); border: 1px solid var(--glass-line); color: var(--fg);
+  -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); animation: fade 0.25s;
+}
+.landing-item-tile { flex: none; width: 46px; height: 46px; border-radius: 13px; background: var(--art-bg); display: grid; place-items: center; }
+.landing-item-text { min-width: 0; }
+.landing-item-text b { display: block; font-size: 14px; font-weight: 700; letter-spacing: -0.4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.landing-item-text small { display: flex; align-items: flex-start; gap: 2px; margin-top: 3px; font-size: 12px; line-height: 1.35; color: var(--muted); word-break: keep-all; }
+.landing-item-text small svg { flex: none; margin-top: 1.5px; }
+
+/* 보관 위치 카드: 초안 옷 정보 화면의 .loc-card(테두리 없는 큰 위치 글자 + 원형 아이콘)를 하늘 위 유리로 */
+.landing-loc {
+  display: flex; align-items: center; gap: 14px; margin-top: 12px; padding: 16px 18px; border-radius: 22px;
+  background: var(--glass-card); border: 1px solid var(--glass-line); color: var(--fg);
+  -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+}
+.landing-loc-icon { flex: none; width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--on-accent); }
+.landing-loc small { display: block; font-size: 13px; color: var(--muted); }
+.landing-loc b { display: block; margin-top: 2px; font-size: 22px; font-weight: 800; letter-spacing: -0.6px; }
+
+/* ---------- 하는 일 4가지: 초안 옷 등록의 방법 카드(.method) 모양 ---------- */
+.landing-steps { padding: 6px 24px calc(48px + var(--safe-bottom)); }
+.landing-steps h2 { margin: 0 2px 12px; font-size: 17px; font-weight: 800; }                         /* = .section-title */
+.landing-steps ol { list-style: none; display: grid; gap: 10px; }
+.landing-step {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 14px; align-items: center;
+  padding: 16px; border-radius: 24px; background: var(--surface); border: 1px solid var(--line);
+}
+.landing-step-ico {                                                                                    /* = .method-ico */
+  grid-row: 1 / 3; width: 46px; height: 46px; border-radius: 15px; display: grid; place-items: center;
+  background: var(--tint); color: var(--accent-ink);
+}
+.landing-step b { align-self: end; font-size: 16px; font-weight: 800; letter-spacing: -0.4px; }
+.landing-step p { align-self: start; margin-top: 3px; font-size: 13px; color: var(--muted); line-height: 1.5; word-break: keep-all; }
+
+@media (max-width: 360px) {
+  .landing-title > b { font-size: 27px; }
+  .landing-title > span { font-size: 19px; }
+  .landing-cta .btn-ghost { font-size: 15px; padding: 0 8px; }
+}
+
+/* 태블릿(600~959px): 휴대폰 배치 그대로, 글자와 카드는 가운데 640px 폭에 (하늘만 화면 가득) */
+@media (min-width: 600px) and (max-width: 959px) {
+  .landing-head, .landing-intro, .landing-steps { max-width: 640px; margin-left: auto; margin-right: auto; }
+  .landing-preview { max-width: 592px; margin: 0 auto; }
+}
+
+/* ---------- PC: 왼쪽 소개와 하는 일, 오른쪽에 초안 하늘을 휴대폰 화면 비율의 카드로 ---------- */
+@media (min-width: 960px) {
+  .landing-head { max-width: 1180px; margin: 0 auto; padding: 32px 48px 0; }
+  .landing-brand img { height: 36px; }
+  .landing-head .link-btn { font-size: 16px; }
+
+  .landing-main {
+    max-width: 1180px; margin: 0 auto; padding: 40px 48px 72px;
+    display: grid; grid-template-columns: minmax(0, 1fr) 470px; column-gap: 72px; row-gap: 48px;
+    grid-template-areas: 'intro sky' 'steps sky';
+  }
+  .landing-intro { grid-area: intro; padding: 28px 0 0; }
+  .landing-kicker { font-size: 14px; }
+  .landing-title > span { margin-top: 10px; font-size: 26px; letter-spacing: -0.6px; }
+  .landing-title > b { margin-top: 2px; font-size: 42px; letter-spacing: -1.4px; }
+  .landing-lead { margin-top: 18px; max-width: 34em; font-size: 16.5px; text-wrap: balance; }
+  .landing-cta { margin-top: 30px; }
+  .landing-cta .btn, .landing-cta .btn-primary { flex: none; padding: 0 26px; }
+
+  .landing-sky {
+    grid-area: sky; align-self: stretch; margin: 0; padding: 32px 26px 30px; border-radius: 32px; overflow: hidden;
+    box-shadow: 0 30px 60px rgba(40, 30, 25, 0.16), 0 2px 8px rgba(0, 0, 0, 0.06);
+  }
+  .landing-sky::before, .landing-sky::after { display: none; }
+  .landing-chips.chips.scroll { margin: 14px -26px 0; padding: 4px 26px; }
+  .landing-items { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .landing-item-text b { font-size: 13px; }
+  .landing-item-text small { font-size: 11px; }
+
+  .landing-steps { grid-area: steps; padding: 0; }
+  .landing-steps ol { grid-template-columns: 1fr 1fr; gap: 12px; }
+  .landing-step { grid-template-columns: 1fr; align-content: start; align-items: start; padding: 18px 18px 20px; }
+  .landing-step-ico { grid-row: auto; margin-bottom: 12px; }
+  .landing-step b { font-size: 16.5px; }
+  .landing-step p { font-size: 13.5px; }
+}

@@ -1,0 +1,97 @@
+/* 로그인·회원가입. 디자인 초안(otgyeol-frontend)에는 없는 화면이라 초안의 부품과 값만으로 만든다.
+   - 하늘: 초안 Sky(지금 시각의 맑은 하늘)와 .sky-scrim. 하늘 위 글자는 초안 홈의 날씨 글자처럼 흰 글자 + 그림자
+   - 휴대폰: 화면 가득 하늘, 위에 로고와 한 줄 소개(초안 홈 인사와 같은 22px · 31px),
+     아래에서 올라온 흰 시트(초안 .sheet 모양) 안에 초안 입력 칸(.field)과 엄지가 닿는 주 버튼(.btn-primary)
+   - PC(960px 이상): 왼쪽 하늘 위 서비스 소개(초안 홈의 유리 카드), 오른쪽 입력 */
+
+.auth { position: relative; min-height: 100dvh; background: var(--bg); color: var(--fg); isolation: isolate; }
+
+/* 하늘은 뒤에 고정해 두고 글자·시트만 스크롤된다 */
+.auth-sky { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; animation: fade 0.6s; }
+
+.auth-logo { display: inline-block; }
+.auth-logo img { display: block; height: 34px; width: auto; filter: drop-shadow(0 1px 8px rgba(0, 0, 0, 0.16)); }
+
+/* ---------- 휴대폰 ---------- */
+.auth-hero { display: none; }
+.auth-main { position: relative; min-height: 100dvh; display: flex; flex-direction: column; }
+.auth-top { flex: 1; padding: calc(var(--safe-top) + 26px) 24px 36px; color: #fff; text-shadow: 0 1px 14px rgba(0, 0, 0, 0.22); }
+.auth-tagline { margin-top: 30px; }
+.auth-tagline > span { display: block; font-size: 22px; font-weight: 500; letter-spacing: -0.5px; }                   /* = .home-hello */
+.auth-tagline > b { display: block; font-size: 31px; font-weight: 800; letter-spacing: -1px; line-height: 1.2; }        /* = .home-name */
+
+/* 아래에서 올라온 시트: 초안 .sheet 와 같은 바탕·모서리·올라오는 움직임 */
+.auth-sheet {
+  position: relative; background: var(--surface); color: var(--fg);
+  border-radius: 28px 28px 0 0; padding: 30px 24px calc(22px + var(--safe-bottom));
+  box-shadow: 0 -12px 32px rgba(20, 25, 40, 0.14);
+  animation: rise 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.auth-intro h1 { font-size: 25px; font-weight: 800; letter-spacing: -0.8px; line-height: 1.25; }                       /* = .reg-intro h2 */
+.auth-intro p { margin-top: 8px; color: var(--muted); font-size: 14px; line-height: 1.55; word-break: keep-all; }        /* = .reg-intro p */
+
+.auth-sheet .fields { margin-top: 24px; }
+/* 입력 이름표: 초안 .field > span 과 같은 값(입력 칸과 이어 주려고 label 로 쓴다) */
+.auth-sheet .field > label { font-size: 13px; color: var(--muted); font-weight: 600; }
+/* 휴대폰에서 입력 칸을 누를 때 화면이 확대되지 않게 글자는 16px */
+.auth-sheet .field input { font-size: 16px; }
+
+/* 비밀번호 보기: 초안 .icon-btn(40px 원)을 입력 칸 안 오른쪽에 */
+.pw-wrap { position: relative; }
+.pw-wrap input { padding-right: 52px; }
+.pw-toggle { position: absolute; right: 4px; top: 4px; color: var(--muted); }
+.pw-toggle[aria-pressed='true'] { color: var(--accent-ink); }
+.pw-toggle svg { width: 20px; height: 20px; }
+.pw-rule { display: inline-flex; align-items: center; gap: 4px; font-size: 12.5px; font-weight: 600; color: var(--muted); transition: color 0.15s; }
+.pw-rule.ok { color: var(--accent-ink); }
+
+.auth-actions { display: flex; flex-direction: column; gap: 14px; margin-top: 26px; }
+.auth-switch { text-align: center; font-size: 14px; color: var(--muted); }
+.auth-switch a { margin-left: 4px; color: var(--accent-ink); font-weight: 700; }                                       /* 초안 .link-btn 색 */
+
+/* 게스트 체험(서버가 켜 둔 때만 버튼이 생긴다): '또는' 줄 아래 보조 버튼 */
+.auth-guest { display: grid; gap: 12px; }
+.auth-guest:empty { display: none; }
+.auth-guest::before {
+  content: '또는'; display: block; text-align: center; font-size: 12px; font-weight: 600; color: var(--muted);
+  background:
+    linear-gradient(var(--line-strong), var(--line-strong)) left center / calc(50% - 26px) 1px no-repeat,
+    linear-gradient(var(--line-strong), var(--line-strong)) right center / calc(50% - 26px) 1px no-repeat;
+}
+
+/* 태블릿(600~959px): 휴대폰 배치 그대로, 소개와 시트는 가운데 600px 폭에 */
+@media (min-width: 600px) and (max-width: 959px) {
+  .auth-top, .auth-sheet { width: 100%; max-width: 600px; margin-left: auto; margin-right: auto; }
+}
+
+/* ---------- PC: 왼쪽 하늘 위 소개, 오른쪽 입력 ---------- */
+@media (min-width: 960px) {
+  .auth { --hero-w: clamp(460px, 52vw, 860px); display: grid; grid-template-columns: var(--hero-w) minmax(0, 1fr); }
+  .auth-sky { right: auto; width: var(--hero-w); }
+
+  .auth-hero {
+    position: sticky; top: 0; height: 100dvh; min-height: 620px; display: flex; flex-direction: column;
+    padding: 40px 56px 48px; color: #fff; text-shadow: 0 1px 14px rgba(0, 0, 0, 0.22);
+  }
+  .auth-logo img { height: 38px; }
+  .auth-hero-copy { margin-top: 64px; }
+  .auth-kicker { font-size: 14px; font-weight: 600; opacity: 0.92; }
+  .auth-hero-title { margin-top: 10px; }
+  .auth-hero-title > span { display: block; font-size: 26px; font-weight: 500; letter-spacing: -0.6px; }
+  .auth-hero-title > b { display: block; margin-top: 2px; font-size: 40px; font-weight: 800; letter-spacing: -1.4px; line-height: 1.2; }
+
+  /* 하는 일 세 가지: 초안 홈 '옷장에서 바로 꺼내기'의 유리 카드(.rec) */
+  .auth-points { list-style: none; display: grid; gap: 10px; margin-top: auto; max-width: 470px; text-shadow: none; }
+  .auth-points li {
+    display: flex; align-items: center; gap: 12px; padding: 9px 16px 9px 9px; border-radius: 18px;
+    background: var(--glass-card); border: 1px solid var(--glass-line); color: var(--fg);
+    -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+    font-size: 14.5px; font-weight: 600; line-height: 1.45; letter-spacing: -0.3px; word-break: keep-all;
+  }
+  .auth-point-icon { flex: none; width: 46px; height: 46px; border-radius: 13px; display: grid; place-items: center; background: var(--tint); color: var(--accent-ink); }
+
+  .auth-top { display: none; }
+  .auth-main { justify-content: center; align-items: center; padding: 48px 40px; }
+  .auth-sheet { width: min(100%, 400px); padding: 0; background: none; border-radius: 0; box-shadow: none; animation: none; }
+  .auth-intro h1 { font-size: 28px; letter-spacing: -0.9px; }                                                          /* = .title-row h2 */
+}

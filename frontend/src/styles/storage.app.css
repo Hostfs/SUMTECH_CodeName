@@ -1,0 +1,183 @@
+/* ---------- 보관함: 옷장 지도 · 관리함 · 옮기기 ----------
+   디자인 초안(storage.css·base.css·layout.css·detail.css)의 부품(.seg·.overview·.callout·.space·.slot·.plan·.care-item·
+   .history·.loc-row·.radio·.chips·.field·.panel)을 그대로 쓴다. 여기에는 초안에 없는 우리 기능(중첩 공간·옷 넣기·추천 공간 바꾸기·
+   관리함 목록 탭·옮기기)을 같은 부품 모양으로 잇는 것과 PC 배치만 둔다. 색은 초안 토큰만 쓴다. */
+
+/* 보관함 보기: 초안 .seg(버튼 두 칸)를 주소가 바뀌는 링크 세 칸으로 */
+.st-seg { grid-template-columns: repeat(3, 1fr); }
+.st-seg a {
+  height: 40px; border-radius: 999px; display: flex; align-items: center; justify-content: center; gap: 5px;
+  font-size: 14.5px; font-weight: 700; color: var(--muted); transition: background 0.15s;
+}
+.st-seg a[data-on='true'] { background: var(--surface); color: var(--fg); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); }
+
+/* 옷 그림·사진: 감싼 칸 크기에 맞춘다(초안 GarmentImage size) */
+.st-art { display: grid; place-items: center; width: 100%; height: 100%; }
+.st-art > svg, .st-art > img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.thumb .st-art { width: 22px; height: 22px; }
+.care-art .st-art, .mini-tile .st-art { width: 34px; height: 34px; }
+.slot-item .st-art { flex: none; width: 30px; height: 30px; }
+.st-plan-art { flex: none; width: 38px; height: 38px; }
+.callout-top .thumbs { flex: none; }
+
+/* 공통: 시트·패널 안 고르기 상자, 안내 글씨 */
+.st-select { position: relative; display: block; }
+.field > .st-select { font-size: 15px; font-weight: 400; color: var(--fg); }
+.st-select select {
+  width: 100%; height: 48px; padding: 0 40px 0 14px; border-radius: 14px; appearance: none; -webkit-appearance: none;
+  background: var(--surface); border: 1px solid var(--line-strong); cursor: pointer;
+}
+.st-select select:focus { outline: 2px solid var(--accent-ink); outline-offset: -1px; }
+.st-select svg { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+.st-field-hint { font-size: 12.5px; color: var(--muted); font-weight: 500; line-height: 1.5; }
+.sheet-body > .hint:first-child { margin-top: 0; }
+.fields > .hint { margin: 0; }
+.sheet-body .notice { margin-top: 14px; }
+
+/* ---------- 옷장 지도 ---------- */
+/* 위치가 없는 옷: 고르기 칩 + 추천 받기 + 선택한 옷 넣기 */
+.st-pick-chips { margin: -2px 0 14px; }
+.st-pick-chips .chip { height: 34px; padding: 0 14px; font-size: 13.5px; }
+.callout .hint { margin: 10px 2px 14px; font-size: 12.5px; }
+.st-callout-actions { display: flex; flex-direction: column; gap: 8px; }
+.st-callout-actions .btn-ghost { height: 46px; font-size: 15px; }
+.st-criteria { margin: 12px 2px 0; font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+.st-criteria summary { cursor: pointer; font-weight: 600; }
+.st-criteria ul { list-style: disc; margin-top: 6px; padding-left: 18px; display: flex; flex-direction: column; gap: 3px; }
+
+/* 배치 추천: 초안의 배치 추천 시트 내용(.plan)을 카드에 담아 지도 위에 둔다(미확정이라 확정 전까지 남는다) */
+.st-plan { margin-top: 14px; padding-bottom: 16px; }
+.st-plan .space-ico { color: var(--accent-ink); }
+.st-plan .hint { margin: 12px 2px 12px; }
+.plan .plan-main small { font-size: 12px; }
+.st-plan-to { position: relative; align-self: flex-start; display: inline-flex; align-items: center; max-width: 100%; color: var(--accent-ink); }
+.st-plan-to > span { flex: none; font-size: 13px; font-weight: 700; margin-right: 3px; }
+.st-plan-to select {
+  min-width: 0; max-width: 100%; padding: 2px 18px 2px 0; border: 0; background: transparent; color: inherit;
+  font-size: 13px; font-weight: 700; text-overflow: ellipsis; appearance: none; -webkit-appearance: none; cursor: pointer;
+  field-sizing: content;
+}
+.st-plan-to svg { position: absolute; right: 0; top: 50%; transform: translateY(-50%); pointer-events: none; }
+.plan li.over .st-plan-to { color: var(--danger); }
+.plan-main small.st-plan-over { color: var(--danger); font-weight: 600; }
+.st-plan-actions { flex: none; display: flex; flex-direction: column; align-items: center; gap: 0; }
+.st-plan-actions .btn-text { padding: 6px; }
+
+/* 공간 카드: 수용 개수가 없는 공간은 벌 수만, 칸마다 '옷 넣기' */
+.st-space-count { font-size: 12.5px; font-weight: 700; color: var(--muted); white-space: nowrap; }
+.st-space-count.st-over, .cap span.st-over { color: var(--danger); }
+.space > .hint { margin: 12px 2px 4px; }
+.st-slot-line { display: flex; align-items: center; gap: 6px; }
+.st-slot-line .slot-row { flex: 1; min-width: 0; }
+.slot-count.st-over { color: var(--danger); }
+.st-slot-add {
+  flex: none; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--tint); color: var(--accent-ink); transition: transform 0.12s;
+}
+.st-slot-add:active { transform: scale(0.94); }
+.slot-item small { white-space: nowrap; }
+
+/* 지도 빈 상태 */
+.st-empty-map { margin-top: 18px; padding: 36px 20px; border-radius: 24px; border: 1.5px dashed var(--line-strong); }
+.st-empty-map p + p { margin-top: 4px; line-height: 1.55; }
+
+/* ---------- 관리함 ---------- */
+.st-tabs .chip { display: inline-flex; align-items: center; }
+.st-tabs .chip .seg-dot { margin-left: 6px; }
+.st-tabs .chip small { margin-left: 5px; font-size: 12.5px; font-weight: 700; color: var(--muted); }
+.st-tabs .chip[data-on='true'] small { color: inherit; opacity: 0.8; }
+.st-returned { margin-top: 12px; }
+.st-returned a { font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
+.st-panel > .section-title { margin-top: 22px; }
+.care-main small { display: block; line-height: 1.45; }
+.care-main .st-care-date { margin-top: 1px; font-weight: 600; }
+.st-care-more { display: flex; align-items: center; }
+.history li a { color: inherit; }
+.st-history-sub { display: block; margin-top: 2px; font-size: 12px; color: var(--muted); }
+
+/* ---------- 옮기기 ---------- */
+.st-lead { margin: 12px 2px 0; }
+.st-done { align-items: flex-start; margin-top: 14px; }
+.st-done .loc-icon { width: 42px; height: 42px; }
+.st-done-main { flex: 1; min-width: 0; }
+.st-done-main b { font-size: 18px; letter-spacing: -0.4px; word-break: keep-all; }
+.st-done-main p { margin-top: 4px; font-size: 13px; color: var(--muted); line-height: 1.45; }
+.st-done-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.st-done-links .btn-ghost { height: 34px; padding: 0 14px; font-size: 13px; }
+.st-done > .icon-btn { flex: none; margin: -10px -12px 0 0; color: var(--muted); }
+
+.st-dest { gap: 16px; }
+.st-dest-tabs .chip { display: inline-flex; align-items: center; gap: 6px; }
+.st-dest .field > span { margin-left: 2px; }
+.st-loc-name { min-width: 0; overflow-wrap: anywhere; }
+.loc-row em { flex: none; white-space: nowrap; }
+.loc-row em.st-danger { color: var(--danger); font-weight: 700; }
+.st-new .radio { color: var(--accent-ink); border-style: dashed; }
+.st-new[data-on='true'] .radio { color: var(--on-accent); border-style: solid; }
+.st-new-place { display: flex; flex-direction: column; gap: 10px; margin: 6px 0 2px; padding-left: 34px; }
+.st-new-place input {
+  height: 48px; padding: 0 14px; border-radius: 14px; width: 100%;
+  background: var(--surface); border: 1px solid var(--line-strong);
+}
+.st-new-place input:focus { outline: 2px solid var(--accent-ink); outline-offset: -1px; }
+.st-new-place .chip { height: 34px; padding: 0 14px; font-size: 13.5px; }
+.st-due-group { display: flex; flex-direction: column; gap: 10px; }
+.st-due-group .chip { height: 34px; padding: 0 14px; font-size: 13.5px; }
+
+.st-list-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 28px 2px 0; }
+.st-list-head .section-title { margin: 0; }
+.st-list-head .link-btn { display: inline-flex; align-items: center; gap: 3px; font-size: 15px; }
+.st-picks { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+.st-pick { width: 100%; text-align: left; padding: 10px 14px 10px 12px; border-width: 1.5px; transition: border-color 0.15s, background 0.15s; }
+.st-pick .row-main small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.st-pick[aria-pressed='true'] { border-color: var(--accent); background: var(--tint); }
+.st-check {
+  flex: none; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--surface); border: 1.5px solid var(--line-strong); color: transparent;
+}
+.st-pick[aria-pressed='true'] .st-check { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.st-move-list > .empty { padding: 36px 20px; }
+
+/* 보내기 버튼: 휴대폰은 하단 탭 바로 위에 떠 있다(초안 .action-bar처럼 아래로 갈수록 배경색) */
+.st-submit {
+  position: fixed; left: 0; right: 0; bottom: calc(74px + var(--safe-bottom)); z-index: 45;
+  padding: 22px 20px 12px; pointer-events: none;
+  background: linear-gradient(to bottom, transparent, var(--bg) 36%);
+}
+.st-submit > * { pointer-events: auto; }
+.st-submit .notice { margin: 0 0 10px; }
+.page.st-move { padding-bottom: calc(220px + var(--safe-bottom)); }
+.st-move .toast { bottom: calc(176px + var(--safe-bottom)); }
+
+.st-recent .section-title { margin-top: 34px; }
+
+/* 처음 보는 옷: 사진 한 장(초안 .photo-row) */
+.st-quick .photo-row { margin-bottom: 0; }
+.st-quick .photo.add { cursor: pointer; text-align: center; }
+
+/* ---------- PC: 같은 부품을 넓게 ---------- */
+@media (min-width: 960px) {
+  .st-seg { max-width: 560px; }
+
+  /* 지도: 요약과 '위치가 없는 옷'을 나란히, 공간 카드는 여러 줄 */
+  .st-map-top { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 16px; margin-top: 16px; align-items: stretch; }
+  .st-map-top > .overview, .st-map-top > .callout { margin-top: 0; }
+  .st-map-top > .overview { padding: 24px 28px; }
+  .st-plan .plan { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .space-list.st-spaces { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; align-items: start; }
+
+  /* 관리함: 두 줄로 */
+  .care-list.st-care-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start; }
+  .history.st-history-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 32px; }
+
+  /* 옮기기: 보낼 곳(왼쪽, 따라 내려옴) · 옮길 옷(오른쪽) */
+  .page.st-move { padding-bottom: 72px; }
+  .st-move .toast { bottom: 36px; }
+  .st-move-grid { display: grid; grid-template-columns: minmax(0, 400px) minmax(0, 1fr); gap: 32px; align-items: start; margin-top: 18px; }
+  .st-move-side { position: sticky; top: 176px; }
+  .st-move-side .panel { margin-top: 0; }
+  .st-submit { position: static; padding: 14px 0 0; background: none; pointer-events: auto; }
+  .st-list-head { margin-top: 0; }
+  .st-picks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .st-recent .history { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 32px; }
+}

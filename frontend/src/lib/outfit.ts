@@ -4,6 +4,10 @@ import type { GarmentSummary } from '../types'
 export type Slot = 'OUTER' | 'TOP' | 'BOTTOM' | 'DRESS'
 export const SLOTS: Slot[] = ['OUTER', 'TOP', 'BOTTOM', 'DRESS']
 export const SLOT_LABEL: Record<Slot, string> = { OUTER: '아우터', TOP: '상의', BOTTOM: '하의', DRESS: '원피스' }
+/** 말풍선은 모형 양옆에 두어 몸을 가리지 않는다(초안: 아우터·신발 왼쪽, 상의·하의 오른쪽 → 신발 자리에 원피스) */
+export const SLOT_SIDE: Record<Slot, 'left' | 'right'> = { OUTER: 'left', TOP: 'right', BOTTOM: 'right', DRESS: 'left' }
+/** 마네킹에 겹쳐 그리는 순서: 하의 → 원피스 → 상의 → 아우터 */
+export const LAYER_ORDER: Slot[] = ['BOTTOM', 'DRESS', 'TOP', 'OUTER']
 
 export type OutfitItem = { slot: Slot; garment: GarmentSummary }
 export type OutfitLook = {
@@ -32,10 +36,10 @@ export function whereNow(g: GarmentSummary): string {
   return `${g.locationKindLabel}${g.locationPath ? ` · ${g.locationPath}` : ''}`
 }
 
-/** 한 자리를 고르거나 다시 눌러 뺀다. 원피스는 상의·하의와 함께 입지 않는다. */
-export function toggle(picks: Picks, slot: Slot, g: GarmentSummary): Picks {
+/** 한 자리에 옷을 입히거나(g) 비운다(null). 원피스는 상의·하의와 함께 입지 않는다. */
+export function choose(picks: Picks, slot: Slot, g: GarmentSummary | null): Picks {
   const next: Picks = { ...picks }
-  if (next[slot]?.id === g.id) {
+  if (!g) {
     delete next[slot]
     return next
   }
@@ -52,3 +56,10 @@ export function toggle(picks: Picks, slot: Slot, g: GarmentSummary): Picks {
 export const picksFrom = (items: OutfitItem[]): Picks => Object.fromEntries(items.map((i) => [i.slot, i.garment]))
 export const pickedItems = (picks: Picks): OutfitItem[] =>
   SLOTS.filter((s) => picks[s]).map((s) => ({ slot: s, garment: picks[s]! }))
+
+/** 받침이 있으면 '을', 없으면 '를' (초안 lib/josa) */
+export function eul(word: string): string {
+  const c = word.charCodeAt(word.length - 1)
+  if (c < 0xac00 || c > 0xd7a3) return `${word}을(를)`
+  return `${word}${(c - 0xac00) % 28 ? '을' : '를'}`
+}

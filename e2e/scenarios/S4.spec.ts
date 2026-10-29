@@ -68,13 +68,18 @@ test("S4 사용자가 '처음 보는 옷'까지 더해 여름 옷을 '여름 박
     await expect(card).toContainText('박스 속 · 여름 박스')
   }
 
-  // '박스 속' 묶음에서 '네이비 반바지'를 눌러 옷 상세를 연다
-  await boxGroup.getByTestId('garment-card').filter({ hasText: '네이비 반바지' }).click()
-  await expect(page.locator('.loc-path')).toContainText('여름 박스')
+  // '박스 속' 묶음의 '네이비 반바지' 카드에서 '꺼내기'를 누른다(옷 상세를 열지 않는다)
+  await boxGroup.getByRole('button', { name: '네이비 반바지 꺼내기' }).click()
 
-  // '위치 변경'에서 '옷장 A → 왼쪽 행거'를 고르고 '여기로 옮김'을 누른다
-  await page.getByRole('button', { name: '위치 변경' }).click()
-  await page.getByRole('radiogroup', { name: '옮길 공간' }).getByRole('button', { name: /^옷장 A → 왼쪽 행거/ }).click()
-  await page.getByRole('button', { name: '여기로 옮김' }).click()
-  await expect(page.locator('.loc-path')).toContainText('옷장 A → 왼쪽 행거')
+  // 꺼내서 둘 곳에서 '옷장 A → 왼쪽 행거'를 고르고 '여기에 둠'을 누른다
+  const sheet = page.getByRole('dialog', { name: '네이비 반바지 꺼내기' })
+  await sheet.getByRole('radiogroup', { name: '꺼내서 둘 곳' }).getByRole('button', { name: /^옷장 A → 왼쪽 행거/ }).click()
+  await sheet.getByRole('button', { name: '여기에 둠' }).click()
+  await expect(sheet).toBeHidden()
+
+  // '박스 속' 묶음에서 빠지고, 카드의 위치가 '옷장 A → 왼쪽 행거'로 바뀐다
+  await expect(boxGroup.getByTestId('garment-card').filter({ hasText: '네이비 반바지' })).toHaveCount(0)
+  const moved = page.getByTestId('garment-card').filter({ hasText: '네이비 반바지' })
+  await expect(moved).toContainText('옷장 A → 왼쪽 행거')
+  await expect(moved).not.toContainText('여름 박스')
 })

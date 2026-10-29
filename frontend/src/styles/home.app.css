@@ -1,0 +1,74 @@
+/* 홈: 디자인 초안 home.css 위에 우리 화면에만 있는 것(계정 줄, 내 위치로 보기, 빈 옷장, PC 두 단)을 더한다. */
+
+.home-account { margin-top: 4px; font-size: 13px; color: var(--muted); font-weight: 500; overflow-wrap: anywhere; }
+
+/* 위치 줄: '내 위치로 보기'(현재 위치 날씨로 바꾸기) */
+.wx-locate {
+  margin-left: 8px; height: 24px; padding: 0 10px; border-radius: 999px;
+  font-size: 12px; font-weight: 700; color: inherit; white-space: nowrap;
+  background: color-mix(in srgb, var(--fg) 8%, transparent); border: 1px solid color-mix(in srgb, var(--fg) 16%, transparent);
+}
+.wx-locate:disabled { opacity: 0.7; }
+.wx-geo-error { margin-top: 6px; font-size: 12.5px; line-height: 1.45; color: var(--loc); text-shadow: none; opacity: 0.9; }
+.wx-retry { margin-left: 8px; font-size: 13px; font-weight: 700; color: #fff; text-decoration: underline; text-underline-offset: 3px; }
+.is-loading .wx-cond { opacity: 0.9; }
+
+/* 옷이 0벌일 때: 하늘 위 유리 카드 */
+.home .home-empty {
+  margin-top: 30px; padding: 22px 20px; border-radius: 22px; text-align: left; text-shadow: none;
+  background: var(--glass-card); border: 1px solid var(--glass-line); color: var(--fg);
+  -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+}
+.home .home-empty p { font-size: 14px; line-height: 1.55; color: var(--muted); }
+.home .home-empty .empty-title { font-size: 17px; color: var(--fg); margin-bottom: 6px; }
+.home .home-empty .btn { margin-top: 16px; height: 46px; }
+
+/* 지금 내 옷은 어디에(PC 오른쪽 단) */
+.home-where { display: none; margin-top: 26px; text-shadow: none; }
+.where-list {
+  margin-top: 10px; padding: 4px 16px; border-radius: 18px; color: var(--fg);
+  background: var(--glass-card); border: 1px solid var(--glass-line);
+  -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+}
+.where-list li { display: grid; grid-template-columns: 10px auto minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 11px 0; border-top: 1px solid var(--line); font-size: 14px; }
+.where-list li:first-child { border-top: 0; }
+.where-list b { font-weight: 700; white-space: nowrap; }
+.where-names { color: var(--muted); font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.where-list em { font-weight: 800; font-variant-numeric: tabular-nums; }
+.where-dot { width: 10px; height: 10px; border-radius: 50%; }
+.where-HOME { background: var(--accent); }
+.where-BOX { background: color-mix(in srgb, var(--accent) 45%, var(--surface)); }
+.where-OFFSITE { background: #6f7c8f; }
+.where-CARE { background: #c98a2e; }
+.where-UNPLACED { background: var(--line-strong); }
+
+/* ---------- PC: 하늘을 본문 전체에 깔고, 왼쪽 오늘 날씨 · 오른쪽 꺼낼 옷과 위치 ---------- */
+@media (min-width: 960px) {
+  .home { min-height: 100dvh; padding-bottom: 64px; }
+  .home-sky { top: 0; }
+  .home-fade-top { display: none; }
+  .home .home-head { max-width: 1180px; margin: 0 auto; padding: 40px 48px 0; color: #fff; text-shadow: 0 1px 14px rgba(0, 0, 0, 0.22); }
+  .home .home-date, .home .home-account, .home .home-name span { color: rgba(255, 255, 255, 0.86); }
+  .home .bell { background: rgba(255, 255, 255, 0.18); color: #fff; -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
+  .home .bell-badge { border-color: transparent; }
+
+  .wx {
+    max-width: 1180px; margin: 34px auto 0; padding: 0 48px;
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(380px, 440px); gap: 56px; align-items: start;
+  }
+  .wx-loc, .wx-geo-error { color: rgba(255, 255, 255, 0.94); text-shadow: 0 1px 10px rgba(0, 0, 0, 0.2); }
+  .wx-locate { background: rgba(255, 255, 255, 0.18); border-color: rgba(255, 255, 255, 0.35); }
+  .wx-main { justify-content: flex-start; gap: 34px; }
+  .wx-temp { font-size: 136px; }
+  .wx-temp sup { font-size: 76px; }
+  .advice-text { font-size: 21px; }
+  .wx-side { padding-top: 6px; }
+  .wx-side .recs { margin-top: 0; }
+  .home .home-empty { margin-top: 0; }
+  .home-where { display: block; }
+}
+
+/* 휴대폰은 초안처럼 두 벌만(나머지는 '전체 보기') */
+@media (max-width: 959px) {
+  .home .recs-row .rec:nth-child(n + 3) { display: none; }
+}

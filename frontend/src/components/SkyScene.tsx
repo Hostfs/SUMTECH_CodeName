@@ -1,7 +1,7 @@
 import { useId, useMemo } from 'react';
 
 // 프론트엔드 담당 초안(otgyeol-frontend/src/components/Sky.tsx)의 날씨 하늘을 그대로 옮겼다.
-// 장면은 기상청 실황(하늘 상태·강수)과 밤낮으로 정한다(WeatherCard의 skyKey).
+// 장면은 기상청 실황(하늘 상태·강수)과 하루의 때(새벽·낮·노을·밤)로 정한다(sceneFor).
 export type SkyKind = 'clear' | 'cloudy' | 'rain' | 'snow';
 
 // 날씨 배경. 그라데이션 하늘 + feTurbulence 로 만든 구름층(그림자 + 빛 받는 가장자리)을 겹친다.
@@ -22,7 +22,7 @@ interface Layer {
   mask: [number, number][];
 }
 interface Glow { cx: number; cy: number; r: number; color: string; op: number; sy?: number }
-interface Scene { stops: [number, string][]; glows?: Glow[]; layers: Layer[] }
+interface Scene { stops: [number, string][]; glows?: Glow[]; layers: Layer[]; stars?: number }
 
 const MASK_A: [number, number][] = [[0, 0.2], [0.3, 0.75], [0.65, 1], [1, 0.9]];
 const MASK_B: [number, number][] = [[0, 0.5], [0.5, 0.9], [1, 0.5]];
@@ -31,6 +31,46 @@ const MASK_D: [number, number][] = [[0, 0.9], [0.6, 1], [1, 0.7]];
 const MASK_E: [number, number][] = [[0, 0.5], [0.4, 1], [0.85, 0.9], [1, 0.4]];
 
 const SCENES: Record<string, Scene> = {
+  // ---- 시간대 장면(초안의 낮·저녁 장면에 더함): 새벽, 흐린 노을, 깊은 밤 ----
+  'clear-dawn': {
+    stops: [[0, '#2C3B6E'], [0.32, '#6B72AA'], [0.6, '#C796AE'], [0.84, '#F2B49C'], [1, '#F9D6A6']],
+    glows: [{ cx: 210, cy: 650, r: 330, color: '#FFB78A', op: 0.85, sy: 0.55 }],
+    layers: [
+      { fx: 0.005, fy: 0.008, seed: 4, gain: 2.3, bias: -1.0, shadow: '#5E6496', light: '#FFD3C6', mask: MASK_A },
+      { fx: 0.011, fy: 0.016, seed: 11, gain: 2.0, bias: -0.9, shadow: '#8A82AE', light: '#FFE6DA', mask: MASK_B, op: 0.8 },
+    ],
+  },
+  'cloudy-dawn': {
+    stops: [[0, '#5E6A8C'], [0.5, '#9E9DB4'], [1, '#D7BFB7']],
+    glows: [{ cx: 80, cy: 560, r: 240, color: '#FFD2B0', op: 0.45 }],
+    layers: [
+      { fx: 0.004, fy: 0.007, seed: 7, gain: 2.6, bias: -0.95, shadow: '#6C7290', light: '#EFE4E2', mask: MASK_C },
+      { fx: 0.009, fy: 0.014, seed: 19, gain: 2.2, bias: -0.85, shadow: '#878AA4', light: '#F6EEEC', mask: [[0, 0.4], [0.6, 1], [1, 0.8]], op: 0.9 },
+    ],
+  },
+  'cloudy-dusk': {
+    stops: [[0, '#26304C'], [0.45, '#545A76'], [0.8, '#8E7480'], [1, '#C98F72']],
+    glows: [{ cx: 330, cy: 640, r: 280, color: '#FF9A5C', op: 0.4, sy: 0.6 }],
+    layers: [
+      { fx: 0.004, fy: 0.007, seed: 17, gain: 2.5, bias: -0.92, shadow: '#232A44', light: '#9A7E88', mask: MASK_D },
+      { fx: 0.009, fy: 0.014, seed: 3, gain: 2.0, bias: -0.85, shadow: '#363C5A', light: '#B38D8A', mask: [[0, 0.3], [0.5, 0.8], [1, 0.5]], op: 0.8 },
+    ],
+  },
+  'clear-late': {
+    stops: [[0, '#040814'], [0.45, '#0B1430'], [0.8, '#17234A'], [1, '#253158']],
+    glows: [{ cx: 318, cy: 96, r: 110, color: '#D7E1FF', op: 0.22 }],
+    stars: 70,
+    layers: [
+      { fx: 0.0045, fy: 0.008, seed: 31, gain: 2.2, bias: -0.95, shadow: '#070D1E', light: '#27355C', mask: [[0, 0.1], [0.5, 0.5], [1, 0.7]] },
+    ],
+  },
+  'snow-late': {
+    stops: [[0, '#070D20'], [0.5, '#142246'], [1, '#2C3A64']],
+    layers: [
+      { fx: 0.004, fy: 0.007, seed: 53, gain: 2.4, bias: -0.92, shadow: '#0C1430', light: '#3E4C78', mask: MASK_C },
+      { fx: 0.009, fy: 0.014, seed: 14, gain: 2.0, bias: -0.85, shadow: '#16204A', light: '#4A5886', mask: MASK_B, op: 0.8 },
+    ],
+  },
   'clear-day': {
     stops: [[0, '#5B93D1'], [0.4, '#93B9E2'], [0.75, '#D9DDE2'], [1, '#F1D6B8']],
     glows: [{ cx: 330, cy: 520, r: 280, color: '#FFE6C4', op: 0.8, sy: 0.8 }],
@@ -117,6 +157,7 @@ export function Sky({ scene }: { scene: string }) {
   const uid = useId().replace(/:/g, '');
   const s = SCENES[scene] ?? SCENES['cloudy-day'];
   return (
+    <>
     <svg className="sky" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice" aria-hidden="true">
       <defs>
         <linearGradient id={`${uid}sk`} x1="0" y1="0" x2="0" y2="1">
@@ -153,6 +194,8 @@ export function Sky({ scene }: { scene: string }) {
         );
       })}
     </svg>
+    {s.stars ? <Stars count={s.stars} /> : null}
+    </>
   );
 }
 
@@ -190,4 +233,20 @@ export function Precip({ kind }: { kind: SkyKind }) {
         : items.map((p, i) => <circle key={i} cx={p.x} cy={p.y} r={0.8 + p.a * 2.8} fill="#fff" opacity={0.45 + p.b * 0.5} />)}
     </svg>
   );
+}
+
+// 맑은 밤하늘의 별: 위쪽 절반에 작게. 하늘 그림처럼 늘어나지 않게 화면 픽셀 크기로 따로 그린다.
+function Stars({ count }: { count: number }) {
+  const style = useMemo(() => {
+    const r = rng(7)
+    const dots = Array.from({ length: count }, () => {
+      const x = (r() * 100).toFixed(2)
+      const y = (r() * 58).toFixed(2)
+      const size = (0.6 + r() * 1.1).toFixed(2)
+      const a = (0.35 + r() * 0.6).toFixed(2)
+      return `radial-gradient(circle at ${x}% ${y}%, rgba(255,255,255,${a}) 0 ${size}px, transparent ${(+size + 0.8).toFixed(2)}px)`
+    })
+    return { backgroundImage: dots.join(',') }
+  }, [count])
+  return <div className="sky-stars" style={style} aria-hidden="true" />
 }

@@ -3,10 +3,11 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { api, errorMessage } from '../api'
 import GarmentCard from '../components/GarmentCard'
 import TakeOutSheet from '../components/TakeOutSheet'
-import { IconFilter, IconSearch } from '../components/Icons'
+import { Icon } from '../components/Icon'
 import { Loading, Notice } from '../components/Ui'
 import { useLabel, useSession } from '../session'
 import type { GarmentSummary } from '../types'
+import '../styles/closet.app.css'
 
 const VIEWS = [
   { value: 'category', label: '종류' },
@@ -21,6 +22,7 @@ type View = (typeof VIEWS)[number]['value']
 
 type Group = { key: string; title: string; items: GarmentSummary[] }
 
+/** 내 옷장(디자인 초안 Closet). 제목·검색·종류·보기 기준은 위에 고정되고 아래 카드 목록만 스크롤된다. */
 export default function Closet() {
   const { meta } = useSession()
   const label = useLabel()
@@ -67,41 +69,43 @@ export default function Closet() {
   const groups = useMemo<Group[]>(() => groupBy(filtered, view, label, meta?.seasons.map((s) => s.value) ?? []), [filtered, view, label, meta])
 
   return (
-    <div className="closet">
-      <div className="page-head">
-        <h1 className="page-title">내 옷장{total !== null && <small>총 {total}벌</small>}</h1>
-        <div className="page-head-actions">
+    <div className="page pinned closet">
+      <div className="pin">
+        <header className="page-head">
+          <h1>내 옷장{total !== null && <small>총 {total}벌</small>}</h1>
           {total !== null && total > 0 && (
             <button type="button" className="link-btn" aria-pressed={selecting} onClick={() => (selecting ? endSelect() : setSelecting(true))}>
               {selecting ? '선택 끝' : '선택'}
             </button>
           )}
-          <Link className="btn btn-sm btn-soft" to="/register">옷 등록</Link>
+        </header>
+
+        <div className="closet-tools">
+          <label className="search">
+            <Icon name="search" size={20} />
+            <input type="search" placeholder="이름·색상·위치로 검색" aria-label="검색창" value={query}
+              onChange={(e) => { setQuery(e.target.value); setParam('q', e.target.value || null) }} />
+          </label>
+
+          <div className="chips scroll" role="group" aria-label="종류로 거르기">
+            <button type="button" className="chip" data-on={category === 'ALL'} aria-pressed={category === 'ALL'} onClick={() => setParam('category', null)}>전체</button>
+            {meta?.categories.map((c) => (
+              <button key={c.value} type="button" className="chip" data-on={category === c.value} aria-pressed={category === c.value}
+                onClick={() => setParam('category', c.value)}>{c.label}</button>
+            ))}
+          </div>
+
+          <div className="filter-row">
+            <label className="filter-btn" htmlFor="closet-view"><Icon name="filter" size={18} />보기 기준</label>
+            <span className="result-count">{items && total !== null && filtered.length !== total ? `${filtered.length}벌` : ''}</span>
+            <label className="sort">
+              <select id="closet-view" aria-label="보기 기준" value={view} onChange={(e) => setParam('view', e.target.value)}>
+                {VIEWS.map((v) => <option key={v.value} value={v.value}>{v.label}</option>)}
+              </select>
+              <Icon name="chevronDown" size={16} />
+            </label>
+          </div>
         </div>
-      </div>
-
-      <label className="search">
-        <IconSearch />
-        <span className="sr-only">검색창</span>
-        <input type="search" placeholder="이름·색상·위치로 검색" aria-label="검색창" value={query}
-          onChange={(e) => { setQuery(e.target.value); setParam('q', e.target.value || null) }} />
-      </label>
-
-      <div className="chips" role="group" aria-label="종류로 거르기">
-        <button type="button" className="chip" aria-pressed={category === 'ALL'} onClick={() => setParam('category', null)}>전체</button>
-        {meta?.categories.map((c) => (
-          <button key={c.value} type="button" className="chip" aria-pressed={category === c.value} onClick={() => setParam('category', c.value)}>{c.label}</button>
-        ))}
-      </div>
-
-      <div className="toolbar">
-        <span className="field-hint">{items ? `${filtered.length}벌 보는 중` : ''}</span>
-        <label className="inline-select">
-          <IconFilter />보기 기준
-          <select aria-label="보기 기준" value={view} onChange={(e) => setParam('view', e.target.value)}>
-            {VIEWS.map((v) => <option key={v.value} value={v.value}>{v.label}</option>)}
-          </select>
-        </label>
       </div>
 
       {error && <Notice>{error}</Notice>}
@@ -109,19 +113,30 @@ export default function Closet() {
 
       {items && total === 0 && !query && (
         <div className="empty">
-          <strong>등록된 옷이 0벌이에요</strong>
+          <p className="empty-title">등록된 옷이 0벌이에요</p>
           <p>새로 산 옷이나 오늘 입은 옷부터 한 벌씩 등록해 보세요. 택을 찍으면 브랜드와 세탁법을 읽어 드려요.</p>
-          <Link className="btn" to="/register">옷 등록</Link>
+          <Link className="btn btn-primary" to="/register">옷 등록</Link>
         </div>
       )}
 
       {items && items.length === 0 && query && (
-        <div className="empty"><strong>‘{query}’와 맞는 옷이 없어요</strong><p>이름, 색상, 브랜드, 보관 위치로 찾을 수 있어요.</p></div>
+        <div className="empty">
+          <p className="empty-title">‘{query}’와 맞는 옷이 없어요</p>
+          <p>이름, 색상, 브랜드, 보관 위치로 찾을 수 있어요.</p>
+        </div>
+      )}
+
+      {items && items.length > 0 && filtered.length === 0 && (
+        <div className="empty">
+          <p className="empty-title">조건에 맞는 옷이 없어요</p>
+          <p>다른 종류를 골라 보세요.</p>
+          <button type="button" className="btn btn-ghost" onClick={() => setParam('category', null)}>조건 초기화</button>
+        </div>
       )}
 
       {groups.map((g) => (
         <section className="group" key={g.key} aria-label={`${g.title} 묶음`}>
-          <h2 className="group-title">{g.title}<small>{g.items.length}벌</small></h2>
+          <h2 className="group-title">{g.title} <small>{g.items.length}벌</small></h2>
           <div className="grid">
             {g.items.map((item) => selecting
               ? <GarmentCard key={`${g.key}-${item.id}`} g={item} selected={sel.includes(item.id)} onToggle={toggle} />
@@ -138,8 +153,8 @@ export default function Closet() {
       {selecting && (
         <div className="selbar" role="region" aria-label="선택한 옷">
           <b>{sel.length}벌 선택</b>
-          <button type="button" className="btn btn-sm btn-ghost" onClick={() => setSel([])} disabled={sel.length === 0}>선택 해제</button>
-          <button type="button" className="btn" disabled={sel.length === 0} onClick={() => navigate(`/move?ids=${sel.join(',')}`)}>옮기기로 보내기</button>
+          <button type="button" className="link-btn muted" onClick={() => setSel([])} disabled={sel.length === 0}>선택 해제</button>
+          <button type="button" className="btn btn-primary" disabled={sel.length === 0} onClick={() => navigate(`/move?ids=${sel.join(',')}`)}>옮기기로 보내기</button>
         </div>
       )}
     </div>

@@ -7,8 +7,9 @@ import { Notice, Spinner } from './Ui'
 /**
  * 게스트 체험(서버 GUEST_MODE=on일 때만 보인다). 발표 자리에서 바로 들어온 사람이 가입 없이 예시 옷장으로 바로 써 본다.
  * 누를 때마다 다른 체험자와 섞이지 않는 새 계정이 만들어진다.
+ * 모양은 디자인 초안의 보조 버튼(.btn-ghost): 주 버튼(시작하기·로그인) 옆이나 아래에 둔다.
  */
-export default function GuestButton({ className = 'btn btn-outline btn-block' }: { className?: string }) {
+export default function GuestButton({ className = 'btn btn-ghost btn-block' }: { className?: string }) {
   const { setMe } = useSession()
   const navigate = useNavigate()
   const [on, setOn] = useState(false)

@@ -1,0 +1,43 @@
+/* 디자인 초안에 없는, 우리 화면들이 함께 쓰는 부품. 초안의 색 토큰(--bg·--surface·--fg·--muted·--accent…)만 쓴다. */
+
+/* 버튼: 종류를 안 붙인 .btn은 초안의 기본 버튼(btn-primary)과 같게 본다 */
+.btn:where(:not(.btn-primary, .btn-ghost, .btn-outline, .btn-danger, .btn-sm)) {
+  background: var(--accent); color: var(--on-accent); box-shadow: 0 6px 16px var(--accent-sh);
+}
+
+/* 안내(오류·정보·주의·완료) */
+.notice {
+  display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border-radius: 16px;
+  font-size: 14px; line-height: 1.5; font-weight: 550;
+  background: var(--tint); color: var(--fg);
+}
+.notice svg { flex: none; width: 18px; height: 18px; margin-top: 1px; }
+.notice.error { background: color-mix(in srgb, var(--danger) 12%, var(--surface)); color: var(--danger-ink); }
+.notice.warn { background: color-mix(in srgb, #e0a42f 16%, var(--surface)); color: color-mix(in srgb, #8a5a00 80%, var(--fg)); }
+.notice.ok { background: color-mix(in srgb, #2f9e6a 14%, var(--surface)); color: color-mix(in srgb, #1d6b45 80%, var(--fg)); }
+:root[data-tone='dark'] .notice.warn { color: #f2c46d; }
+:root[data-tone='dark'] .notice.ok { color: #7fd6a8; }
+
+/* 불러오는 중 */
+.spinner {
+  display: inline-block; width: 18px; height: 18px; border-radius: 50%;
+  border: 2.2px solid color-mix(in srgb, currentColor 25%, transparent); border-top-color: currentColor;
+  animation: spin 0.8s linear infinite; vertical-align: -3px;
+}
+.btn .spinner { width: 16px; height: 16px; }
+.loading { padding: 56px 0; display: grid; place-items: center; color: var(--muted); }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* 시트 안 버튼 줄(시트를 footer 없이 쓰는 화면) */
+.sheet-actions { display: flex; gap: 10px; margin-top: 20px; }
+.sheet-actions .btn { flex: 1; }
+
+/* 화면 설명 한 줄 */
+.page-lead { margin-top: 6px; color: var(--muted); font-size: 14px; line-height: 1.55; }
+.page-head + .page-lead { margin-top: -6px; margin-bottom: 4px; }
+
+/* 시각적으로 숨김(스크린 리더만) */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* 밤하늘 별 층(하늘 그림 위). 하늘을 쓰는 화면(홈·로그인·첫 화면) 모두 */
+.sky-stars { position: absolute; inset: 0; pointer-events: none; }

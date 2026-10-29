@@ -1,17 +1,20 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
-import StorageTabs from '../components/StorageTabs'
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { api, errorMessage } from '../api'
-import GarmentArt from '../components/GarmentArt'
-import { IconCamera, IconCheck, IconClose, IconPlus, IconSearch } from '../components/Icons'
+import { Icon } from '../components/Icon'
+import StorageTabs, { GarmentPick, PlaceRadios } from '../components/StorageTabs'
 import { Loading, Notice, Sheet, Spinner, Toast } from '../components/Ui'
 import { formatDate } from '../format'
 import { processCoverIfNeeded } from '../imageCleanup'
 import { useSession } from '../session'
 import type { GarmentDetail, GarmentSummary, MapView, MoveBatch, SpaceView } from '../types'
+import '../styles/storage.app.css'
 
 type Dest = 'SPACE' | 'LAUNDRY'
 type NewPlace = { name: string; spaceType: 'BOX' | 'OFFSITE' }
+
+/** 회수 예정일 빠른 고르기 */
+const QUICK: [string, number][] = [['내일', 1], ['3일 뒤', 3], ['1주 뒤', 7]]
 
 function iso(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -32,7 +35,6 @@ function ro(word: string) {
   return `${word}${jong === 0 || jong === 8 ? '로' : '으로'}`
 }
 
-/** 옮길 수 있는 박스·집 밖 공간(하위 공간이 없는 곳). */
 /** 보낼 곳: 박스·집 밖 공간과 그 아래 가장 안쪽 공간('본가 → 안방 옷장'). 옷은 가장 안쪽 공간에만 넣는다. */
 function boxPlaces(map: MapView): SpaceView[] {
   const byId = new Map(map.spaces.map((s) => [s.id, s]))
@@ -48,6 +50,8 @@ function boxPlaces(map: MapView): SpaceView[] {
 /**
  * 옮기기(R11): 박스·집 밖·세탁소로 여러 벌을 한 번에 옮긴다. 옮기는 순간을 짧게 끝내도록
  * 보낼 곳·업체·날짜는 가장 최근 기록으로 미리 채우고, 옷만 체크하면 된다.
+ * 초안에 없는 화면이라 초안 부품으로 짓는다: 보낼 곳은 .chips 탭 + .loc-row·.radio 목록(LocationSheet),
+ * 옮길 옷은 .row-link 줄 + 체크, 보내기 버튼은 휴대폰에서 하단 탭 위에 떠 있다. PC는 보낼 곳(왼쪽)·옮길 옷(오른쪽).
  */
 export default function Move() {
   const { meta, refreshBadge } = useSession()
@@ -71,6 +75,8 @@ export default function Move() {
   const [adding, setAdding] = useState(false)
   const [toast, setToast] = useState('')
   const defaulted = useRef(false)
+  const closeAdd = useCallback(() => setAdding(false), [])
+  const clearToast = useCallback(() => setToast(''), [])
 
   // 처음 열 때 한 번: 가장 최근 묶음의 보낸 곳·업체·회수 간격을 기본값으로 채운다.
   useEffect(() => {
@@ -110,7 +116,8 @@ export default function Move() {
     .filter((g) => !(dest === 'SPACE' && target && g.spaceId === target.id && g.locationPath))
     .filter((g) => !query.trim() || [g.name, g.colorName, g.locationPath].some((v) => v?.includes(query.trim())))
   const destName = dest === 'LAUNDRY' ? (shopName.trim() || '세탁소') : newPlace ? newPlace.name.trim() : target?.name ?? ''
-  const ready = picked.length > 0 && (dest === 'LAUNDRY' ? Boolean(dueOn) : Boolean(target || newPlace?.name.trim()))
+  // 새로 만들기를 골랐으면 이름이 있어야 보낼 수 있다(버튼 글자 '보낼 곳을 골라 주세요'와 같은 기준).
+  const ready = picked.length > 0 && (dest === 'LAUNDRY' ? Boolean(dueOn) : newPlace ? Boolean(newPlace.name.trim()) : Boolean(target))
 
   async function submit(e: FormEvent) {
     e.preventDefault()
@@ -126,8 +133,9 @@ export default function Move() {
       if (newPlace) {
         setNewPlace(null)
         setSpaceId(batch.spaceId)
-        api.get<MapView>('/api/spaces').then(setMap).catch(() => undefined)
       }
+      // 보낼 곳 줄에 벌 수를 보여 주므로 옮길 때마다 공간을 다시 읽는다(새로 만든 곳도 여기서 목록에 들어온다).
+      api.get<MapView>('/api/spaces').then(setMap).catch(() => undefined)
       api.get<GarmentSummary[]>('/api/garments').then(setGarments).catch(() => undefined)
       if (dest === 'LAUNDRY') refreshBadge()
       setToast(dest === 'LAUNDRY' ? `${batch.garments.length}벌을 맡겼어요` : `${batch.garments.length}벌을 옮겼어요`)
@@ -138,133 +146,142 @@ export default function Move() {
     }
   }
 
-  if (!map || !garments || !recent) return <><StorageTabs />{error ? <Notice>{error}</Notice> : <Loading />}</>
+  if (!map || !garments || !recent) {
+    return (
+      <div className="page pinned storage">
+        <StorageTabs />
+        {error ? <Notice>{error}</Notice> : <Loading />}
+      </div>
+    )
+  }
+
+  const toggle = (id: number) => setPicked(picked.includes(id) ? picked.filter((x) => x !== id) : [...picked, id])
 
   return (
-    <>
+    <div className="page pinned storage st-move">
       <StorageTabs />
-      <p className="page-lead">박스에 넣거나 본가·세탁소로 보낼 때, 옷을 한 벌씩이 아니라 묶음으로 한 번에 기록해요. 보낼 곳과 날짜는 미리 채워 두었어요.</p>
+      <p className="hint st-lead">박스에 넣거나 본가·세탁소로 보낼 때, 옷을 한 벌씩이 아니라 묶음으로 한 번에 기록해요. 보낼 곳과 날짜는 미리 채워 두었어요.</p>
 
       {done && (
-        <div className="card move-done" role="status" aria-label="옮긴 결과">
-          <IconCheck />
-          <div>
-            <strong>{done.destination === 'LAUNDRY' ? `${done.shopName ?? '세탁소'}에 ${done.garments.length}벌 맡김` : `${ro(done.spacePath ?? '')} ${done.garments.length}벌 보냄`}</strong>
-            <p className="row-sub" style={{ margin: '2px 0 0' }}>{done.garments.map((g) => g.name).join(', ')}</p>
-            <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
-              <Link className="btn btn-sm btn-outline" to="/closet?view=where">집 밖/박스 보기</Link>
-              {done.destination === 'LAUNDRY' && <Link className="btn btn-sm btn-outline" to="/care">관리함</Link>}
+        <div className="loc-card st-done" role="status" aria-label="옮긴 결과">
+          <span className="loc-icon"><Icon name="check" size={22} stroke={2.4} /></span>
+          <div className="st-done-main">
+            <b>{done.destination === 'LAUNDRY' ? `${done.shopName ?? '세탁소'}에 ${done.garments.length}벌 맡김` : `${ro(done.spacePath ?? '')} ${done.garments.length}벌 보냄`}</b>
+            <p>{done.garments.map((g) => g.name).join(', ')}</p>
+            <div className="st-done-links">
+              <Link className="btn btn-sm" to="/closet?view=where">집 밖/박스 보기</Link>
+              {done.destination === 'LAUNDRY' && <Link className="btn btn-ghost" to="/care">관리함</Link>}
             </div>
           </div>
-          <button type="button" className="icon-btn" aria-label="닫기" onClick={() => setDone(null)}><IconClose /></button>
+          <button type="button" className="icon-btn" aria-label="닫기" onClick={() => setDone(null)}><Icon name="close" size={18} /></button>
         </div>
       )}
 
-      <form onSubmit={submit} noValidate>
-        <div className="chips" role="tablist" aria-label="보낼 곳 종류">
-          <button type="button" role="tab" className="chip" aria-selected={dest === 'SPACE'} aria-pressed={dest === 'SPACE'} onClick={() => setDest('SPACE')}>박스·집 밖</button>
-          <button type="button" role="tab" className="chip" aria-selected={dest === 'LAUNDRY'} aria-pressed={dest === 'LAUNDRY'} onClick={() => setDest('LAUNDRY')}>세탁소</button>
-        </div>
+      <form className="st-move-grid" onSubmit={submit} noValidate>
+        <div className="st-move-side">
+          <section className="panel st-dest" aria-label="보낼 곳">
+            <div className="chips st-dest-tabs" role="tablist" aria-label="보낼 곳 종류">
+              <button type="button" role="tab" className="chip" data-on={dest === 'SPACE'} aria-selected={dest === 'SPACE'} onClick={() => setDest('SPACE')}>
+                <Icon name="box" size={16} />박스·집 밖
+              </button>
+              <button type="button" role="tab" className="chip" data-on={dest === 'LAUNDRY'} aria-selected={dest === 'LAUNDRY'} onClick={() => setDest('LAUNDRY')}>
+                <Icon name="drop" size={16} />세탁소
+              </button>
+            </div>
 
-        <section className="card" aria-label="보낼 곳" style={{ marginTop: 12 }}>
-          {dest === 'SPACE' ? (
-            <div className="field" style={{ marginTop: 14 }}>
-              <span className="field-label" id="move-place">보낼 곳</span>
-              <div className="chips wrap" role="radiogroup" aria-labelledby="move-place" style={{ marginTop: 0 }}>
-                {places.map((p) => (
-                  <button key={p.id} type="button" role="radio" className="chip" aria-checked={!newPlace && spaceId === p.id}
-                    onClick={() => { setSpaceId(p.id); setNewPlace(null) }}>
-                    {p.path}<small style={{ marginLeft: 4, opacity: .7 }}>{p.spaceTypeLabel}</small>
+            {dest === 'SPACE' ? (
+              <div className="field">
+                <span id="st-move-place">보낼 곳</span>
+                <PlaceRadios all={map.spaces} options={places} checked={newPlace ? null : spaceId} labelledBy="st-move-place"
+                  onPick={(p) => { setSpaceId(p.id); setNewPlace(null) }}
+                  note={(p) => `${p.spaceTypeLabel} · ${p.capacity ? `${p.count}/${p.capacity}벌` : `${p.count}벌`}`}>
+                  <button type="button" role="radio" aria-checked={Boolean(newPlace)} data-on={Boolean(newPlace)} className="loc-row st-new"
+                    onClick={() => setNewPlace(newPlace ?? { name: '', spaceType: 'BOX' })}>
+                    <span className="radio">{newPlace ? <Icon name="check" size={13} stroke={3} /> : <Icon name="plus" size={13} stroke={2.4} />}</span>
+                    새로 만들기
                   </button>
-                ))}
-                <button type="button" className="chip" aria-pressed={Boolean(newPlace)} onClick={() => setNewPlace(newPlace ?? { name: '', spaceType: 'BOX' })}>
-                  <IconPlus />새로 만들기
-                </button>
+                </PlaceRadios>
+                {newPlace && (
+                  <div className="st-new-place">
+                    <input aria-label="새 박스·장소 이름" placeholder="예: 박스 A, 본가" value={newPlace.name} maxLength={100}
+                      onChange={(e) => setNewPlace({ ...newPlace, name: e.target.value })} />
+                    <div className="chips" role="group" aria-label="새 장소 종류">
+                      <button type="button" className="chip" data-on={newPlace.spaceType === 'BOX'} aria-pressed={newPlace.spaceType === 'BOX'} onClick={() => setNewPlace({ ...newPlace, spaceType: 'BOX' })}>박스</button>
+                      <button type="button" className="chip" data-on={newPlace.spaceType === 'OFFSITE'} aria-pressed={newPlace.spaceType === 'OFFSITE'} onClick={() => setNewPlace({ ...newPlace, spaceType: 'OFFSITE' })}>집 밖</button>
+                    </div>
+                  </div>
+                )}
+                {places.length === 0 && !newPlace && <p className="st-field-hint">아직 박스·집 밖 장소가 없어요. ‘새로 만들기’로 만들어요.</p>}
               </div>
-              {newPlace && (
-                <div className="form-grid two" style={{ marginTop: 10 }}>
-                  <input className="input" aria-label="새 박스·장소 이름" placeholder="예: 박스 A, 본가" value={newPlace.name} maxLength={100}
-                    onChange={(e) => setNewPlace({ ...newPlace, name: e.target.value })} />
-                  <div className="chips" role="group" aria-label="새 장소 종류" style={{ marginTop: 0 }}>
-                    <button type="button" className="chip" aria-pressed={newPlace.spaceType === 'BOX'} onClick={() => setNewPlace({ ...newPlace, spaceType: 'BOX' })}>박스</button>
-                    <button type="button" className="chip" aria-pressed={newPlace.spaceType === 'OFFSITE'} onClick={() => setNewPlace({ ...newPlace, spaceType: 'OFFSITE' })}>집 밖</button>
+            ) : (
+              <>
+                <label className="field"><span>세탁소</span>
+                  <input value={shopName} onChange={(e) => setShopName(e.target.value)} placeholder="예: 동네 세탁소" maxLength={100} />
+                </label>
+                <div className="st-due-group">
+                  <label className="field"><span>회수 예정일</span>
+                    <input type="date" value={dueOn} min={movedOn} onChange={(e) => setDueOn(e.target.value)} />
+                  </label>
+                  <div className="chips">
+                    {QUICK.map(([l, n]) => {
+                      const on = dueOn === addDays(movedOn, n)
+                      return <button key={l} type="button" className="chip" data-on={on} aria-pressed={on} onClick={() => setDueOn(addDays(movedOn, n))}>{l}</button>
+                    })}
                   </div>
                 </div>
-              )}
-              {places.length === 0 && !newPlace && <span className="field-hint">아직 박스·집 밖 장소가 없어요. ‘새로 만들기’로 만들어요.</span>}
-            </div>
-          ) : (
-            <div className="form-grid two" style={{ marginTop: 14 }}>
-              <div className="field">
-                <label htmlFor="move-shop">세탁소</label>
-                <input id="move-shop" className="input" value={shopName} onChange={(e) => setShopName(e.target.value)} placeholder="예: 동네 세탁소" maxLength={100} />
-              </div>
-              <div className="field">
-                <label htmlFor="move-due">회수 예정일</label>
-                <input id="move-due" className="input" type="date" value={dueOn} min={movedOn} onChange={(e) => setDueOn(e.target.value)} />
-                <div className="chips" style={{ marginTop: 6 }}>
-                  {[['내일', 1], ['3일 뒤', 3], ['1주 뒤', 7]].map(([l, n]) => (
-                    <button key={l} type="button" className="chip chip-sm" aria-pressed={dueOn === addDays(movedOn, n as number)} onClick={() => setDueOn(addDays(movedOn, n as number))}>{l}</button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-          <div className="field" style={{ marginTop: 12 }}>
-            <label htmlFor="move-date">{dest === 'LAUNDRY' ? '맡긴 날' : '옮긴 날'}</label>
-            <input id="move-date" className="input" type="date" value={movedOn} max={today} onChange={(e) => setMovedOn(e.target.value)} style={{ maxWidth: 220 }} />
-          </div>
-        </section>
+              </>
+            )}
 
-        <section className="section" aria-label="옮길 옷">
-          <div className="page-head" style={{ margin: '0 0 10px' }}>
-            <h2 className="section-title" style={{ margin: 0 }}>옮길 옷<small>{picked.length}벌 선택</small></h2>
-            <button type="button" className="btn btn-sm btn-outline" onClick={() => setAdding(true)}><IconPlus />처음 보는 옷</button>
+            <label className="field"><span>{dest === 'LAUNDRY' ? '맡긴 날' : '옮긴 날'}</span>
+              <input type="date" value={movedOn} max={today} onChange={(e) => setMovedOn(e.target.value)} />
+            </label>
+          </section>
+
+          <div className="st-submit">
+            {error && <Notice>{error}</Notice>}
+            <button type="submit" className="btn btn-primary btn-block" disabled={!ready || busy}>
+              {busy && <Spinner />}
+              {picked.length === 0 ? '옮길 옷을 골라 주세요'
+                : dest === 'LAUNDRY' ? `${destName}에 맡김 (${picked.length}벌)`
+                  : destName ? `${ro(destName)} 보냄 (${picked.length}벌)` : '보낼 곳을 골라 주세요'}
+            </button>
+          </div>
+        </div>
+
+        <section className="st-move-list" aria-label="옮길 옷">
+          <div className="st-list-head">
+            <h2 className="section-title">옮길 옷 <small>{picked.length}벌 선택</small></h2>
+            <button type="button" className="link-btn" onClick={() => setAdding(true)}><Icon name="plus" size={16} stroke={2.4} />처음 보는 옷</button>
           </div>
           <label className="search">
-            <IconSearch />
+            <Icon name="search" size={19} />
             <input type="search" placeholder="이름·색상·위치로 찾기" aria-label="옮길 옷 찾기" value={query} onChange={(e) => setQuery(e.target.value)} />
           </label>
           {choices.length === 0 ? (
             <div className="empty"><p>옮길 수 있는 옷이 없어요. 세탁·수선 중인 옷은 관리함에서 회수한 뒤 옮길 수 있어요.</p></div>
           ) : (
-            <div className="pick-list" role="group" aria-label="옮길 옷 목록">
+            <div className="st-picks" role="group" aria-label="옮길 옷 목록">
               {choices.map((g) => (
-                <button key={g.id} type="button" className="pick-row" aria-pressed={picked.includes(g.id)}
-                  onClick={() => setPicked(picked.includes(g.id) ? picked.filter((x) => x !== g.id) : [...picked, g.id])}>
-                  <span className="pick-check" aria-hidden><IconCheck /></span>
-                  <span className="row-thumb">{g.imageUrl ? <img src={g.imageUrl} alt="" /> : <GarmentArt subType={g.subType} colorHex={g.colorHex} title={g.name} />}</span>
-                  <span className="pick-text">
-                    <span className="row-title">{g.name}</span>
-                    <span className="row-sub">{g.locationPath ? `${g.locationKind === 'HOME' ? '' : `${g.locationKindLabel} · `}${g.locationPath}` : g.locationKindLabel}</span>
-                  </span>
-                </button>
+                <GarmentPick key={g.id} g={g} on={picked.includes(g.id)} onToggle={() => toggle(g.id)}
+                  sub={g.locationPath ? `${g.locationKind === 'HOME' ? '' : `${g.locationKindLabel} · `}${g.locationPath}` : g.locationKindLabel} />
               ))}
             </div>
           )}
         </section>
-
-        {error && <div style={{ marginTop: 12 }}><Notice>{error}</Notice></div>}
-        <div className="move-submit">
-          <button type="submit" className="btn btn-block" disabled={!ready || busy}>
-            {busy && <Spinner />}
-            {picked.length === 0 ? '옮길 옷을 골라 주세요'
-              : dest === 'LAUNDRY' ? `${destName}에 맡김 (${picked.length}벌)`
-                : destName ? `${ro(destName)} 보냄 (${picked.length}벌)` : '보낼 곳을 골라 주세요'}
-          </button>
-        </div>
       </form>
 
       {recent.length > 0 && (
-        <section className="section" aria-label="최근 옮긴 기록">
+        <section className="st-recent" aria-label="최근 옮긴 기록">
           <h2 className="section-title">최근 옮긴 기록</h2>
-          <ul className="list-plain card">
+          <ul className="history">
             {recent.slice(0, 8).map((b) => (
               <li key={b.id}>
-                <span>{b.destination === 'LAUNDRY' ? `${b.shopName ?? '세탁소'}에 맡김` : `${ro(b.spacePath ?? '')} 보냄`} · {b.garments.length}벌</span>
-                <span className="row-sub">
-                  {formatDate(b.movedOn)}{b.dueOn ? `, ${formatDate(b.dueOn)} 회수 예정` : ''}
+                <Icon name={b.destination === 'LAUNDRY' ? 'drop' : 'box'} size={15} stroke={2} />
+                <span>
+                  <b>{b.destination === 'LAUNDRY' ? `${b.shopName ?? '세탁소'}에 맡김` : `${ro(b.spacePath ?? '')} 보냄`}</b> · {b.garments.length}벌
+                  {b.dueOn && <em className="st-history-sub">{formatDate(b.dueOn)} 회수 예정</em>}
                 </span>
+                <small>{formatDate(b.movedOn)}</small>
               </li>
             ))}
           </ul>
@@ -272,15 +289,15 @@ export default function Move() {
       )}
 
       {adding && (
-        <QuickAddSheet subTypes={meta?.subTypes ?? []} onClose={() => setAdding(false)}
+        <QuickAddSheet subTypes={meta?.subTypes ?? []} onClose={closeAdd}
           onAdded={(g) => { setGarments((list) => [g, ...(list ?? [])]); setPicked((p) => [...p, g.id]); setAdding(false) }} />
       )}
-      {toast && <Toast message={toast} onDone={() => setToast('')} />}
-    </>
+      {toast && <Toast message={toast} onDone={clearToast} />}
+    </div>
   )
 }
 
-/** 처음 보는 옷: 사진 한 장과 이름·종류만 받아 바로 등록하고 묶음에 넣는다. 자세한 정보는 나중에 옷 상세에서 채운다. */
+/** 처음 보는 옷: 이름·종류와 사진 한 장만 받아 바로 등록하고 묶음에 넣는다. 자세한 정보는 나중에 옷 상세에서 채운다. */
 function QuickAddSheet({ subTypes, onClose, onAdded }: {
   subTypes: { value: string; label: string }[]; onClose: () => void; onAdded: (g: GarmentSummary) => void
 }) {
@@ -313,33 +330,38 @@ function QuickAddSheet({ subTypes, onClose, onAdded }: {
   }
 
   return (
-    <Sheet title="처음 보는 옷 넣기" onClose={onClose}>
-      <form className="form-grid" onSubmit={save} noValidate>
-        <label className="upload">
-          {preview ? <img src={preview} alt="옷 사진" style={{ maxHeight: 140, borderRadius: 12 }} /> : <IconCamera />}
-          <strong>{file ? '다시 찍기' : '옷 사진 한 장'}</strong>
-          <input className="sr-only" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" aria-label="옷 사진"
-            onChange={(e) => { setFile(e.target.files?.[0] ?? null); e.target.value = '' }} />
+    <Sheet title="처음 보는 옷 넣기" onClose={onClose}
+      footer={
+        <button type="submit" form="st-quick-add" className="btn btn-primary btn-block" disabled={busy || !name.trim() || !subType}>
+          {busy && <Spinner />}등록하고 넣기
+        </button>
+      }>
+      <form id="st-quick-add" className="fields st-quick" onSubmit={save} noValidate>
+        <label className="field"><span>옷 이름 <i>*</i></span>
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="예: 체크 셔츠" maxLength={100} />
         </label>
-        <div className="form-grid two">
-          <div className="field">
-            <label htmlFor="qa-name">옷 이름</label>
-            <input id="qa-name" className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="예: 체크 셔츠" maxLength={100} />
-          </div>
-          <div className="field">
-            <label htmlFor="qa-sub">옷 종류</label>
-            <select id="qa-sub" className="select" value={subType} onChange={(e) => setSubType(e.target.value)}>
+        <label className="field"><span>옷 종류 <i>*</i></span>
+          <span className="st-select">
+            <select value={subType} onChange={(e) => setSubType(e.target.value)}>
               <option value="">골라 주세요</option>
               {subTypes.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
             </select>
+            <Icon name="chevronDown" size={16} />
+          </span>
+        </label>
+        <div className="field">
+          <span>옷 사진 (고르지 않아도 돼요)</span>
+          <div className="photo-row">
+            {preview && <div className="photo"><img src={preview} alt="옷 사진" /></div>}
+            <label className="photo add">
+              <Icon name="camera" size={22} />{file ? '다시 찍기' : '사진 한 장'}
+              <input className="sr-only" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" aria-label="옷 사진"
+                onChange={(e) => { setFile(e.target.files?.[0] ?? null); e.target.value = '' }} />
+            </label>
           </div>
         </div>
-        <span className="field-hint">택·소재·세탁법은 나중에 옷 상세의 ‘정보 수정’에서 채울 수 있어요.</span>
+        <p className="hint">택·소재·세탁법은 나중에 옷 상세의 ‘정보 수정’에서 채울 수 있어요.</p>
         {error && <Notice>{error}</Notice>}
-        <div className="sheet-actions">
-          <button type="button" className="btn btn-outline" onClick={onClose}>취소</button>
-          <button type="submit" className="btn" disabled={busy || !name.trim() || !subType}>{busy && <Spinner />}등록하고 넣기</button>
-        </div>
       </form>
     </Sheet>
   )

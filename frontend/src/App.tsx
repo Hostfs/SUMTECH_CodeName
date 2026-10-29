@@ -14,6 +14,7 @@ import SpaceMap from './pages/SpaceMap'
 import CareBoard from './pages/CareBoard'
 import Move from './pages/Move'
 import NotFound from './pages/NotFound'
+import { useDaylight, useDaylightTone } from './lib/daylight'
 
 // 코디 화면(3D·2D 스튜디오)은 무거워서 열 때 나눠 불러온다.
 const Outfit = lazy(() => import('./pages/Outfit'))
@@ -26,9 +27,16 @@ function RequireLogin({ children }: { children: ReactNode }) {
   return <>{children}</>
 }
 
+/** 하루의 때에 맞춰 앱 전체 톤(밤이면 어둡게)과 하늘을 맞춘다. 로그인 전 화면도 같다. */
+function Daylight() {
+  useDaylightTone(useDaylight())
+  return null
+}
+
 export default function App() {
   return (
     <BrowserRouter>
+      <Daylight />
       <SessionProvider>
         <Routes>
           <Route path="/" element={<Landing />} />

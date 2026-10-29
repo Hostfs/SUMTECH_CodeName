@@ -1,9 +1,12 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import GuestButton from '../components/GuestButton'
 import GarmentArt from '../components/GarmentArt'
-import { IconPin } from '../components/Icons'
+import GuestButton from '../components/GuestButton'
+import { Icon, type IconName } from '../components/Icon'
+import { Sky } from '../components/SkyScene'
+import { useDaylight, sceneFor } from '../lib/daylight'
 import { useSession } from '../session'
+import '../styles/landing.app.css'
 
 // 예시 옷장(시드 계정과 같은 옷). 로그인 없이 '어디에 있는지' 보기 기준을 눌러 볼 수 있다.
 const SAMPLES = [
@@ -23,68 +26,103 @@ const KINDS = [
   { value: 'CARE', label: '세탁 맡김' },
 ] as const
 
-/** 로그인하지 않은 사람이 처음 보는 화면: 서비스 이름, 하는 일, 시작 방법, 예시 옷장 둘러보기. */
+const STEPS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'box', title: '옮길 때 묶어서 기록', body: '옮길 곳을 고르고 옷을 여러 벌 고르면, 여러 벌이 한 번에 ‘박스 A’·‘세탁소’로 옮겨져요.' },
+  { icon: 'pin', title: '어디 있는지 한눈에', body: '내 옷장을 ‘집 밖/박스’로 보면 집 안, 박스 속, 본가, 세탁소에 있는 옷이 나뉘어 보여요.' },
+  { icon: 'drop', title: '세탁소 회수 챙기기', body: '맡긴 옷과 회수 예정일을 모아 두고, 기한이 지난 옷을 알려 줘요.' },
+  { icon: 'tag', title: '처음 등록은 택 사진으로', body: 'AI가 택의 브랜드·소재·세탁법을 읽어 등록을 도와요. 읽지 못한 값은 직접 고쳐요.' },
+]
+
+/**
+ * 로그인하지 않은 사람이 처음 보는 화면: 서비스 이름, 하는 일, 시작 방법, 예시 옷장 둘러보기.
+ * 디자인 초안의 홈과 같은 짜임이다 — 배경색 위 인사 글자, 그 아래 지금 시각의 하늘과 유리 카드.
+ */
 export default function Landing() {
   const { me } = useSession()
+  const phase = useDaylight()
   const [kind, setKind] = useState<(typeof KINDS)[number]['value']>('ALL')
   const shown = SAMPLES.filter((s) => kind === 'ALL' || s.kind === kind)
+
   return (
     <div className="landing">
-      <header className="landing-nav">
-        <Link to="/" className="landing-brand"><img src="/brand/logo-lockup.svg" alt="옷결" /></Link>
-        {me ? <Link className="btn btn-sm btn-outline" to="/home">내 옷장</Link> : <Link className="btn btn-sm btn-outline" to="/login">로그인</Link>}
+      <header className="landing-head">
+        <Link to="/" className="landing-brand">
+          <img className="brand-ink" src="/brand/logo-lockup.svg" alt="옷결" />
+          <img className="brand-light" src="/brand/logo-lockup-light.svg" alt="옷결" />
+        </Link>
+        {me ? <Link className="link-btn" to="/home">내 옷장</Link> : <Link className="link-btn" to="/login">로그인</Link>}
       </header>
 
-      <section className="landing-hero">
-        <div>
-          <h1>박스 속, 본가, 세탁소에 둔 옷까지<br />지금 어디 있는지 한 번에</h1>
-          <p className="lead">계절이 바뀌어 박스에 넣거나 본가·세탁소로 보낸 옷은 어디 뒀는지 잊기 쉬워요. 옷결은 옮길 때 여러 벌을 한 번에 기록해 두고, 필요할 때 위치와 상태를 바로 찾게 해 줘요.</p>
+      <main className="landing-main">
+        <section className="landing-intro">
+          <p className="landing-kicker">자취방 옷 위치·상태 기록</p>
+          <h1 className="landing-title">
+            <span>박스 속, 본가, 세탁소에 둔 옷까지</span>
+            <b>지금 어디 있는지 한 번에</b>
+          </h1>
+          <p className="landing-lead">계절이 바뀌어 박스에 넣거나 본가·세탁소로 보낸 옷은 어디 뒀는지 잊기 쉬워요. 옷결은 옮길 때 여러 벌을 한 번에 기록해 두고, 필요할 때 <em>위치와 상태</em>를 바로 찾게 해 줘요.</p>
           <div className="landing-cta">
             {me ? (
-              <Link className="btn" to="/home">내 옷장 열기</Link>
+              <Link className="btn btn-primary" to="/home">내 옷장 열기</Link>
             ) : (
               <>
-                <Link className="btn" to="/signup">시작하기</Link>
-                <Link className="btn btn-outline" to="/login">로그인</Link>
-                <GuestButton className="btn btn-outline" />
+                <Link className="btn btn-primary" to="/signup">시작하기</Link>
+                <Link className="btn btn-ghost" to="/login">로그인</Link>
+                <GuestButton className="btn btn-ghost" />
               </>
             )}
           </div>
-          <ol className="landing-steps">
-            <li><div><strong>옮길 때 묶어서 기록</strong><span>옮길 곳을 고르고 옷을 여러 벌 고르면, 여러 벌이 한 번에 ‘박스 A’·‘세탁소’로 옮겨져요.</span></div></li>
-            <li><div><strong>어디 있는지 한눈에</strong><span>내 옷장을 ‘집 밖/박스’로 보면 집 안, 박스 속, 본가, 세탁소에 있는 옷이 나뉘어 보여요.</span></div></li>
-            <li><div><strong>세탁소 회수 챙기기</strong><span>맡긴 옷과 회수 예정일을 모아 두고, 기한이 지난 옷을 알려 줘요.</span></div></li>
-            <li><div><strong>처음 등록은 택 사진으로</strong><span>AI가 택의 브랜드·소재·세탁법을 읽어 등록을 도와요. 읽지 못한 값은 직접 고쳐요.</span></div></li>
-          </ol>
-        </div>
+        </section>
 
-        <div className="preview" aria-label="예시 옷장 둘러보기">
-          <p className="preview-title">예시 옷장 <small style={{ color: 'var(--ink-2)', fontWeight: 400 }}>어디에 있는지로 보기</small></p>
-          <div className="chips" role="group" aria-label="예시 옷장 보기 기준">
-            {KINDS.map((k) => (
-              <button key={k.value} type="button" className="chip chip-sm" aria-pressed={kind === k.value} onClick={() => setKind(k.value)}>{k.label}</button>
-            ))}
+        <section className="landing-sky" aria-label="예시 옷장 둘러보기">
+          <div className="landing-sky-bg" aria-hidden="true">
+            <Sky scene={sceneFor('clear', phase)} />
+            <div className="sky-scrim" />
           </div>
-          <div className="grid" style={{ marginTop: 12 }}>
-            {shown.map((s) => (
-              <div className="gcard" key={s.name}>
-                <div className="gcard-tile"><GarmentArt subType={s.sub} colorHex={s.hex} title={s.name} /></div>
-                <div className="gcard-body">
-                  <p className="gcard-name">{s.name}</p>
-                  <div className={`gcard-loc${s.kind === 'HOME' ? '' : ' away'}`}><IconPin /><span>{s.loc}</span></div>
-                </div>
+          <div className="landing-preview">
+            <p className="landing-preview-head">예시 옷장 <small>어디에 있는지로 보기</small></p>
+            <div className="chips scroll landing-chips" role="group" aria-label="예시 옷장 보기 기준">
+              {KINDS.map((k) => (
+                <button key={k.value} type="button" className="chip" data-on={kind === k.value} aria-pressed={kind === k.value} onClick={() => setKind(k.value)}>
+                  {k.label}
+                </button>
+              ))}
+            </div>
+            <ul className="landing-items">
+              {shown.map((s) => (
+                <li className="landing-item" key={s.name}>
+                  <span className="landing-item-tile"><GarmentArt subType={s.sub} colorHex={s.hex} size={34} /></span>
+                  <span className="landing-item-text">
+                    <b>{s.name}</b>
+                    <small><Icon name="pin" size={11} stroke={2} />{s.loc}</small>
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <div className="landing-loc">
+              <span className="landing-loc-icon"><Icon name="pin" size={22} /></span>
+              <div>
+                <small>린넨 반소매 셔츠 보관 위치</small>
+                <b>여름 박스</b>
+                <small>9월 28일에 2벌 함께 옮김</small>
               </div>
-            ))}
-          </div>
-          <div className="loc-card stitch-in d1">
-            <span className="loc-icon"><IconPin /></span>
-            <div>
-              <div className="loc-label">린넨 반소매 셔츠 보관 위치</div>
-              <div className="loc-path">여름 박스 (9월 28일에 2벌 함께 옮김)</div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+
+        <section className="landing-steps">
+          <h2>이렇게 써요</h2>
+          <ol>
+            {STEPS.map((s) => (
+              <li className="landing-step" key={s.title}>
+                <span className="landing-step-ico"><Icon name={s.icon} size={22} /></span>
+                <b>{s.title}</b>
+                <p>{s.body}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
+      </main>
     </div>
   )
 }

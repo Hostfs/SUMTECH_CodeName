@@ -1,0 +1,199 @@
+/* ---------- 옷 등록 · 옷 정보 입력(우리 화면에만 있는 것) ----------
+   초안(register.css·detail.css·base.css)의 부품 .topbar·.reg-intro·.methods·.panel·.photo·.reg-block·.field·.chips·.kinds·.hits·.loc-pick·.action-bar 를
+   그대로 쓰고, 초안에 없는 것(택 분석 결과, 제품 후보, 사진 빼기, 소재·세탁 칸, 색 고르기, PC 두 단)만 여기서 더한다. 색은 초안 토큰만 쓴다. */
+
+/* 감춘 파일·색 입력은 초안의 .field input 크기 규칙(너비 100%·높이 48px)을 받지 않게 한다 */
+.field input.sr-only, .reg-page input.sr-only, .color-pick input.sr-only { width: 1px; height: 1px; padding: 0; border: 0; }
+
+/* ---------- 옷 등록 화면 ---------- */
+/* 제목은 초안처럼 가운데. 오른쪽 칸은 비어 있어 떠 있는 알림·프로필과 겹치지 않는다(옷 정보 화면과 같게) */
+.with-float .reg-page .topbar { padding-right: 0; }
+.reg-page .topbar h1 { white-space: nowrap; }
+.reg-page .methods { margin-top: 22px; }
+/* 넓은 줄 방법(직접 입력)을 고르면 아이콘도 주 방법처럼 채운다(옅은 바탕끼리 묻히지 않게) */
+.method[data-wide='true'][data-on='true'] .method-ico { background: var(--accent); color: var(--on-accent); box-shadow: 0 6px 14px var(--accent-sh); }
+/* 읽는 중·찾는 중·저장 중인 버튼은 흐리게 하지 않는다(눌러 둔 일이 진행 중임을 보여 준다) */
+.reg-page .btn[aria-busy='true']:disabled { opacity: 1; }
+.reg-page .hint, .reg-page .fine, .reg-page .notice, .gform .field-error, .gform-warn { word-break: keep-all; overflow-wrap: anywhere; }
+
+/* 구역 제목: 한 줄 블록(초안 .reg-block h3)과 카드(초안 .panel) 모두 같은 줄 모양, 옆에 작은 설명 */
+.reg-title { display: flex; align-items: baseline; gap: 6px; }
+.reg-title small { font-size: 12.5px; font-weight: 700; color: var(--muted); letter-spacing: 0; }
+.reg-panel .reg-title { font-size: 16px; font-weight: 800; letter-spacing: -0.4px; }
+
+/* 등록 방법 아래·PC 왼쪽 단의 카드(초안 .panel) */
+.reg-panel .hint { margin: -8px 0 0; }
+.reg-panel .photo-row { margin-bottom: 0; }
+.reg-panel .fine { margin: 0; }
+.reg-page .panel .notice { margin-top: 0; }
+.reg-panel-actions { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.reg-panel-actions .link-btn { font-size: 14px; }
+.reg-panel > .link-btn { align-self: flex-start; font-size: 14px; }
+.reg-page .reg-block > .btn-block { margin-top: 2px; }
+
+/* 사진 칸: 빼기 버튼, 대표 표시, '추가' 칸(파일 입력을 감싼 label) */
+.reg-photos .photo { position: relative; }
+.reg-photos .photo.add { cursor: pointer; transition: border-color 0.15s, color 0.15s, background 0.15s; }
+.reg-photos .photo.add:hover { border-color: var(--accent); color: var(--accent-ink); }
+.reg-photos .photo.add:focus-within { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
+.photo-x {
+  position: absolute; top: 6px; right: 6px; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
+  background: rgba(20, 18, 16, 0.58); color: #fff; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+}
+.reg-cover { position: absolute; left: 6px; bottom: 6px; }
+/* 택을 읽는 동안: 사진 위로 빛이 지나간다 */
+.reg-photos[data-busy] .photo:not(.add)::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.55) 50%, transparent 70%) 0 0 / 240% 100% no-repeat;
+  animation: reg-scan 1.15s linear infinite;
+}
+@keyframes reg-scan { from { background-position: 140% 0; } to { background-position: -40% 0; } }
+
+/* 대표 이미지 미리보기(초안 누끼 카드 .cut-card·.checker). 카드(.panel) 안에서는 테두리 없이 */
+.reg-page .reg-cover-card .checker { height: 260px; }
+.reg-block .reg-cover-card { margin: 4px 0 14px; }
+.reg-panel .reg-cover-card { margin: 0; padding: 0; border: 0; background: none; }
+.reg-cover-card .hint { margin: 8px 0 0; }
+.reg-cover-busy { display: inline-flex; align-items: center; gap: 10px; color: #6b665f; font-size: 13.5px; font-weight: 600; }
+
+/* 택에서 읽은 항목(초안 .tag). 읽지 못한 항목은 노란 표시 */
+.reg-read { margin-top: 0; gap: 6px; }
+.reg-read .tag { height: 28px; padding: 0 11px; gap: 4px; font-size: 12.5px; }
+.reg-read .tag.muted, .field-flag[data-kind='check'] {
+  background: color-mix(in srgb, #e0a42f 18%, var(--surface)); color: color-mix(in srgb, #8a5a00 80%, var(--fg)); font-weight: 700;
+}
+:root[data-tone='dark'] .reg-read .tag.muted, :root[data-tone='dark'] .field-flag[data-kind='check'] { color: #f2c46d; }
+
+/* 택 원문 */
+.reg-raw summary { display: inline-flex; align-items: center; gap: 4px; padding: 2px 0; list-style: none; cursor: pointer; color: var(--muted); font-size: 13.5px; font-weight: 700; }
+.reg-raw summary::-webkit-details-marker { display: none; }
+.reg-raw summary svg { transition: transform 0.15s; }
+.reg-raw[open] summary svg { transform: rotate(90deg); }
+.reg-raw-text {
+  margin-top: 10px; padding: 12px 14px; max-height: 210px; overflow: auto; border-radius: 14px;
+  background: var(--tile-bg); color: var(--fg); font-size: 13px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere;
+}
+
+/* 제품 후보(초안 .hits): 고른 후보는 포인트 테두리 + 체크 */
+.reg-cands { margin-top: 14px; }
+.reg-panel .reg-cands { margin-top: 0; }
+.reg-cands .hint { margin: 0 0 10px; }
+.reg-cands .hits button { padding: 8px 12px 8px 8px; border: 1.5px solid transparent; transition: background 0.15s, border-color 0.15s; }
+.reg-cands .hits button[aria-pressed='true'] { background: var(--tint); border-color: var(--accent); }
+.hit-img {
+  flex: none; width: 56px; height: 56px; border-radius: 12px; overflow: hidden; display: grid; place-items: center;
+  background: var(--art-bg); color: #8c8781; font-size: 10.5px; font-weight: 600; text-align: center;
+}
+.hit-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.hit-text b { line-height: 1.35; word-break: keep-all; overflow-wrap: anywhere; }
+.hit-text small { line-height: 1.4; overflow-wrap: anywhere; }
+.reg-cands .hits button[aria-pressed='true'] .radio { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+
+/* 보관 위치 */
+.reg-page .loc-pick { margin-top: 0; }
+.reg-page .loc-pick svg:first-child { color: var(--accent-ink); }
+.reg-page .loc-pick span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* 저장: 초안 아래 고정 버튼 줄(.action-bar) 위에 안내 한 줄·오류를 얹는다 */
+.action-bar.reg-save { flex-direction: column; align-items: stretch; gap: 10px; background: linear-gradient(to bottom, transparent, var(--bg) 24px); }
+.action-bar.reg-save .btn { flex: none; }
+.action-bar.reg-save .fine { margin: 0; text-align: center; }
+.action-bar.reg-save .notice { margin: 0; }
+
+/* ---------- 옷 정보 입력(등록·정보 수정 같이 씀) ---------- */
+/* 칸 이름 옆 표시: 택에서 읽음(포인트 색) · 직접 고침(테두리만) · 확인 필요(노랑) */
+.field-flag {
+  display: inline-flex; align-items: center; height: 20px; margin-left: 6px; padding: 0 8px; border-radius: 999px; vertical-align: 1px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0; background: var(--tint); color: var(--accent-ink);
+}
+.field-flag[data-kind='edited'] { background: transparent; color: var(--muted); box-shadow: inset 0 0 0 1px var(--line-strong); }
+.gform .field[data-flag='check'] input, .gform .field[data-flag='check'] select, .gform .field[data-flag='check'] textarea, .gform .field[data-flag='check'] .color-trigger {
+  border-color: #e0a42f; box-shadow: 0 0 0 3px color-mix(in srgb, #e0a42f 16%, transparent);
+}
+
+/* 옷 종류: 분류 타일(초안 .kinds) 다섯 칸 + 세부 종류 칩 */
+.gform-kinds { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin-top: 0; }
+.gform-kinds .kind { padding: 10px 2px 9px; border-radius: 18px; }
+.gform-kinds .kind-art { width: 48px; height: 48px; margin-bottom: 2px; }
+.gform-kinds .kind b { font-size: 13.5px; }
+.gform-kinds .kind small { font-size: 10px; }
+.gform-subs { margin-top: 4px; }
+
+/* 선택 상자·여러 줄 입력도 초안의 입력 칸(.field input)과 같은 모양 */
+.gform select, .gform textarea {
+  width: 100%; min-width: 0; border-radius: 14px; background-color: var(--surface); border: 1px solid var(--line-strong);
+  color: inherit; font: inherit; letter-spacing: inherit;
+}
+.gform select {
+  height: 48px; padding: 0 30px 0 12px; appearance: none; -webkit-appearance: none; text-overflow: ellipsis; cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238c8781' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center; background-size: 16px 16px;
+}
+.gform textarea { display: block; min-height: 112px; padding: 12px 14px; line-height: 1.55; resize: vertical; }
+.gform select:focus, .gform textarea:focus { outline: 2px solid var(--accent-ink); outline-offset: -1px; }
+
+/* 소재: 부위 · 섬유 · 혼용률 · 지우기 한 줄 */
+.gform-mats { display: flex; flex-direction: column; gap: 8px; }
+.gform-mat { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr) 74px 32px; gap: 6px; align-items: center; }
+.gform-mat .icon-btn { width: 32px; height: 32px; color: var(--muted); }
+.gform-pct { position: relative; display: block; }
+.gform .gform-pct input { padding: 0 26px 0 10px; text-align: right; }
+.gform-pct i { position: absolute; right: 11px; top: 50%; transform: translateY(-50%); font-style: normal; font-size: 14px; color: var(--muted); pointer-events: none; }
+.gform-add {
+  align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 16px; border-radius: 999px;
+  border: 1.5px dashed var(--line-strong); color: var(--accent-ink); font-size: 14px; font-weight: 700;
+}
+.gform-warn { font-size: 12.5px; font-weight: 600; line-height: 1.45; color: color-mix(in srgb, #8a5a00 80%, var(--fg)); }
+:root[data-tone='dark'] .gform-warn { color: #f2c46d; }
+
+/* 색상: 입력 칸 모양의 버튼 + 펼치는 팔레트 패널 */
+.color-field { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.color-trigger {
+  display: flex; align-items: center; gap: 10px; width: 100%; height: 48px; padding: 0 12px 0 14px; border-radius: 14px;
+  background: var(--surface); border: 1px solid var(--line-strong); text-align: left;
+}
+.color-trigger:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: -1px; }
+.color-trigger > svg { flex: none; color: var(--muted); transition: transform 0.15s; }
+.color-trigger[aria-expanded='true'] > svg { transform: rotate(180deg); }
+.color-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.color-name.placeholder { color: var(--muted); }
+.color-dot { flex: none; width: 22px; height: 22px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.14); }
+.color-dot[data-empty='true'] {
+  background: repeating-linear-gradient(45deg, var(--tile-bg) 0 4px, var(--surface) 4px 8px) !important; box-shadow: inset 0 0 0 1px var(--line-strong);
+}
+.color-panel {
+  display: flex; flex-direction: column; gap: 14px; padding: 16px; border-radius: 22px;
+  background: var(--surface); border: 1px solid var(--line); box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08); animation: pop 0.16s;
+}
+.color-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(36px, 1fr)); gap: 10px; }
+.color-swatch { aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.14); }
+.color-swatch[aria-pressed='true'] { outline: 2.5px solid var(--accent); outline-offset: 2px; }
+/* 밤에는 검정·네이비 칸이 어두운 바탕에 묻히지 않게 밝은 테두리 */
+:root[data-tone='dark'] .color-swatch, :root[data-tone='dark'] .color-dot { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.24); }
+.color-custom { display: flex; align-items: center; gap: 10px; }
+.color-custom input:not([type='color']) { flex: 1; min-width: 0; height: 44px; }
+.color-pick {
+  position: relative; flex: none; display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 14px; border-radius: 999px;
+  border: 1.5px solid var(--accent-ink); color: var(--accent-ink); font-size: 13.5px; font-weight: 700; white-space: nowrap; cursor: pointer;
+}
+.color-pick:focus-within { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
+.color-actions { display: flex; align-items: center; gap: 8px; }
+.color-actions .link-btn { margin-right: auto; font-size: 14.5px; }
+.color-actions .btn { height: 42px; padding: 0 20px; font-size: 14.5px; }
+
+/* ---------- PC: 왼쪽 단(등록 방법·택·사진·제품 찾기·보관 위치 카드) + 오른쪽 단(옷 정보·저장) ---------- */
+@media (min-width: 960px) {
+  /* PC는 넓어서 제목을 뒤로 버튼 옆에 붙인다(옷 정보 화면과 같게) */
+  .reg-page .topbar { display: flex; align-items: center; gap: 6px; }
+  .reg-page .topbar h1 { font-size: 18px; text-align: left; }
+  .reg-page .topbar .topbar-gap { display: none; }
+}
+/* 두 단은 본문이 충분히 넓을 때만(왼쪽 메뉴를 뺀 본문이 좁은 960~1099px는 휴대폰처럼 한 줄). Register.tsx의 WIDE와 같은 값 */
+@media (min-width: 1100px) {
+  .reg-cols { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); column-gap: 44px; align-items: start; }
+  .reg-main > :first-child { margin-top: 6px; }
+  .reg-main .action-bar { margin: 28px 0 0; padding: 26px 0 24px; }
+  .reg-wait { padding: 48px 32px; border-radius: 28px; border: 1.5px dashed var(--line-strong); }
+  .reg-wait .stub-art { gap: 14px; margin-bottom: 20px; padding: 0; background: transparent; border: 0; }
+  .reg-wait p { max-width: 380px; margin: 8px auto 0; }
+}

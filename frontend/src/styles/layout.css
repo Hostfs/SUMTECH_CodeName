@@ -1,0 +1,154 @@
+/* ---------- 앱 틀 ----------
+   휴대폰(960px 미만): 디자인 초안(otgyeol-frontend) 그대로 — 화면 전체가 앱, 하단 탭.
+   PC(960px 이상): 같은 화면·같은 부품을 왼쪽 메뉴 + 넓은 본문으로 펼친다(초안의 아이폰 틀 대신). */
+:root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --screen-h: 100dvh;
+  --rail-w: 232px;
+}
+.app { position: relative; min-height: 100dvh; background: var(--bg); transition: background 0.35s; }
+
+/* ---------- 본문 + 하단 탭 ---------- */
+.main { width: 100%; position: relative; }
+.page { padding: calc(var(--safe-top) + 24px) 20px calc(130px + var(--safe-bottom)); }
+
+.tabbar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+  display: grid; grid-template-columns: repeat(5, 1fr); align-items: center;
+  padding: 8px 8px calc(var(--safe-bottom) + 10px);
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+  border-top: 1px solid var(--line);
+}
+.tab {
+  position: relative;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  font-size: 11px; font-weight: 600; color: var(--tab-off); padding: 4px 0;
+}
+.tab.active { color: var(--accent-ink); }
+.fab {
+  width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--accent); color: var(--on-accent); box-shadow: 0 8px 18px var(--accent-sh);
+}
+.tab-fab { margin-top: -6px; }
+/* 보관함 탭의 처리할 관리 건수 */
+.tab-count {
+  position: absolute; top: 0; left: calc(50% + 6px); min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px;
+  background: var(--danger); color: #fff; font-size: 10.5px; font-weight: 800; display: grid; place-items: center;
+  border: 2px solid var(--bg);
+}
+
+/* 홈: 하늘 배경이 하단 탭으로 끊김 없이 이어지도록 탭 뒤에 배경색 그라데이션을 깐다 */
+.tabbar[data-blend='true'] { background: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; border-top-color: transparent; }
+.tabbar[data-blend='true']::before {
+  content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 200px; z-index: -1; pointer-events: none;
+  background: linear-gradient(to bottom,
+    transparent 0%,
+    color-mix(in srgb, var(--bg) 12%, transparent) 18%,
+    color-mix(in srgb, var(--bg) 42%, transparent) 36%,
+    color-mix(in srgb, var(--bg) 86%, transparent) 52%,
+    var(--bg) 62%);
+}
+
+/* ---------- 토스트 ---------- */
+.toast {
+  position: fixed; left: 50%; bottom: calc(112px + var(--safe-bottom)); transform: translateX(-50%);
+  z-index: 120; width: max-content; max-width: calc(100% - 40px); padding: 12px 18px; border-radius: 14px;
+  background: #24211f; color: #fff; font-size: 14px; font-weight: 600; text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); animation: rise 0.25s;
+}
+
+/* ---------- 시트 ---------- */
+.sheet-root { position: fixed; inset: 0; z-index: 90; }
+.sheet-backdrop { position: absolute; inset: 0; background: rgba(15, 12, 10, 0.45); animation: fade 0.2s; }
+.sheet {
+  position: absolute; left: 0; right: 0; bottom: 0; max-height: 88%;
+  display: flex; flex-direction: column; background: var(--surface); color: var(--fg);
+  border-radius: 28px 28px 0 0; animation: rise 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.sheet-grab { width: 40px; height: 4px; border-radius: 2px; background: var(--line-strong); margin: 10px auto 0; }
+.sheet-head { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px 4px 22px; }
+.sheet-head h2 { font-size: 18px; font-weight: 800; letter-spacing: -0.4px; }
+.sheet-body { overflow-y: auto; overscroll-behavior: contain; padding: 12px 22px 20px; }
+.sheet-foot { padding: 12px 22px calc(18px + var(--safe-bottom)); border-top: 1px solid var(--line); }
+.sheet-text { color: var(--muted); line-height: 1.6; }
+.foot-row { display: flex; gap: 10px; }
+.foot-row .btn { flex: 1; }
+
+/* 위치 고르기 */
+.loc-list { display: flex; flex-direction: column; gap: 2px; }
+.loc-space { display: flex; align-items: center; gap: 6px; padding: 14px 4px 6px; font-size: 13px; font-weight: 700; color: var(--muted); }
+.loc-row {
+  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 50px; padding: 0 12px;
+  border-radius: 14px; font-size: 15.5px; font-weight: 600; text-align: left;
+}
+.loc-row.indent { padding-left: 22px; }
+.loc-row[data-on='true'] { background: var(--tint); }
+.loc-row em { margin-left: auto; font-size: 12px; color: var(--muted); font-weight: 500; }
+.radio {
+  flex: none; width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--line-strong);
+  display: grid; place-items: center;
+}
+.loc-row[data-on='true'] .radio { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+
+/* ---------- 상단 고정 영역 ----------
+   제목·검색·필터처럼 위쪽 조작부는 .pin 안에 두면 고정되고, 아래 목록만 스크롤된다. */
+.page.pinned { padding-top: 0; }
+.pin {
+  position: sticky; top: 0; z-index: 25; margin: 0 -20px; padding: calc(var(--safe-top) + 24px) 20px 10px;
+  background: var(--bg);
+}
+.pin::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: -16px; height: 16px; pointer-events: none;
+  background: linear-gradient(to bottom, var(--bg), transparent);
+}
+.pin .topbar { margin: -6px -8px 0; }
+.pin .chips.scroll { margin-bottom: 0; }
+
+/* ---------- 화면 위 오른쪽: 알림 종 + 프로필(홈은 인사 옆, 다른 화면은 제목 줄 오른쪽에 떠 있다) ---------- */
+/* 스크롤해도 고정된 제목 줄과 함께 위에 남는다 */
+.float-actions { position: fixed; top: calc(var(--safe-top) + 18px); right: 20px; z-index: 40; }
+.float-actions .head-actions { margin-top: 0; }
+/* 떠 있는 알림·프로필과 제목이 겹치지 않게 제목 줄 오른쪽을 비운다 */
+.with-float .page-title-row { padding-right: 116px; }
+
+/* ---------- PC 왼쪽 메뉴(.rail은 초안 코디 화면의 옷 줄이라 이름을 달리한다) ---------- */
+.sidenav { display: none; }
+
+@media (min-width: 960px) {
+  :root { --safe-bottom: 0px; }
+  .tabbar { display: none; }
+  .sidenav {
+    position: fixed; left: 0; top: 0; bottom: 0; z-index: 60; width: var(--rail-w);
+    display: flex; flex-direction: column; gap: 4px; padding: 28px 16px;
+    background: var(--surface); border-right: 1px solid var(--line);
+  }
+  .sidenav-brand { display: block; padding: 4px 10px 26px; }
+  .sidenav-brand img { height: 34px; width: auto; }
+  :root[data-tone='dark'] .sidenav-brand img { filter: brightness(0) invert(1); }
+  .sidenav-link {
+    position: relative; display: flex; align-items: center; gap: 12px; height: 48px; padding: 0 14px; border-radius: 14px;
+    font-size: 15px; font-weight: 650; color: var(--tab-off);
+  }
+  .sidenav-link:hover { background: var(--tint); color: var(--fg); }
+  .sidenav-link.active { background: var(--tint); color: var(--accent-ink); }
+  .sidenav-link.sidenav-cta { margin: 10px 0; justify-content: center; background: var(--accent); color: var(--on-accent); box-shadow: 0 8px 18px var(--accent-sh); }
+  .sidenav-link.sidenav-cta:hover { background: var(--accent); color: var(--on-accent); filter: brightness(1.04); }
+  .sidenav-link .tab-count { position: static; margin-left: auto; border: 0; }
+
+  .main { padding-left: var(--rail-w); }
+  .page { max-width: 1180px; margin: 0 auto; padding: 40px 48px 72px; }
+  .pin { margin: 0 -48px; padding: 40px 48px 12px; }
+  .float-actions { top: 30px; right: 40px; }
+
+  /* PC의 시트는 화면 가운데 대화상자 */
+  .sheet-root { display: grid; place-items: center; }
+  .sheet {
+    position: relative; left: auto; right: auto; bottom: auto; width: min(560px, calc(100vw - 64px)); max-height: min(86vh, 820px);
+    border-radius: 28px; animation: pop 0.2s;
+  }
+  .sheet-grab { display: none; }
+  .sheet-head { padding-top: 18px; }
+  .toast { bottom: 36px; left: calc(50% + var(--rail-w) / 2); }
+}
