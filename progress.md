@@ -5,22 +5,22 @@ Agent가 서비스 저장소 루트의 `progress.md`로 복사해 이어 쓴다(
 ## 현재 상태
 
 - 실제 서비스 저장소 폴더: C:UsersootDesktopSUMTECHSUMTECH_CodeName
-- 현재 단계 / 다음 행동: 1단계 마무리 중. loopthon-bot 설치 확인 후 레포 URL 재저장으로 접근 재확인
-- 학생에게 확인할 내용: 레포가 public 상태 → private 전환 여부, loopthon-bot 설치 완료 여부
+- 현재 단계 / 다음 행동: 1단계 완료. 학생이 다음으로 가자고 하면 2단계(종이 문제정의 기록 받기) 시작
+- 학생에게 확인할 내용: 종이 문제정의 기록(2단계 시작 시). 참고: 상위 폴더에 SUMTECH_옷결_문제정의_캔버스_기입본.pdf 있음, 학생 확인 후 사용
 
 ## 1. GitHub 준비
 
 - [x] 기존 저장소·브랜치·remote와 로그인 확인 (gh 설치, Hostfs 로그인)
 - [x] 학생과 저장소 이름 합의 (답을 받기 전에는 생성하지 않음) → 학생이 기존 레포 SUMTECH_CodeName 지정
-- [ ] 팀의 private 레포 생성 또는 기존 레포 확인 → 기존 레포 확인함. 단 현재 PUBLIC, private 전환은 학생 확인 대기
-- [ ] loopthon-bot 앱을 팀 레포에 설치 (https://github.com/apps/loopthon-bot/installations/new, 팀 레포만 선택)
-- [ ] 팀 코드로 대시보드 API 로그인(`data.teamId`), 레포 URL을 HTTP로 저장(`data.team.repoUrl`) 확인. 팀 코드로는 화면에 들어갈 수 없음
+- [x] 팀의 private 레포 생성 또는 기존 레포 확인 → 기존 레포, 학생이 PRIVATE로 전환함
+- [x] loopthon-bot 앱을 팀 레포에 설치 (https://github.com/apps/loopthon-bot/installations/new, 팀 레포만 선택)
+- [x] 팀 코드로 대시보드 API 로그인(`data.teamId`), 레포 URL을 HTTP로 저장(`data.team.repoUrl`) 확인. 팀 코드로는 화면에 들어갈 수 없음
 - [x] 사이트에 등록한 레포를 실제 작업 폴더로 clone, remote·기본 브랜치 확인 (빈 레포, main으로 첫 push)
 - [x] .gitignore / .env.example / README 준비(`.env`·`node_modules/`·`.next/`·`dist/`·`build/` 제외, 큰 데이터 파일 커밋 안 함. 파일이 너무 많으면 저장소를 읽지 못함)
-- [ ] 준비 파일 commit/push 확인
-- [ ] 앱 설치 후 읽기 권한 확인 (5분 자동 재확인, 즉시 확인은 같은 레포 URL 다시 저장)
-- 저장소 URL / 기본 브랜치 / commit SHA: https://github.com/Hostfs/SUMTECH_CodeName / main / (첫 commit 후 기록)
-- 사이트 등록 결과 / loopthon-bot 설치·접근 상태: 2026-10-29 팀 11에 repoUrl 저장 성공, check.result=denied (앱 미설치)
+- [x] 준비 파일 commit/push 확인
+- [x] 앱 설치 후 읽기 권한 확인 (5분 자동 재확인, 즉시 확인은 같은 레포 URL 다시 저장)
+- 저장소 URL / 기본 브랜치 / commit SHA: https://github.com/Hostfs/SUMTECH_CodeName / main / 첫 commit 06bd30bf5927bde274a477123751f9e504f7873e
+- 사이트 등록 결과 / loopthon-bot 설치·접근 상태: 2026-10-29 팀 11에 repoUrl 저장 성공, check.result=denied (앱 미설치) → 설치 후 재저장 check.result=ok, repoAccessOk=true
 
 ## 2. 문제정의 기록 → 문제 다지기 → 해법 찾기 → 기능 명세
 
