@@ -225,6 +225,36 @@ class OtgyeolApplicationTests {
         assertThat(other.multipart(path, null).status()).isEqualTo(404);
     }
 
+    @Test
+    void placeGarmentsDirectlyAndOnRegister() throws Exception {
+        Client c = new Client();
+        c.post("/api/auth/signup", "{\"email\":\"place" + System.nanoTime() + "@example.com\",\"password\":\"password123\"}");
+        long closet = c.post("/api/spaces", "{\"name\":\"옷장 A\",\"spaceType\":\"HANG\"}").body().get("spaces").get(0).get("id").asLong();
+        JsonNode map = c.post("/api/spaces", "{\"name\":\"왼쪽 행거\",\"parentId\":" + closet + ",\"spaceType\":\"HANG\",\"capacity\":1}").body();
+        long hanger = find(map.get("spaces"), "왼쪽 행거").get("id").asLong();
+
+        // 등록할 때 공간을 고르면 바로 그 위치로 확정된다
+        JsonNode created = c.post("/api/garments", "{\"name\":\"등록 셔츠\",\"subType\":\"SHIRT\",\"spaceId\":" + hanger + "}").body();
+        assertThat(created.get("summary").get("locationPath").asString()).isEqualTo("옷장 A → 왼쪽 행거");
+        assertThat(c.post("/api/garments", "{\"name\":\"바깥 셔츠\",\"subType\":\"SHIRT\",\"spaceId\":" + closet + "}").status())
+                .isEqualTo(400);
+
+        // 옷장 지도에서 추천 없이 고른 옷을 바로 넣는다. 용량을 넘기면 초과 수량이 보인다
+        long tee = c.post("/api/garments", "{\"name\":\"미배치 티\",\"subType\":\"SHORT_SLEEVE_TEE\"}").body().get("summary").get("id").asLong();
+        assertThat(c.get("/api/spaces").body().get("unplaced").toString()).contains("미배치 티");
+        JsonNode after = c.post("/api/spaces/" + hanger + "/garments", "{\"garmentIds\":[" + tee + "]}").body();
+        assertThat(after.get("unplaced").size()).isZero();
+        JsonNode hangerView = find(after.get("spaces"), "왼쪽 행거");
+        assertThat(hangerView.get("count").asInt()).isEqualTo(2);
+        assertThat(hangerView.get("overBy").asInt()).isEqualTo(1);
+        assertThat(c.post("/api/spaces/" + closet + "/garments", "{\"garmentIds\":[" + tee + "]}").status()).isEqualTo(400);
+        assertThat(c.post("/api/spaces/" + hanger + "/garments", "{\"garmentIds\":[]}").status()).isEqualTo(400);
+
+        // 세탁 중인 옷은 넣을 수 없다
+        c.post("/api/garments/" + tee + "/care", "{\"careType\":\"WASH\",\"place\":\"HOME\",\"dueOn\":\"" + today(1) + "\"}");
+        assertThat(c.post("/api/spaces/" + hanger + "/garments", "{\"garmentIds\":[" + tee + "]}").status()).isEqualTo(409);
+    }
+
     static JsonNode imageById(JsonNode images, long imageId) {
         for (JsonNode n : images) {
             if (n.get("id").asLong() == imageId) {

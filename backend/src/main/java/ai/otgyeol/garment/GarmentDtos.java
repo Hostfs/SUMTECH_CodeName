@@ -39,7 +39,7 @@ public final class GarmentDtos {
             @Size(max = 300) String source) {
     }
 
-    /** 등록과 수정에 같이 쓰는 입력. 등록 때만 imageIds·coverImageId·extractionId·candidateId·aiFields를 읽는다. */
+    /** 등록과 수정에 같이 쓰는 입력. 등록 때만 imageIds·coverImageId·extractionId·candidateId·aiFields·spaceId를 읽는다. */
     public record GarmentInput(
             @NotBlank(message = "옷 이름을 입력해 주세요.") @Size(max = 100, message = "옷 이름은 100자까지 쓸 수 있어요.") String name,
             @Size(max = 100) String brand,
@@ -60,7 +60,8 @@ public final class GarmentDtos {
             Long coverImageId,
             Long extractionId,
             Long candidateId,
-            Set<GarmentField> aiFields) {
+            Set<GarmentField> aiFields,
+            Long spaceId) {
     }
 
     public record StatusInput(@NotNull(message = "상태를 골라 주세요.") GarmentStatus status, Boolean usableWhenPending) {

@@ -1,5 +1,7 @@
 // 옷 정보 입력 값과 서버 입력(GarmentInput) 변환. 등록과 수정이 같이 쓴다.
 
+import { nearestColorName } from './colors'
+
 export type MaterialRow = { part: string; fiber: string; percent: string }
 export type OtherMeasurement = { part: string; kind: string; valueCm: number; source: string | null }
 
@@ -36,7 +38,8 @@ export function toInput(v: GarmentFormValue) {
     subType: v.subType || null,
     brand: v.brand,
     productCode: v.productCode,
-    colorName: v.colorName,
+    // 색만 고르고 이름을 비워 두면 가까운 색 이름을 붙여 '미입력'으로 남지 않게 한다.
+    colorName: v.colorName.trim() || nearestColorName(v.colorHex) || '',
     colorHex: v.colorHex || null,
     sizeLabel: v.sizeLabel,
     origin: v.origin,

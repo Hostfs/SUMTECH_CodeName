@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
@@ -49,7 +50,11 @@ public class SpaceController {
     public record MapView(List<SpaceView> spaces, List<GarmentSummary> unplaced) {
     }
 
+    public record PutGarmentsInput(@NotEmpty(message = "넣을 옷을 골라 주세요.") @Size(max = 200) List<Long> garmentIds) {
+    }
+
     private final StorageSpaceRepository spaces;
+    private final PlacementProposalRepository proposals;
     private final StorageSpaceParentRepository parents;
     private final GarmentPlacementRepository placements;
     private final GarmentRepository garments;
@@ -58,8 +63,9 @@ public class SpaceController {
 
     public SpaceController(StorageSpaceRepository spaces, StorageSpaceParentRepository parents,
             GarmentPlacementRepository placements, GarmentRepository garments, GarmentService garmentService,
-            LocationPaths locationPaths) {
+            LocationPaths locationPaths, PlacementProposalRepository proposals) {
         this.spaces = spaces;
+        this.proposals = proposals;
         this.parents = parents;
         this.placements = placements;
         this.garments = garments;
@@ -111,6 +117,16 @@ public class SpaceController {
         StorageSpace space = spaces.findByIdAndUserId(id, userId).orElseThrow(() -> ApiException.notFound("공간"));
         apply(space, body);
         setParent(userId, space.id, body.parentId());
+        return map();
+    }
+
+    /** 고른 옷을 이 공간에 바로 넣는다(위치 확정). 그 옷들의 미확정 배치 추천은 지운다. */
+    @PostMapping("/{id}/garments")
+    @Transactional
+    public MapView putGarments(@PathVariable long id, @Valid @RequestBody PutGarmentsInput body) {
+        long userId = CurrentUser.id();
+        garmentService.placeDirectly(userId, id, body.garmentIds());
+        proposals.deleteByGarmentIds(body.garmentIds());
         return map();
     }
 

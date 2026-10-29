@@ -61,6 +61,7 @@ import ai.otgyeol.label.ProductCandidateRepository;
 import ai.otgyeol.label.ProductSearchRepository;
 import ai.otgyeol.space.GarmentPlacement;
 import ai.otgyeol.space.GarmentPlacementRepository;
+import ai.otgyeol.space.LocationPaths;
 import ai.otgyeol.space.StorageSpaceRepository;
 
 /**
@@ -90,6 +91,7 @@ public class GarmentService {
     private final StorageSpaceRepository spaces;
     private final ImageController imageStore;
     private final RemoteImageFetcher remoteImages;
+    private final LocationPaths locationPaths;
 
     public GarmentService(GarmentRepository garments, ClosetContext.Loader contextLoader,
             ClosetCollectionRepository collections, ImageAssetRepository images, GarmentImageRepository garmentImages,
@@ -98,9 +100,10 @@ public class GarmentService {
             LabelExtractionSearchRepository extractionSearches, ProductSearchRepository searches,
             ProductCandidateRepository candidates, GarmentProductRepository garmentProducts,
             CareEventRepository careEvents, GarmentPlacementRepository placements, StorageSpaceRepository spaces,
-            ImageController imageStore, RemoteImageFetcher remoteImages) {
+            ImageController imageStore, RemoteImageFetcher remoteImages, LocationPaths locationPaths) {
         this.imageStore = imageStore;
         this.remoteImages = remoteImages;
+        this.locationPaths = locationPaths;
         this.garments = garments;
         this.contextLoader = contextLoader;
         this.collections = collections;
@@ -255,6 +258,10 @@ public class GarmentService {
             }
             covers.save(new GarmentCoverImage(g.id, cover));
         }
+        if (in.spaceId() != null) {
+            requireLeafSpace(userId, in.spaceId());
+            place(g.id, in.spaceId());
+        }
         return detail(userId, g.id);
     }
 
@@ -353,10 +360,36 @@ public class GarmentService {
         if (target == null) {
             throw ApiException.badRequest("넣을 공간을 골라 주세요.");
         }
-        spaces.findByIdAndUserId(target, userId).orElseThrow(() -> ApiException.notFound("공간"));
+        requireLeafSpace(userId, target);
         place(g.id, target);
         g.updatedAt = Instant.now();
         return detail(userId, g.id);
+    }
+
+    /** 옷장 지도에서 고른 옷을 고른 공간에 바로 넣는다(추천을 거치지 않음). 세탁·수선 중인 옷은 넣을 수 없다. */
+    @Transactional
+    public void placeDirectly(long userId, long spaceId, List<Long> garmentIds) {
+        if (garmentIds == null || garmentIds.isEmpty()) {
+            throw ApiException.badRequest("넣을 옷을 골라 주세요.");
+        }
+        requireLeafSpace(userId, spaceId);
+        ClosetContext ctx = context(userId);
+        for (Long garmentId : new LinkedHashSet<>(garmentIds)) {
+            Garment g = owned(userId, garmentId);
+            if (ctx.status(g).isAway()) {
+                throw ApiException.conflict("'" + g.name + "'은(는) 세탁·수선 중이라 회수 완료 후에 넣을 수 있어요.");
+            }
+            place(g.id, spaceId);
+            g.updatedAt = Instant.now();
+        }
+    }
+
+    /** 옷은 가장 안쪽 공간에만 넣는다('옷장 A'가 아니라 '옷장 A → 왼쪽 행거'). */
+    private void requireLeafSpace(long userId, long spaceId) {
+        spaces.findByIdAndUserId(spaceId, userId).orElseThrow(() -> ApiException.notFound("공간"));
+        if (locationPaths.parentMap(userId).containsValue(spaceId)) {
+            throw ApiException.badRequest("안쪽에 다른 공간이 있는 곳이에요. 가장 안쪽 공간을 골라 주세요.");
+        }
     }
 
     /** 확정 위치를 쓴다(있으면 바꾸고 없으면 만든다). */

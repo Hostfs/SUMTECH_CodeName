@@ -6,7 +6,7 @@ import { processCoverIfNeeded } from '../imageCleanup'
 import { emptyForm, toInput, type GarmentFormValue } from '../garmentForm'
 import { IconCamera, IconClose, IconSearch, IconSparkle } from '../components/Icons'
 import { Notice, Spinner } from '../components/Ui'
-import type { Candidate, Extraction, GarmentDetail } from '../types'
+import type { Candidate, Extraction, GarmentDetail, MapView, SpaceView } from '../types'
 
 type Suggestion = Partial<Omit<GarmentFormValue, 'materials' | 'careLines' | 'collections' | 'totalLengthCm' | 'otherMeasurements'>> & {
   materials?: { part: string; fiber: string; percent: number }[]
@@ -41,6 +41,14 @@ export default function Register() {
   const [search, setSearch] = useState<SearchResult | null>(null)
   const [searchError, setSearchError] = useState('')
   const [candidateId, setCandidateId] = useState<number | null>(null)
+
+  const [spaces, setSpaces] = useState<SpaceView[]>([])
+  const [spaceId, setSpaceId] = useState('')
+  useEffect(() => {
+    api.get<MapView>('/api/spaces')
+      .then((m) => setSpaces(m.spaces.filter((s) => !m.spaces.some((o) => o.parentId === s.id))))
+      .catch(() => undefined)
+  }, [])
 
   const [saving, setSaving] = useState(false)
   const [cleaning, setCleaning] = useState(false)
@@ -126,6 +134,7 @@ export default function Register() {
       const aiFields = analysis ? analysis.aiFields.filter((k) => !analysis.unread.includes(k)) : []
       const created = await api.post<GarmentDetail>('/api/garments', {
         ...toInput(form), imageIds, extractionId: analysis?.extraction.id ?? null, candidateId, aiFields,
+        spaceId: spaceId ? Number(spaceId) : null,
       })
       // 옷은 이미 저장됐으므로 대표 이미지 정리가 실패해도 상세 화면으로 간다(상세에서 '다시 처리' 가능).
       setCleaning(true)
@@ -251,6 +260,23 @@ export default function Register() {
                 </div>
               ))}
             </div>
+          )}
+        </section>
+      )}
+
+      {showForm && (
+        <section className="card" aria-label="보관 위치" style={{ marginTop: 16 }}>
+          <h2 className="section-title">보관 위치 <small>선택, 넣어 둘 곳을 바로 정해요</small></h2>
+          {spaces.length > 0 ? (
+            <div className="field">
+              <label htmlFor="g-space">넣어 둘 공간</label>
+              <select id="g-space" className="select" value={spaceId} onChange={(e) => setSpaceId(e.target.value)}>
+                <option value="">나중에 정하기(미배치)</option>
+                {spaces.map((s) => <option key={s.id} value={s.id}>{s.path}{s.capacity ? ` (${s.count}/${s.capacity}벌)` : ''}</option>)}
+              </select>
+            </div>
+          ) : (
+            <p className="field-hint" style={{ margin: 0 }}>아직 수납 공간이 없어요. 저장한 뒤 옷장 지도에서 공간을 만들고 넣을 수 있어요.</p>
           )}
         </section>
       )}

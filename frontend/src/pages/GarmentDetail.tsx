@@ -7,6 +7,7 @@ import { Loading, Notice, Sheet, Spinner, Toast } from '../components/Ui'
 import { formatDate } from '../format'
 import GarmentForm from '../components/GarmentForm'
 import { processGarmentImage } from '../imageCleanup'
+import { nearestColorName } from '../colors'
 import { toInput, type GarmentFormValue } from '../garmentForm'
 import { useSession } from '../session'
 import type { GarmentDetail, MapView } from '../types'
@@ -97,7 +98,7 @@ export default function GarmentDetailPage() {
 
           <dl className="info-table">
             <Row k="종류" v={`${s.categoryLabel} / ${s.subTypeLabel}`} />
-            <Row k="색상" v={s.colorName} swatch={s.colorHex} />
+            <Row k="색상" v={s.colorName || nearestColorName(s.colorHex)} swatch={s.colorHex} />
             <Row k="브랜드" v={s.brand} />
             <Row k="사이즈" v={d.sizeLabel} />
             <Row k="품번" v={d.productCode} />

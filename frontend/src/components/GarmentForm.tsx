@@ -1,5 +1,6 @@
 import type { GarmentFormValue, MaterialRow } from '../garmentForm'
 import { useSession } from '../session'
+import ColorField from './ColorField'
 import { IconClose, IconPlus } from './Icons'
 
 type Flags = Partial<Record<string, 'ai' | 'check'>>
@@ -43,11 +44,8 @@ export default function GarmentForm({ value, onChange, flags = {} }: { value: Ga
         </div>
         <div className="field">
           <label htmlFor="g-color">색상 <Flag f={flags.COLOR} /></label>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <input id="g-color" className="input" value={value.colorName} onChange={(e) => set('colorName', e.target.value)} placeholder="예: 네이비" />
-            <input type="color" aria-label="색상 코드" value={value.colorHex || '#d9d3c9'} onChange={(e) => set('colorHex', e.target.value)}
-              style={{ width: 52, minWidth: 52, height: 48, padding: 4, border: '1px solid var(--line-strong)', borderRadius: 14, background: 'var(--surface)' }} />
-          </div>
+          <ColorField id="g-color" value={{ name: value.colorName, hex: value.colorHex }}
+            onChange={(c) => onChange({ ...value, colorName: c.name, colorHex: c.hex })} />
         </div>
         <div className="field">
           <label htmlFor="g-brand">브랜드 <Flag f={flags.BRAND} /></label>

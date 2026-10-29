@@ -480,7 +480,24 @@ a { color: inherit; }
 .row-main { min-width: 0; }
 .row-title { font-weight: 700; display: block; text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .row-sub { color: var(--ink-2); font-size: var(--t-small); overflow-wrap: anywhere; }
-.row-sub.danger { color: var(--danger); font-weight: 600; }
+.row-sub.danger, .cand-meta.danger { color: var(--danger); font-weight: 600; }
+.mini-pick { border: 2px solid transparent; cursor: pointer; font: inherit; color: inherit; }
+.mini-pick[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft-2); font-weight: 700; }
+.dot-lg { width: 28px; height: 28px; border-radius: 50%; border: 1px solid rgb(0 0 0 / .08); align-self: center; }
+
+/* 색상 고르기 */
+.color-field { position: relative; }
+.color-trigger { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; cursor: pointer; }
+.color-trigger .placeholder { color: var(--ink-3); }
+.color-dot { width: 22px; height: 22px; flex: none; border-radius: 50%; border: 1px solid rgb(0 0 0 / .12); }
+.color-dot[data-empty="true"] { background: repeating-linear-gradient(45deg, var(--tile) 0 4px, var(--surface) 4px 8px) !important; }
+.color-panel { margin-top: 8px; padding: 14px; border: 1px solid var(--line-strong); border-radius: 16px; background: var(--surface); box-shadow: 0 8px 24px rgb(0 0 0 / .08); }
+.color-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(34px, 1fr)); gap: 8px; }
+.color-swatch { aspect-ratio: 1; border-radius: 50%; border: 1px solid rgb(0 0 0 / .12); cursor: pointer; padding: 0; }
+.color-swatch[aria-pressed="true"] { outline: 3px solid var(--accent); outline-offset: 2px; }
+.color-custom { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+.color-custom .input { flex: 1; min-width: 0; }
+.color-custom label { position: relative; flex: none; cursor: pointer; }
 .row-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
 @media (max-width: 420px) { .row-item { grid-template-columns: 48px 1fr; } .row-thumb { width: 48px; height: 48px; } .row-actions { grid-column: 1 / -1; justify-content: stretch; } .row-actions .btn { flex: 1; } }
 
