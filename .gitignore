@@ -1,7 +1,8 @@
 # 비밀값
-*/.env
+# 슬래시 없는 .env는 모든 폴더의 .env에 적용된다. 예시 파일(.env.example)만 올린다.
 .env
-!.env
+.env.*
+!.env.example
 *.pem
 *.key
 
