@@ -270,18 +270,18 @@ test('placementRulesSearchLinkAndConfirmMakesStored', async () => {
   const map = (await c.post('/api/spaces', { name: '행거', parentId: closet, spaceType: 'HANG', capacity: 5 })).body
   const hanger = find(map.spaces, '행거').id
 
-  // R07: 옷이 들어 있는 공간 안에는 다른 공간을 만들 수 없다(옷이 위치 경로 중간에 끼지 않게)
+  // F6: 옷이 들어 있는 공간 안에는 다른 공간을 만들 수 없다(옷이 위치 경로 중간에 끼지 않게)
   const shirt = (await c.post('/api/garments', { name: '규칙 셔츠', subType: 'SHIRT', spaceId: hanger })).body.summary.id
   assert.equal((await c.post('/api/spaces', { name: '칸', parentId: hanger, spaceType: 'FOLD' })).status, 400)
 
-  // R07: 배치 추천의 공간을 바깥 공간(안쪽에 공간이 있는 곳)으로 바꿀 수 없다
+  // F6: 배치 추천의 공간을 바깥 공간(안쪽에 공간이 있는 곳)으로 바꿀 수 없다
   const tee = (await c.post('/api/garments', { name: '추천 티', subType: 'SHORT_SLEEVE_TEE' })).body.summary.id
   const proposals = (await c.post('/api/placements/recommend', { garmentIds: [tee] })).body
   const proposal = proposals[0].id
   assert.equal((await c.put(`/api/placements/${proposal}`, { spaceId: closet })).status, 400)
   assert.equal((await c.put(`/api/placements/${proposal}`, { spaceId: hanger })).status, 200)
 
-  // R08: '착용·보관 전'이던 옷도 회수 후 '재배치 확인'을 누르면 '보관 중'이 된다
+  // F7: '착용·보관 전'이던 옷도 회수 후 '재배치 확인'을 누르면 '보관 중'이 된다
   await c.patch(`/api/garments/${shirt}/status`, { status: 'PENDING' })
   const care = (await c.post(`/api/garments/${shirt}/care`, { careType: 'WASH', place: 'HOME', dueOn: today(1) })).body.inProgress[0].care.id
   await c.post(`/api/care/${care}/complete`)
@@ -289,7 +289,7 @@ test('placementRulesSearchLinkAndConfirmMakesStored', async () => {
   assert.equal(confirmed.summary.status, 'STORED')
   assert.equal(confirmed.summary.statusLabel, '보관 중')
 
-  // R02: 택 분석 없이 한 검색도 옷에 남는다(결과가 없어도 '검색 결과 없음'으로 상세에 보인다)
+  // F3: 택 분석 없이 한 검색도 옷에 남는다(결과가 없어도 '검색 결과 없음'으로 상세에 보인다)
   const searchId = await insertSearch(c)
   const linked = (await c.post('/api/garments', { name: '검색만 한 셔츠', subType: 'SHIRT', searchId })).body
   assert.equal(linked.search.id, searchId)

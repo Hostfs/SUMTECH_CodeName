@@ -671,7 +671,7 @@ async function confirmPlacement(userId: number, garmentId: number, spaceId: numb
   if (target == null) throw ApiError.badRequest('넣을 공간을 골라 주세요.')
   await requireLeafSpace(userId, target)
   await place(g.id, target)
-  // 위치를 확인해 넣었으니 집 안 상태도 보관 중이다(R08 '재배치 확인' → '보관 중').
+  // 위치를 확인해 넣었으니 집 안 상태도 보관 중이다(F7 '재배치 확인' → '보관 중').
   await run('UPDATE garments SET status_code = ?, updated_at = ? WHERE id = ?', ['STORED', new Date(), g.id])
   return detail(userId, g.id)
 }

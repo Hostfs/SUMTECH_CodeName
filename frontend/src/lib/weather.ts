@@ -5,7 +5,7 @@ import type { SkyKind } from '../components/SkyScene'
 import type { Phase } from './daylight'
 
 /**
- * 홈 하늘의 날씨(R12, 기상청 단기예보). 디자인 초안(otgyeol-frontend)의 WeatherProvider와 같은 자리.
+ * 홈 하늘의 날씨(F11, 기상청 단기예보). 디자인 초안(otgyeol-frontend)의 WeatherProvider와 같은 자리.
  * 화면 부품은 WeatherProvider.tsx, 여기에는 자료 모양·불러오기·옷결의 한마디만 둔다.
  */
 export const DEFAULT_PLACE = { name: '광주창조경제혁신센터', lat: 35.1534, lon: 126.8901 }

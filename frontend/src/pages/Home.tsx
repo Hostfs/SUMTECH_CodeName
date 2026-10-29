@@ -53,7 +53,7 @@ export default function Home() {
   const icon: IconName = weather ? (weather.kind === 'clear' && (phase === 'night' || phase === 'dusk') ? 'moon' : KIND_ICON[weather.kind]) : 'cloudSun'
   const advice = weather ? adviceFor(weather) : null
 
-  // 옷장에서 바로 꺼내기: 날씨가 있으면 날씨 규칙(R12), 없으면 이번 계절 옷 중 집 안에 있는 옷.
+  // 옷장에서 바로 꺼내기: 날씨가 있으면 날씨 규칙(F11), 없으면 이번 계절 옷 중 집 안에 있는 옷.
   const picks = useMemo(() => {
     if (!garments) return []
     if (weather) return pickForWeather(garments, weather.raw).picks.map((p) => p.garment)

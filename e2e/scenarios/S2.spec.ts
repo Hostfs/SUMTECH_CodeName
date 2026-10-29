@@ -19,7 +19,8 @@ function menu(page: Page, name: string) {
 }
 
 test('S2 사용자가 택 사진 2장으로 새 옷을 AI 분석해 등록한다', async ({ page }) => {
-  test.setTimeout(180_000)
+  // 주최 측 자동 실행은 테스트마다 90초 제한이다. AI 응답 대기를 그 안에 나눠 둔다.
+  test.setTimeout(90_000)
   await login(page)
 
   // 메뉴에서 '옷 등록'을 누른다
@@ -37,7 +38,7 @@ test('S2 사용자가 택 사진 2장으로 새 옷을 AI 분석해 등록한다
   // 성공 안내나 실패 안내 중 먼저 나오는 것을 기다리고, 실패면 화면에 보인 이유를 그대로 실패 메시지에 남긴다.
   const done = page.getByText('택을 읽었어요')
   const failed = page.getByText('사진을 다시 찍거나')
-  await expect(done.or(failed)).toBeVisible({ timeout: 90_000 })
+  await expect(done.or(failed)).toBeVisible({ timeout: 45_000 })
   const reason = (await failed.allInnerTexts()).join(' ')
   expect(reason, `택 분석이 실패했어요: ${reason}`).toBe('')
   await expect(done).toBeVisible()
@@ -48,13 +49,13 @@ test('S2 사용자가 택 사진 2장으로 새 옷을 AI 분석해 등록한다
   // '제품 찾기'를 누른다
   const search = page.getByRole('region', { name: '제품 찾기' })
   await search.getByRole('button', { name: '제품 찾기' }).click()
-  await expect(search.getByRole('group', { name: '제품 후보' }).or(search.getByText('검색 결과 없음'))).toBeVisible({ timeout: 90_000 })
+  await expect(search.getByRole('group', { name: '제품 후보' }).or(search.getByText('검색 결과 없음'))).toBeVisible({ timeout: 25_000 })
 
   // '저장하기'를 누른다
   await page.getByRole('button', { name: '저장하기' }).click()
 
   // 옷 상세: 이름, 택 사진 2장, AI가 읽은 브랜드·소재, 제품 후보 또는 '검색 결과 없음'
-  await expect(page).toHaveURL(/\/closet\/\d+/, { timeout: 60_000 })
+  await expect(page).toHaveURL(/\/closet\/\d+/, { timeout: 10_000 })
   await expect(page.getByRole('heading', { name: '등록 테스트 셔츠' })).toBeVisible()
   await expect(page.getByRole('group', { name: '사진' }).getByRole('button', { name: '택 사진' })).toHaveCount(2)
   await expect(page.getByRole('region', { name: '택에서 읽은 정보' })).toBeVisible()

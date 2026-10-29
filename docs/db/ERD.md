@@ -2,7 +2,7 @@
 
 - 스키마 원본: [`schema.sql`](schema.sql) (MariaDB 10.4 이상, utf8mb4)
 - 테이블 46개(핵심 29 + 도메인 17), 외래키 60개(복합 FK 1개 포함, 열 쌍 61개), CHECK 제약 22개, 같은 주인 트리거 22개
-- V2(R11 옮기는 묶음, 2.1절)를 더하면 테이블 51개(핵심 34 + 도메인 17), 외래키 69개(열 쌍 70개), CHECK 22개, 트리거 30개다. V2 개수는 스크립트에서 센 값이고, 실제 적용은 CI의 마이그레이션 테스트로 확인한다. 아래 1~2절 다이어그램과 검증 수치는 V1 기준이다.
+- V2(F10 옮기는 묶음, 2.1절)를 더하면 테이블 51개(핵심 34 + 도메인 17), 외래키 69개(열 쌍 70개), CHECK 22개, 트리거 30개다. V2 개수는 스크립트에서 센 값이고, 실제 적용은 CI의 마이그레이션 테스트로 확인한다. 아래 1~2절 다이어그램과 검증 수치는 V1 기준이다.
 - V3(`V3__scope_cleanup.sql`): 범위에서 뺀 코디 테이블 `outfits`·`outfit_garments`·`body_profiles`를 지우고, 옷 ↔ 등록 때 한 제품 검색 연결 `garment_product_searches`(같은 주인 트리거 2개)를 더했다. 그래서 테이블 49개다. 아래 다이어그램의 코디 테이블은 V1 기록으로 남겨 둔다.
 - V4(`V4__care_completed_kst.sql`): `care_events.ck_ce_completed`를 `DATE(completed_at + INTERVAL 9 HOUR) >= dropped_on`으로 바꿨다. `completed_at`은 UTC로, `dropped_on`은 서울 날짜로 저장돼 서울 00~09시 회수가 막혔다. 테이블·CHECK 개수는 그대로다.
 - V5(`V5__outfits.sql`): 코디를 다시 범위에 넣되 '지금 입을 수 있는 옷'(집 안·사용 가능)만 쓰는 저장 코디로 새로 만들었다. `outfit_looks`(사용자 FK, 이름 CHECK)와 `outfit_look_garments`(PK `(look_id, slot_code)`, 코디·옷 FK, 자리 CHECK `OUTER·TOP·BOTTOM·DRESS`, 같은 주인 트리거 2개)를 더해 테이블 51개다. 자리와 옷 종류가 맞는지·지금 입을 수 있는지는 저장하지 않고 서버가 계산한다(옷 종류는 `sub_types`를 거쳐 정해지므로 3NF).
@@ -268,7 +268,7 @@ erDiagram
     storage_spaces ||--o| storage_space_parents : "space_id"
 ```
 
-## 2.1 옮기는 묶음(R11, V2 마이그레이션) 테이블 5개
+## 2.1 옮기는 묶음(F10, V2 마이그레이션) 테이블 5개
 
 옷 여러 벌을 한 번에 박스·집 밖 공간으로 옮기거나 세탁소에 맡긴 기록이다. 공간 유형에 `BOX`(박스)와 `OFFSITE`(집 밖)를 추가했다.
 

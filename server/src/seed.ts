@@ -80,7 +80,7 @@ export async function populateSeedData(userId: number) {
   const secondDrawer = await space(userId, drawer, '2단', 'FOLD', 4)
   const underBed = await space(userId, null, '침대 아래', 'LONG_TERM', null)
   await space(userId, underBed, '겨울 박스', 'LONG_TERM', 10)
-  // 옮기는 단위 묶음 기록(R11)의 목적지: 라벨을 붙인 박스와 집 밖(본가).
+  // 옮기는 단위 묶음 기록(F10)의 목적지: 라벨을 붙인 박스와 집 밖(본가).
   await space(userId, null, '여름 박스', 'BOX', 12)
   await space(userId, null, '본가', 'OFFSITE', null)
 

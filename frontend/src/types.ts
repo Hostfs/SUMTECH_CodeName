@@ -48,7 +48,7 @@ export type GarmentSummary = {
   totalLengthCm: number | null
 }
 
-/** 옮긴 묶음(R11). destination이 SPACE면 박스·집 밖 공간, LAUNDRY면 세탁소. */
+/** 옮긴 묶음(F10). destination이 SPACE면 박스·집 밖 공간, LAUNDRY면 세탁소. */
 export type MoveBatch = {
   id: number
   createdAt: string
@@ -154,7 +154,7 @@ export type BoardItem = { care: CareView; garment: GarmentSummary; overdue: bool
 export type Board = { today: string; dueToday: BoardItem[]; overdue: BoardItem[]; inProgress: BoardItem[]; history: BoardItem[] }
 
 
-/** 현재 위치 날씨(R12). 기상청 초단기실황·단기예보를 서버가 합친 값. 받지 못한 값은 null. */
+/** 현재 위치 날씨(F11). 기상청 초단기실황·단기예보를 서버가 합친 값. 받지 못한 값은 null. */
 export type Weather = {
   observedAt: string
   temperature: number | null

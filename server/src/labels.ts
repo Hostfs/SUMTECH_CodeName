@@ -307,7 +307,7 @@ function analysisRequest(stored: StoredImage[]): AiRequest {
 const labelUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024, files: 10 } })
 
 /**
- * R01 택 사진 분석. 사진을 저장하고 판독 기록을 만든 뒤, 비전 모델이 읽은 값을 항목별로 남긴다.
+ * F2 택 사진 분석. 사진을 저장하고 판독 기록을 만든 뒤, 비전 모델이 읽은 값을 항목별로 남긴다.
  * 읽지 못한 항목은 null(확인 필요)로 둔다. 분석이 실패해도 판독 기록은 실패 상태로 남고 직접 입력으로 계속할 수 있다.
  */
 export const labelsRouter = Router()

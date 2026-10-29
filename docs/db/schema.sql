@@ -781,7 +781,7 @@ INSERT INTO search_statuses (code, label) VALUES
     ('SUCCEEDED', '검색 완료'), ('FAILED', '검색 실패');
 
 -- =====================================================================
--- V2: 옮기는 단위(박스·본가·세탁소) 묶음 기록 (R11)
+-- V2: 옮기는 단위(박스·본가·세탁소) 묶음 기록 (F10)
 -- =====================================================================
 
 -- 박스(집 안에서 통째로 옮기는 상자)와 집 밖(본가 등) 공간 유형.
@@ -892,7 +892,7 @@ DROP TABLE outfit_garments;
 DROP TABLE outfits;
 DROP TABLE body_profiles;
 
--- 옷 ↔ 그 옷을 등록할 때 한 제품 검색(R02). 택 분석 없이 이름만으로 검색해도 '검색 결과 없음'이 옷 상세에 남게 한다.
+-- 옷 ↔ 그 옷을 등록할 때 한 제품 검색(F3). 택 분석 없이 이름만으로 검색해도 '검색 결과 없음'이 옷 상세에 남게 한다.
 -- 택 분석을 거친 검색은 label_extraction_searches로도 이어진다. 한 벌에 검색 하나(가장 최근에 저장한 것).
 CREATE TABLE garment_product_searches (
     garment_id BIGINT NOT NULL PRIMARY KEY,
