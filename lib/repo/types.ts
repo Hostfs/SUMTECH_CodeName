@@ -1,4 +1,4 @@
-import type { Garment, Outfit, Place, Profile } from "../types";
+import type { Body, Garment, Outfit, Outing, Place, Profile } from "../types";
 
 /**
  * 데이터 접근은 이 인터페이스로만 한다. 지금은 localStorage 구현(local.ts)을 쓰고,
@@ -6,6 +6,8 @@ import type { Garment, Outfit, Place, Profile } from "../types";
  */
 
 export type GarmentInput = Omit<Garment, "id" | "createdAt" | "updatedAt">;
+
+export type OutingInput = Pick<Outing, "kind" | "shop" | "dueDate" | "memo">;
 
 export interface GarmentRepo {
   list(): Promise<Garment[]>;
@@ -15,6 +17,10 @@ export interface GarmentRepo {
   remove(id: string): Promise<void>;
   /** 여러 벌의 보관 위치를 한 번에 바꾼다. placeId null = 위치 미지정 */
   movePlace(ids: string[], placeId: string | null): Promise<Garment[]>;
+  /** 세탁·수선을 맡긴다. 보관 위치는 '세탁소'·'수선집'(없으면 만든다)이 된다. */
+  sendOut(id: string, input: OutingInput): Promise<Garment>;
+  /** 찾아와서 placeId에 둔다. 맡김 상태는 사라진다. */
+  bringBack(id: string, placeId: string | null): Promise<Garment>;
 }
 
 export interface PlaceRepo {
@@ -34,6 +40,7 @@ export interface OutfitRepo {
 
 export interface ProfileRepo {
   get(): Promise<Profile>;
+  setBody(body: Body | null): Promise<Profile>;
 }
 
 export interface Repos {

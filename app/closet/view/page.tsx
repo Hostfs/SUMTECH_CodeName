@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { useData } from "@/components/DataProvider";
 import { GarmentPhoto } from "@/components/garment/GarmentPhoto";
+import { OutingSheet } from "@/components/garment/OutingSheet";
 import { PlacePickerSheet } from "@/components/garment/PlacePickerSheet";
 import { CameraIcon, MoreIcon, PinIcon } from "@/components/icons";
 import { Screen } from "@/components/layout/Screen";
@@ -12,6 +13,7 @@ import { TopBar } from "@/components/layout/TopBar";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/Toast";
+import { OUTING_LABEL, OUTING_PLACE_NAME, outingSummary } from "@/lib/outing";
 import { movedMessage, placePath, UNASSIGNED_LABEL } from "@/lib/places";
 import { SEASON_LABEL, SEASONS } from "@/lib/theme";
 import { CATEGORY_LABEL } from "@/lib/types";
@@ -21,10 +23,11 @@ function GarmentDetailPage() {
   const id = useSearchParams().get("id") ?? "";
   const router = useRouter();
   const toast = useToast();
-  const { ready, garments, placeIndex, updateGarment, removeGarment } = useData();
+  const { ready, garments, placeIndex, updateGarment, removeGarment, sendOutGarment, bringBackGarment } = useData();
   const [moveOpen, setMoveOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [outingOpen, setOutingOpen] = useState(false);
 
   const g = garments.find((x) => x.id === id);
 
@@ -47,10 +50,29 @@ function GarmentDetailPage() {
 
   const location = placePath(placeIndex, g.placeId, " › ");
 
+  const outing = g.outing;
+  // 맡겨 둔 옷은 '위치 변경'이 곧 '찾아왔어요'다. 맡기기 전 위치를 미리 골라 준다.
+  const previous = outing
+    ? outing.previousPlaceId === null || placeIndex.has(outing.previousPlaceId)
+      ? outing.previousPlaceId
+      : undefined
+    : g.placeId;
+
   const move = async (placeId: string | null) => {
-    await updateGarment(g.id, { placeId });
     setMoveOpen(false);
+    if (outing) {
+      await bringBackGarment(g.id, placeId);
+      toast(`찾아왔어요. ${movedMessage(placeIndex, placeId)}`);
+      return;
+    }
+    await updateGarment(g.id, { placeId });
     toast(movedMessage(placeIndex, placeId));
+  };
+
+  const sendOut = async (input: Parameters<typeof sendOutGarment>[1]) => {
+    setOutingOpen(false);
+    await sendOutGarment(g.id, input);
+    toast(outing ? "맡김 정보를 고쳤어요" : `${OUTING_PLACE_NAME[input.kind]}에 맡겼어요`);
   };
 
   const remove = async () => {
@@ -102,12 +124,33 @@ function GarmentDetailPage() {
             {menuOpen && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-                <ul role="menu" className="absolute top-11 right-0 z-20 w-32 overflow-hidden rounded-[14px] border border-line bg-card">
+                <ul role="menu" className="absolute top-11 right-0 z-20 w-44 overflow-hidden rounded-[14px] border border-line bg-card">
                   <li>
                     <Link role="menuitem" href={garmentEditHref(g.id)} className="flex h-11 items-center px-4 text-sm">
                       수정
                     </Link>
                   </li>
+                  {(outing
+                    ? [
+                        { label: "찾아왔어요", run: () => setMoveOpen(true) },
+                        { label: "맡김 정보 수정", run: () => setOutingOpen(true) },
+                      ]
+                    : [{ label: "세탁·수선 맡기기", run: () => setOutingOpen(true) }]
+                  ).map((m) => (
+                    <li key={m.label}>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className="h-11 w-full px-4 text-left text-sm"
+                        onClick={() => {
+                          setMenuOpen(false);
+                          m.run();
+                        }}
+                      >
+                        {m.label}
+                      </button>
+                    </li>
+                  ))}
                   <li>
                     <button
                       type="button"
@@ -161,6 +204,19 @@ function GarmentDetailPage() {
         </span>
       </button>
 
+      {outing && (
+        <div className="mx-4 mt-3 flex items-center gap-3 rounded-card-lg border border-line bg-card py-3 pr-3 pl-4">
+          <span className="min-w-0 flex-1">
+            <b className="block text-[15px] font-semibold text-deep">{OUTING_LABEL[outing.kind]} 맡긴 중</b>
+            <span className="mt-0.5 block truncate text-caption text-sub">{outingSummary(outing)}</span>
+            {outing.memo && <span className="block truncate text-caption text-sub">{outing.memo}</span>}
+          </span>
+          <Button variant="outline" size="sm" onClick={() => setMoveOpen(true)}>
+            찾아왔어요
+          </Button>
+        </div>
+      )}
+
       <dl className="mx-4 mt-3 grid grid-cols-2 gap-x-3 rounded-card-lg border border-line bg-card px-4 py-1.5">
         {info.map(([k, v], i) => (
           <div
@@ -201,7 +257,20 @@ function GarmentDetailPage() {
         </div>
       )}
 
-      <PlacePickerSheet open={moveOpen} onClose={() => setMoveOpen(false)} current={g.placeId} onConfirm={move} />
+      <PlacePickerSheet
+        open={moveOpen}
+        onClose={() => setMoveOpen(false)}
+        current={previous}
+        onConfirm={move}
+        title={outing ? "찾아와서 둘 위치" : "보관 위치 선택"}
+        confirmLabel={outing ? "찾아왔어요" : "위치 변경"}
+      />
+      <OutingSheet
+        open={outingOpen}
+        onClose={() => setOutingOpen(false)}
+        initial={outing && { kind: outing.kind, shop: outing.shop, dueDate: outing.dueDate, memo: outing.memo }}
+        onSubmit={sendOut}
+      />
       <ConfirmDialog
         open={confirmOpen}
         message={

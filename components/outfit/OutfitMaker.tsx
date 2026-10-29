@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useData } from "@/components/DataProvider";
 import { GarmentPhoto } from "@/components/garment/GarmentPhoto";
+import { Mannequin, type Worn } from "./Mannequin";
 import { CheckIcon, PlusIcon, SmallCloseIcon } from "@/components/icons";
 import { buttonClass } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
@@ -35,8 +36,10 @@ export function OutfitMaker({
   onChange: (d: OutfitDraft) => void;
   nameError: boolean;
 }) {
-  const { garments } = useData();
+  const { garments, profile } = useData();
   const [cat, setCat] = useState<Category | "all">("all");
+  /** 칸으로 보기(목업) / 마네킹으로 입어 보기 */
+  const [view, setView] = useState<"slots" | "mannequin">("slots");
 
   const byId = useMemo(() => new Map(garments.map((g) => [g.id, g])), [garments]);
   const pickable = garments.filter((g) => g.category !== "etc" && (cat === "all" || g.category === cat));
@@ -49,9 +52,45 @@ export function OutfitMaker({
     onChange({ ...draft, slots });
   };
 
+  const worn: Worn = {};
+  for (const slot of ["outer", "top", "bottom", "shoes"] as const) {
+    const g = draft.slots[slot] ? byId.get(draft.slots[slot]!) : undefined;
+    if (g) worn[slot] = g;
+  }
+  const body = profile.body;
+
   return (
     <>
-      <div className="mx-4 mt-2.5 grid grid-cols-2 gap-2.5 rounded-card-lg border border-line bg-card p-2.5">
+      {view === "mannequin" && (
+        <div className="mx-4 mt-2.5 rounded-card-lg border border-line bg-card pt-3 pb-3.5">
+          <div className="flex justify-center">
+            <Mannequin body={body} worn={worn} height={330} />
+          </div>
+          <p className="mt-1 px-4 text-center text-[13px] leading-normal text-sub">
+            {body ? (
+              <>
+                키 {body.heightCm}cm · 몸무게 {body.weightKg}kg 체형이에요.
+              </>
+            ) : (
+              <>
+                키와 몸무게를 등록하면
+                <br />
+                내 체형에 맞게 보여 줘요.
+              </>
+            )}
+            <br />
+            <Link href="/my/body" className="font-semibold text-deep">
+              {body ? "내 체형 바꾸기 ›" : "내 체형 등록하기 ›"}
+            </Link>
+          </p>
+        </div>
+      )}
+      <div
+        className={
+          "mx-4 mt-2.5 grid grid-cols-2 gap-2.5 rounded-card-lg border border-line bg-card p-2.5 " +
+          (view === "mannequin" ? "hidden" : "")
+        }
+      >
         {CANVAS_SLOTS.map((slot) => {
           const g = draft.slots[slot] ? byId.get(draft.slots[slot]!) : undefined;
           return (
@@ -79,7 +118,16 @@ export function OutfitMaker({
         })}
       </div>
 
-      <h2 className="px-5 pt-3.5 text-[15px] font-semibold">내 옷장에서 고르기</h2>
+      <div className="flex items-baseline justify-between px-5 pt-3.5">
+        <h2 className="text-[15px] font-semibold">내 옷장에서 고르기</h2>
+        <button
+          type="button"
+          className="text-[13px] font-semibold text-deep"
+          onClick={() => setView((v) => (v === "slots" ? "mannequin" : "slots"))}
+        >
+          {view === "slots" ? "마네킹으로 보기" : "칸으로 보기"}
+        </button>
+      </div>
       <div className="no-scrollbar flex gap-2 overflow-x-auto px-4 pt-2">
         <Chip selected={cat === "all"} onClick={() => setCat("all")}>
           전체

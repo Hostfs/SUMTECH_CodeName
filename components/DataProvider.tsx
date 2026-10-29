@@ -3,10 +3,10 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { SEED_GARMENTS, SEED_OUTFITS, SEED_PLACES, SEED_PROFILE } from "@/lib/mock/seed";
 import { indexPlaces, type PlaceIndex } from "@/lib/places";
-import { repos, type GarmentInput } from "@/lib/repo";
+import { repos, type GarmentInput, type OutingInput } from "@/lib/repo";
 import { SAVE_FAILED_EVENT } from "@/lib/repo/local";
 import { useToast } from "@/components/ui/Toast";
-import type { Garment, Outfit, Place, Profile } from "@/lib/types";
+import type { Body, Garment, Outfit, Place, Profile } from "@/lib/types";
 
 /**
  * 화면들이 같은 데이터를 보도록 한곳에 모은 상태 (R09: 한 화면에서 바꾼 값이 모든 화면에 같게 보인다).
@@ -23,6 +23,9 @@ interface DataContextValue {
   updateGarment(id: string, patch: Partial<GarmentInput>): Promise<Garment>;
   removeGarment(id: string): Promise<void>;
   moveGarments(ids: string[], placeId: string | null): Promise<void>;
+  sendOutGarment(id: string, input: OutingInput): Promise<void>;
+  bringBackGarment(id: string, placeId: string | null): Promise<void>;
+  setBody(body: Body | null): Promise<void>;
   createPlace(input: Omit<Place, "id">): Promise<Place>;
   renamePlace(id: string, name: string): Promise<void>;
   removePlace(id: string): Promise<void>;
@@ -85,6 +88,17 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       async moveGarments(ids, placeId) {
         await repos.garments.movePlace(ids, placeId);
         await reloadGarments();
+      },
+      async sendOutGarment(id, input) {
+        await repos.garments.sendOut(id, input);
+        await Promise.all([reloadGarments(), reloadPlaces()]);
+      },
+      async bringBackGarment(id, placeId) {
+        await repos.garments.bringBack(id, placeId);
+        await reloadGarments();
+      },
+      async setBody(body) {
+        setProfile(await repos.profile.setBody(body));
       },
       async createPlace(input) {
         const p = await repos.places.create(input);

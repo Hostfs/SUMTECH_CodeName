@@ -9,6 +9,7 @@ import { TopBar } from "@/components/layout/TopBar";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useToast } from "@/components/ui/Toast";
+import { useSessionState } from "@/lib/useSessionState";
 
 type Tab = "make" | "saved";
 
@@ -16,7 +17,8 @@ export default function OutfitsPage() {
   const { garments, outfits, createOutfit } = useData();
   const toast = useToast();
   const [tab, setTab] = useState<Tab>("make");
-  const [draft, setDraft] = useState<OutfitDraft>(EMPTY_DRAFT);
+  // 내 체형 화면에 다녀와도 작성 중인 코디가 남도록 세션에 보관한다
+  const [draft, setDraft] = useSessionState<OutfitDraft>("outfit.draft", EMPTY_DRAFT);
   const [nameError, setNameError] = useState(false);
 
   // 마이 > 저장한 코디에서 들어오면 ?tab=saved

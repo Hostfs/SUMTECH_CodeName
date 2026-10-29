@@ -22,6 +22,21 @@ export interface Place {
   memo?: string;
 }
 
+/** 세탁·수선을 맡긴 상태. 맡긴 동안 보관 위치는 '세탁소'·'수선집'이 되고, 찾아올 때 원래 위치로 돌려 둔다. */
+export type OutingKind = "laundry" | "repair";
+
+export interface Outing {
+  kind: OutingKind;
+  /** 맡긴 곳 이름 (예: 우리동네세탁소) */
+  shop?: string;
+  /** 찾을 예정일 'YYYY-MM-DD' */
+  dueDate?: string;
+  memo?: string;
+  /** 맡기기 전 보관 위치. 찾아올 때 이 위치를 미리 골라 준다. */
+  previousPlaceId: string | null;
+  since: string;
+}
+
 export interface Garment {
   id: string;
   name: string;
@@ -37,6 +52,8 @@ export interface Garment {
   material?: string;
   memo?: string;
   careInfo?: { text: string; confirmed: boolean }[];
+  /** 지금 세탁·수선을 맡겨 둔 상태면 있다 */
+  outing?: Outing;
   createdAt: string;
   updatedAt: string;
 }
@@ -52,8 +69,15 @@ export interface Outfit {
   createdAt: string;
 }
 
+/** 코디 마네킹 체형 */
+export interface Body {
+  heightCm: number;
+  weightKg: number;
+}
+
 export interface Profile {
   name: string;
+  body?: Body;
 }
 
 /** 등록 화면의 색 점 8개 (design/html/add_autumn.html) */

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useData } from "@/components/DataProvider";
 import {
   BellIcon,
+  BodyIcon,
   BoxIcon,
   ChevronRightIcon,
   GearIcon,
@@ -40,6 +41,12 @@ export default function MyPage() {
           {themeValue}
         </>
       ),
+    },
+    {
+      label: "내 체형",
+      Icon: BodyIcon,
+      href: "/my/body",
+      value: profile.body ? `${profile.body.heightCm}cm · ${profile.body.weightKg}kg` : "등록 안 함",
     },
     { label: "저장한 코디", Icon: ShirtIcon, href: "/outfits?tab=saved", value: `${outfits.length}개` },
     { label: "보관 장소 관리", Icon: BoxIcon, href: "/storage", value: `${placeCount}곳` },

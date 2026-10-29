@@ -16,12 +16,16 @@ export function PlacePickerSheet({
   onClose,
   current,
   onConfirm,
+  title = "보관 위치 선택",
+  confirmLabel = "위치 변경",
 }: {
   open: boolean;
   onClose: () => void;
   /** 지금 위치. 여러 벌이라 정해지지 않으면 undefined */
   current?: string | null;
   onConfirm: (placeId: string | null) => void;
+  title?: string;
+  confirmLabel?: string;
 }) {
   const { places } = useData();
   const [picked, setPicked] = useState<string | null | undefined>(current);
@@ -61,10 +65,10 @@ export function PlacePickerSheet({
     <Sheet
       open={open}
       onClose={onClose}
-      title="보관 위치 선택"
+      title={title}
       footer={
         <Button size="lg" className="w-full" disabled={picked === undefined} onClick={() => picked !== undefined && onConfirm(picked)}>
-          위치 변경
+          {confirmLabel}
         </Button>
       }
     >

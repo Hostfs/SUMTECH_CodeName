@@ -78,7 +78,10 @@ export const localRepos: Repos = {
     },
     async update(id, patch) {
       const g = mustFind(load().garments, id);
+      // 위치를 직접 바꾸면 다시 찾아온 것으로 본다
+      if (g.outing && patch.placeId !== undefined && patch.placeId !== g.placeId) delete g.outing;
       Object.assign(g, patch, { updatedAt: now() });
+      if (!g.outing) delete g.outing;
       save();
       return clone(g);
     },
@@ -100,12 +103,41 @@ export const localRepos: Repos = {
       for (const g of load().garments) {
         if (set.has(g.id)) {
           g.placeId = placeId;
+          delete g.outing;
           g.updatedAt = at;
           moved.push(g);
         }
       }
       save();
       return clone(moved);
+    },
+    async sendOut(id, input) {
+      const d = load();
+      const g = mustFind(d.garments, id);
+      const placeName = input.kind === "laundry" ? "세탁소" : "수선집";
+      let place = d.places.find((p) => !p.parentId && p.name === placeName);
+      if (!place) {
+        place = { id: newId("p"), name: placeName };
+        d.places.push(place);
+      }
+      const at = now();
+      g.outing = {
+        ...input,
+        previousPlaceId: g.outing ? g.outing.previousPlaceId : g.placeId,
+        since: g.outing ? g.outing.since : at,
+      };
+      g.placeId = place.id;
+      g.updatedAt = at;
+      save();
+      return clone(g);
+    },
+    async bringBack(id, placeId) {
+      const g = mustFind(load().garments, id);
+      delete g.outing;
+      g.placeId = placeId;
+      g.updatedAt = now();
+      save();
+      return clone(g);
     },
   },
 
@@ -160,6 +192,13 @@ export const localRepos: Repos = {
   profile: {
     async get() {
       return clone(load().profile);
+    },
+    async setBody(body) {
+      const d = load();
+      if (body) d.profile.body = body;
+      else delete d.profile.body;
+      save();
+      return clone(d.profile);
     },
   },
 };

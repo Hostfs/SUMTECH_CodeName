@@ -215,3 +215,10 @@ export const LogoutIcon = (p: IconProps) => (
     <path d="M10 5H5v14h5M14 8l4 4-4 4M18 12H9" />
   </Icon>
 );
+
+export const BodyIcon = (p: IconProps) => (
+  <Icon size={22} {...p}>
+    <circle cx="12" cy="5" r="2.2" />
+    <path d="M12 8.5v6.5M7 10.5 12 8.5l5 2M9.5 21 12 15l2.5 6" />
+  </Icon>
+);

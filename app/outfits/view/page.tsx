@@ -6,6 +6,7 @@ import { Suspense, useMemo, useState } from "react";
 import { useData } from "@/components/DataProvider";
 import { GarmentPhoto } from "@/components/garment/GarmentPhoto";
 import { PinIcon } from "@/components/icons";
+import { Mannequin, type Worn } from "@/components/outfit/Mannequin";
 import { Screen } from "@/components/layout/Screen";
 import { TopBar } from "@/components/layout/TopBar";
 import { Button } from "@/components/ui/Button";
@@ -22,7 +23,7 @@ function OutfitDetailPage() {
   const id = useSearchParams().get("id") ?? "";
   const router = useRouter();
   const toast = useToast();
-  const { ready, outfits, garments, placeIndex, removeOutfit } = useData();
+  const { ready, outfits, garments, placeIndex, removeOutfit, profile } = useData();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const byId = useMemo(() => new Map(garments.map((g) => [g.id, g])), [garments]);
   const o = outfits.find((x) => x.id === id);
@@ -51,6 +52,14 @@ function OutfitDetailPage() {
     >
       <TopBar title={o.name} fallbackHref="/outfits" />
       {o.memo && <p className="px-5 pt-1 text-sm text-sub">{o.memo}</p>}
+
+      <div className="mx-4 mt-3 flex justify-center rounded-card-lg border border-line bg-card py-3">
+        <Mannequin
+          body={profile.body}
+          worn={Object.fromEntries(items.filter((i) => i.slot !== "etc").map((i) => [i.slot, i.g])) as Worn}
+          height={300}
+        />
+      </div>
 
       <ul className="grid grid-cols-2 gap-3 px-4 pt-3 pb-6">
         {items.map(({ slot, g }) => {
