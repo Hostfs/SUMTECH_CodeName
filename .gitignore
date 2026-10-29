@@ -1,0 +1,26 @@
+# 비밀값
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# 의존성·빌드 산출물
+node_modules/
+.next/
+dist/
+build/
+out/
+coverage/
+
+# E2E 결과
+e2e/test-results/
+e2e/playwright-report/
+test-results/
+playwright-report/
+
+# OS·편집기
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
