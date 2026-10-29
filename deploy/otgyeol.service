@@ -1,0 +1,17 @@
+[Unit]
+Description=Otgyeol wardrobe service (Node.js)
+After=network-online.target mariadb.service mysql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=otgyeol
+WorkingDirectory=/opt/otgyeol
+ExecStart=/opt/otgyeol/start.sh
+Restart=on-failure
+RestartSec=3
+# 메모리가 작은 서버에서도 넉넉하다(평소 약 70~100MB).
+MemoryMax=512M
+
+[Install]
+WantedBy=multi-user.target

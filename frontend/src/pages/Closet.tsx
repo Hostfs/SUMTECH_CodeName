@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { api, errorMessage } from '../api'
 import GarmentCard from '../components/GarmentCard'
+import TakeOutSheet from '../components/TakeOutSheet'
 import { IconSearch } from '../components/Icons'
 import { Loading, Notice } from '../components/Ui'
 import WeatherCard from '../components/WeatherCard'
@@ -32,6 +33,15 @@ export default function Closet() {
   const [total, setTotal] = useState<number | null>(null)
   const [allItems, setAllItems] = useState<GarmentSummary[] | null>(null)
   const [error, setError] = useState('')
+  // 선택 모드: 카드를 눌러 여러 벌을 고르고 옮기기 화면으로 넘긴다.
+  const [selecting, setSelecting] = useState(false)
+  const [sel, setSel] = useState<number[]>([])
+  const navigate = useNavigate()
+  const toggle = (id: number) => setSel((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]))
+  const endSelect = () => { setSelecting(false); setSel([]) }
+  // 꺼내기: 박스·집 밖에 있는 옷을 찾은 카드에서 바로 집 안 자리로 옮긴다. 옮긴 뒤 목록을 다시 읽는다.
+  const [takeOut, setTakeOut] = useState<GarmentSummary | null>(null)
+  const [reload, setReload] = useState(0)
 
   // 검색어는 잠시 멈춘 뒤 서버에 보낸다(이름·브랜드·색상·종류·위치 경로에서 찾음).
   useEffect(() => {
@@ -42,7 +52,7 @@ export default function Closet() {
         .catch((e) => setError(errorMessage(e)))
     }, query ? 250 : 0)
     return () => clearTimeout(t)
-  }, [query])
+  }, [query, reload])
 
   function setParam(key: string, value: string | null) {
     const next = new URLSearchParams(params)
@@ -62,7 +72,14 @@ export default function Closet() {
     <>
       <div className="page-head">
         <h1 className="page-title">내 옷장{total !== null && <small>총 {total}벌</small>}</h1>
-        <Link className="btn btn-sm btn-soft" to="/register">옷 등록</Link>
+        <div className="page-head-actions">
+          {total !== null && total > 0 && (
+            <button type="button" className="btn btn-sm btn-ghost" aria-pressed={selecting} onClick={() => (selecting ? endSelect() : setSelecting(true))}>
+              {selecting ? '선택 끝' : '선택'}
+            </button>
+          )}
+          <Link className="btn btn-sm btn-soft" to="/register">옷 등록</Link>
+        </div>
       </div>
 
       {allItems && allItems.length > 0 && <WeatherCard items={allItems} />}
@@ -110,10 +127,25 @@ export default function Closet() {
         <section className="group" key={g.key} aria-label={`${g.title} 묶음`}>
           <h2 className="group-title">{g.title}<small>{g.items.length}벌</small></h2>
           <div className="grid">
-            {g.items.map((item) => <GarmentCard key={`${g.key}-${item.id}`} g={item} />)}
+            {g.items.map((item) => selecting
+              ? <GarmentCard key={`${g.key}-${item.id}`} g={item} selected={sel.includes(item.id)} onToggle={toggle} />
+              : <GarmentCard key={`${g.key}-${item.id}`} g={item} onTakeOut={setTakeOut} />)}
           </div>
         </section>
       ))}
+
+      {takeOut && (
+        <TakeOutSheet garment={takeOut} onClose={() => setTakeOut(null)}
+          onDone={() => { setTakeOut(null); setReload((n) => n + 1) }} />
+      )}
+
+      {selecting && (
+        <div className="selbar" role="region" aria-label="선택한 옷">
+          <b>{sel.length}벌 선택</b>
+          <button type="button" className="btn btn-sm btn-ghost" onClick={() => setSel([])} disabled={sel.length === 0}>선택 해제</button>
+          <button type="button" className="btn" disabled={sel.length === 0} onClick={() => navigate(`/move?ids=${sel.join(',')}`)}>옮기기로 보내기</button>
+        </div>
+      )}
     </>
   )
 }

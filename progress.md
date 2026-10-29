@@ -109,6 +109,13 @@ Agent가 서비스 저장소 루트의 `progress.md`로 복사해 이어 쓴다(
   - 2026-10-29 외부 리뷰 반영(지적 대부분 사실로 확인, progress.md 미반영 지적은 이미 ce46792에서 갱신됨): ① /move 직접 열기·새로고침·QR 링크 404 → SpaController에 추가, CI에 App.tsx 화면 주소 전체 직접 열기 검사 추가 ② 택 분석 실패(FAILED) 시 사진 잠김·재시도 버튼 사라짐 → 분석 성공일 때만 잠금 ③ 등록·수정 때 읽은 값과 다른 값을 corrected_value로 저장하고 그 항목은 aiFields에서 뺌(등록 화면도 고친 칸 제외) ④ 관리함 진행 중 행에 옷 상태(세탁 중·수선 중) 표시, S5·S7·S8 spec이 steps 밖 화면 이동 없이 확인 ⑤ 택 색상 제안 추가 ⑥ 택 분석(사진 해시)·제품 검색(브랜드·품번·이름) 6시간 메모리 캐시, 후보 페이지 동시 확인 ⑦ QR 읽기 jsQR 폴백(BarcodeDetector 없는 PC Chrome에서 라벨 사진 판독 확인) ⑧ 배경 제거: 완만한 조명 차이 허용, 외곽 반투명 처리 ⑨ 첫 화면·README를 수정안 기준으로
   - 검사: docker mvn test 14개 통과(정정값 테스트 추가), 화면 주소 10개 직접 열기 200·없는 주소 404, E2E S2 제외 14/14 통과, 택 분석 실패 후 재시도·입력 유지 수동 확인
   - 남은 것: S2·실제 AI(키 필요), 배포, problem.yaml 근거 빈칸(학생·팀 답), 팀원이 만든 POST /api/images/{id}/processed 정리 여부(팀 결정), 영수증 자동 읽기
+- 2026-10-29 프론트 교체: 학생 결정으로 frontend/를 frontend 브랜치(새 디자인 초안)로 통째로 덮어씀. 기존 main 프론트는 기능 확인용이었음. 새 초안은 브라우저 저장소(localStorage·IndexedDB)만 쓰고 서버 API·로그인·옮기기(R11)·관리함·택 AI 분석 화면이 아직 없어, 흐름 E2E(S1~S8)는 다시 연결할 때까지 실패. 서버에 새 화면 주소(/outfit, /storage) 추가, 새 프론트에 lint가 없어 CI는 lint가 있을 때만 실행. 다음: 새 디자인에 서버 API 연결
+- 2026-10-30 프론트 복구: 학생 결정으로 frontend/를 서버에 연결된 직전 버전(be6e789)으로 되돌림. 새 디자인 초안은 frontend 브랜치에 그대로 두고, 색·레이아웃을 이 프론트로 차례로 옮긴다. SpaController·frontend.yml도 같은 시점으로. problem.yaml은 로컬 교차 채점본(Codex 19·Gemini 18.5/30)으로, scenarios S4(라벨 QR·처음 보는 옷·위치 변경으로 꺼내기)·S5(영수증 사진)를 학생 수정대로 넣고 버튼 이름을 실제 화면에 맞춤. 박스·집 밖 아래 공간의 옷을 집 밖으로 보는 백엔드 수정(ClosetContext) 포함
+  - 검사: E2E S2 제외 14/14 통과(S2는 로컬 AI 키 없음), 백엔드 테스트 18개 통과
+- 2026-10-30 학생 결정: 백엔드를 Spring Boot에서 Node.js(Express 5, TypeScript)로 교체(저사양에서 무겁다는 이유). DB·테이블·트리거·마이그레이션 V1~V4는 그대로, API 35개의 경로·응답 형식도 그대로(화면 코드 변경 없음). 배포는 nginx(HTTPS·프록시) → Express → MariaDB, FTP 묶음은 deploy/make_bundle.py로 만들고 서버에서 sudo bash install.sh 도메인 한 줄로 설치·업데이트. Spring 코드(backend/)는 검증 뒤 삭제
+  - 검사: 같은 요청 83개를 Spring·Express에 보내 상태 코드 전부 일치(본문 차이는 검사 문구 순서·401 본문뿐), 빈 DB 스키마 지문(테이블 49·컬럼·제약 160·CHECK 15·인덱스·트리거 30) 일치, Spring이 만든 DB를 그대로 이어 씀, 통합 테스트 20/20(TZ=UTC 포함), E2E 16/16(팀 Gemini 키로 S2 포함), 빈 DB 기동 3.2초·메모리 약 75MB(Spring 21초·343MB)
+  - AI 키가 Vercel Gateway 키가 아니라 Google AI Studio(Gemini) 키라 Gateway가 거절하던 것을 확인 → 키 종류를 보고 Gemini 키면 Google로 바로 보내게 함(기본 모델 gemini-flash-lite-latest). 주최 측이 넣는 Gateway 키는 이전과 같이 Gateway로
+  - 2026-10-30 01:52 다른 도구(Antigravity)의 롤백 커밋 96d3e11로 커밋 전 작업이 지워졌다가 작업 기록에서 복구. 학생 요청으로 원격은 96d3e11 그대로 두고 로컬에서 fa264bb 코드 기준으로 작업
 
 ## 6. 흐름 E2E
 

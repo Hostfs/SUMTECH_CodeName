@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useState, type CSSProperties, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import QRCode from 'qrcode'
 import { api, errorMessage } from '../api'
 import GarmentArt from '../components/GarmentArt'
-import { IconPlus } from '../components/Icons'
+import { IconBox, IconHanger, IconMove, IconPlus, IconShirt, IconSparkle } from '../components/Icons'
 import { Loading, Notice, Sheet, Spinner, Toast } from '../components/Ui'
 import { useSession } from '../session'
 import type { GarmentSummary, MapView, Proposal, SpaceView } from '../types'
@@ -57,6 +56,11 @@ export default function SpaceMap() {
   if (!map) return error ? <Notice>{error}</Notice> : <Loading />
   const leaves = map.spaces.filter((s) => !map.spaces.some((o) => o.parentId === s.id))
   const roots = map.spaces.filter((s) => s.parentId === null)
+  // 제자리 비율: 공간에 넣어 둔 옷 / (넣어 둔 옷 + 미배치 옷). 세탁·수선 중인 옷은 세지 않는다.
+  const placed = leaves.reduce((n, s) => n + s.count, 0)
+  const atHome = placed + map.unplaced.length
+  const pct = atHome ? Math.round((placed / atHome) * 100) : 0
+  const pick = (id: number) => setSelected(selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id])
 
   return (
     <>
@@ -67,80 +71,97 @@ export default function SpaceMap() {
       <p className="page-lead">옷장·서랍·박스를 등록하고 옷을 넣어 두면, 내 옷장에서 검색할 때 꺼낼 위치가 보여요.</p>
       {error && <div style={{ marginBottom: 16 }}><Notice>{error}</Notice></div>}
 
-      <section className="section" aria-label="배치">
-        <div className="page-head" style={{ margin: '0 0 12px' }}>
-          <h2 className="section-title" style={{ margin: 0 }}>배치할 옷<small>{map.unplaced.length}벌 미배치{selected.length > 0 ? `, ${selected.length}벌 선택` : ''}</small></h2>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <button type="button" className="btn btn-sm" disabled={selected.length === 0 || leaves.length === 0 || busy !== null}
-              onClick={() => setPutting({ garments: map.unplaced.filter((g) => selected.includes(g.id)) })}>
-              선택한 옷 넣기
-            </button>
-            <button type="button" className="btn btn-sm btn-outline" onClick={recommend} disabled={busy === 'recommend' || map.spaces.length === 0 || map.unplaced.length === 0}>
-              {busy === 'recommend' && <Spinner />}배치 추천 받기
-            </button>
+      <div className="map-top">
+        <section className="map-ov" aria-label="배치 요약">
+          <div className="map-ring" style={{ '--p': `${pct}%` } as CSSProperties} role="img" aria-label={`제자리 ${pct}%`}>
+            <b>{pct}<small>%</small></b>
           </div>
-        </div>
-        {map.spaces.length === 0 && <div className="empty"><p>먼저 ‘공간 추가’로 옷을 넣을 곳을 만들어 주세요. 예: 옷장 A 안의 왼쪽 행거.</p></div>}
-        {map.spaces.length > 0 && map.unplaced.length > 0 && (
-          <details className="field-hint" style={{ marginBottom: 12 }}>
-            <summary style={{ cursor: 'pointer' }}>배치 추천은 어떤 기준인가요?</summary>
-            <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
-              <li>옷을 골라 두면 고른 옷만, 고르지 않으면 미배치 옷 전체를 추천해요.</li>
-              <li>이번 계절에 입지 않는 옷 → 장기보관 공간</li>
-              <li>아우터·원피스·셔츠처럼 형태 유지가 필요한 옷 → 걸기 공간, 나머지 → 접기 공간</li>
-              <li>같은 유형 중에서는 남은 자리가 많은 공간, 자주 입는 옷부터 자리를 잡아요.</li>
-              <li>추천은 확정이 아니에요. 공간을 바꾸거나 빼고, 실제로 넣은 뒤 ‘배치 완료’를 눌러요.</li>
-            </ul>
-          </details>
-        )}
-        {proposals.length > 0 && (
-          <>
-            <Notice kind="info">추천은 아직 확정되지 않았어요. 실제로 옷을 넣은 뒤 ‘배치 완료’를 눌러야 위치가 바뀌어요.</Notice>
-            <div style={{ marginTop: 12 }}>
-              {proposals.map((p) => (
-                <div className="row-item" key={p.id} aria-label={`${p.garment.name} 배치 추천`}>
-                  <Thumb g={p.garment} />
-                  <div className="row-main">
-                    <span className="row-title">{p.garment.name}</span>
-                    <div className="row-sub">
-                      <select aria-label={`${p.garment.name} 추천 공간`} className="inline-select" style={{ border: 0, background: 'none', padding: 0, fontWeight: 700, color: 'var(--accent)' }}
-                        value={p.spaceId} onChange={(e) => change(p, Number(e.target.value))}>
-                        {leaves.map((s) => <option key={s.id} value={s.id}>{s.path}</option>)}
-                      </select>
-                    </div>
-                    <div className="row-sub">{p.reason}</div>
-                    {p.overBy > 0 && <div className="row-sub danger">이 공간이 {p.overBy}벌 넘쳐요({p.projectedCount}/{p.capacity}). 다른 공간을 골라 주세요.</div>}
+          <div className="map-ov-text">
+            <p className="map-ov-title">{atHome}벌 중 {placed}벌이 제자리에 있어요</p>
+            <p className="map-ov-sub">공간 {map.spaces.length}곳 · 미배치 {map.unplaced.length}벌</p>
+          </div>
+        </section>
+
+        <section className={`map-callout${map.unplaced.length === 0 ? ' done' : ''}`} aria-label="배치">
+          <div className="map-callout-head">
+            {map.unplaced.length > 0 && <Avatars items={map.unplaced} max={3} />}
+            <h2 className="section-title">배치할 옷<small>{map.unplaced.length}벌 미배치{selected.length > 0 ? `, ${selected.length}벌 선택` : ''}</small></h2>
+          </div>
+          {map.spaces.length === 0 && <p className="field-hint">먼저 ‘공간 추가’로 옷을 넣을 곳을 만들어 주세요. 예: 옷장 A 안의 왼쪽 행거.</p>}
+          {map.unplaced.length === 0 && map.spaces.length > 0 && <p className="field-hint">모든 옷의 위치가 정해져 있어요.</p>}
+          {map.unplaced.length > 0 && map.spaces.length > 0 && (
+            <>
+              <p className="field-hint">옷을 눌러 고르면 고른 옷만 추천해요. ‘선택한 옷 넣기’로 바로 넣을 수도 있어요.</p>
+              <div className="mini-list" role="group" aria-label="미배치 옷">
+                {map.unplaced.map((g) => (
+                  <button key={g.id} type="button" className="mini mini-pick" aria-pressed={selected.includes(g.id)} onClick={() => pick(g.id)}>
+                    <span className="dot" style={{ background: g.colorHex ?? '#d9d3c9' }} />{g.name}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+          {map.unplaced.length > 0 && (
+            <div className="map-callout-actions">
+              <button type="button" className="btn btn-block" onClick={recommend} disabled={busy === 'recommend' || map.spaces.length === 0}>
+                {busy === 'recommend' ? <Spinner /> : <IconSparkle />}배치 추천 받기
+              </button>
+              <button type="button" className="btn btn-outline btn-block" disabled={selected.length === 0 || leaves.length === 0 || busy !== null}
+                onClick={() => setPutting({ garments: map.unplaced.filter((g) => selected.includes(g.id)) })}>
+                선택한 옷 넣기
+              </button>
+            </div>
+          )}
+          {map.spaces.length > 0 && map.unplaced.length > 0 && (
+            <details className="field-hint">
+              <summary style={{ cursor: 'pointer' }}>배치 추천은 어떤 기준인가요?</summary>
+              <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
+                <li>옷을 골라 두면 고른 옷만, 고르지 않으면 미배치 옷 전체를 추천해요.</li>
+                <li>이번 계절에 입지 않는 옷 → 장기보관 공간</li>
+                <li>아우터·원피스·셔츠처럼 형태 유지가 필요한 옷 → 걸기 공간, 나머지 → 접기 공간</li>
+                <li>같은 유형 중에서는 남은 자리가 많은 공간, 자주 입는 옷부터 자리를 잡아요.</li>
+                <li>추천은 확정이 아니에요. 공간을 바꾸거나 빼고, 실제로 넣은 뒤 ‘배치 완료’를 눌러요.</li>
+              </ul>
+            </details>
+          )}
+        </section>
+      </div>
+
+      {proposals.length > 0 && (
+        <section className="section" aria-label="배치 추천">
+          <h2 className="section-title">배치 추천<small>{proposals.length}벌</small></h2>
+          <Notice kind="info">추천은 아직 확정되지 않았어요. 실제로 옷을 넣은 뒤 ‘배치 완료’를 눌러야 위치가 바뀌어요.</Notice>
+          <div style={{ marginTop: 12 }}>
+            {proposals.map((p) => (
+              <div className="row-item" key={p.id} aria-label={`${p.garment.name} 배치 추천`}>
+                <Thumb g={p.garment} />
+                <div className="row-main">
+                  <span className="row-title">{p.garment.name}</span>
+                  <div className="row-sub">
+                    <select aria-label={`${p.garment.name} 추천 공간`} className="inline-select" style={{ border: 0, background: 'none', padding: 0, fontWeight: 700, color: 'var(--deep)' }}
+                      value={p.spaceId} onChange={(e) => change(p, Number(e.target.value))}>
+                      {leaves.map((s) => <option key={s.id} value={s.id}>{s.path}</option>)}
+                    </select>
                   </div>
-                  <div className="row-actions">
-                    <button type="button" className="btn btn-sm btn-ghost" onClick={() => dismiss(p)} disabled={busy !== null}>빼기</button>
-                    <button type="button" className="btn btn-sm" onClick={() => apply(p)} disabled={busy !== null}>{busy === `apply-${p.id}` && <Spinner />}배치 완료</button>
-                  </div>
+                  <div className="row-sub">{p.reason}</div>
+                  {p.overBy > 0 && <div className="row-sub danger">이 공간이 {p.overBy}벌 넘쳐요({p.projectedCount}/{p.capacity}). 다른 공간을 골라 주세요.</div>}
                 </div>
-              ))}
-            </div>
-          </>
-        )}
-        {map.unplaced.length > 0 && map.spaces.length > 0 && (
-          <div style={{ marginTop: proposals.length > 0 ? 16 : 0 }}>
-            <p className="field-hint" style={{ margin: '0 0 8px' }}>넣을 옷을 눌러 고른 뒤 ‘선택한 옷 넣기’로 공간을 정하거나, 공간 카드의 ‘옷 넣기’를 눌러요.</p>
-            <div className="mini-list" role="group" aria-label="미배치 옷">
-              {map.unplaced.map((g) => (
-                <button key={g.id} type="button" className="mini mini-pick" aria-pressed={selected.includes(g.id)}
-                  onClick={() => setSelected(selected.includes(g.id) ? selected.filter((x) => x !== g.id) : [...selected, g.id])}>
-                  <span className="dot" style={{ background: g.colorHex ?? '#d9d3c9' }} />{g.name}
-                </button>
-              ))}
-            </div>
+                <div className="row-actions">
+                  <button type="button" className="btn btn-sm btn-ghost" onClick={() => dismiss(p)} disabled={busy !== null}>빼기</button>
+                  <button type="button" className="btn btn-sm" onClick={() => apply(p)} disabled={busy !== null}>{busy === `apply-${p.id}` && <Spinner />}배치 완료</button>
+                </div>
+              </div>
+            ))}
           </div>
-        )}
-        {map.unplaced.length === 0 && map.spaces.length > 0 && <p className="field-hint">모든 옷의 위치가 정해져 있어요.</p>}
-      </section>
+        </section>
+      )}
 
       <section className="section" aria-label="공간">
         <h2 className="section-title">공간<small>{map.spaces.length}곳</small></h2>
         <div className="spaces">
-          {roots.flatMap((r) => [r, ...descendants(r, map.spaces)]).map((s) => (
-            <SpaceCard key={s.id} s={s} isParent={!leaves.includes(s)} onPut={() => setPutting({ space: s })} />
+          {roots.map((r) => (
+            <SpaceCard key={r.id} root={r} slots={[r, ...descendants(r, map.spaces)].filter((s) => leaves.includes(s))}
+              onPut={(s) => setPutting({ space: s })} />
           ))}
         </div>
       </section>
@@ -171,57 +192,77 @@ function Mini({ g }: { g: GarmentSummary }) {
   return <Link className="mini" to={`/closet/${g.id}`}><span className="dot" style={{ background: g.colorHex ?? '#d9d3c9' }} />{g.name}</Link>
 }
 
-function SpaceCard({ s, isParent, onPut }: { s: SpaceView; isParent: boolean; onPut: () => void }) {
-  const [qr, setQr] = useState(false)
-  const over = s.overBy > 0
-  const pct = s.capacity ? Math.min(100, (s.count / s.capacity) * 100) : 0
+/** 옷을 겹친 작은 동그라미로 보여 준다. 넘치는 벌 수는 +N. */
+function Avatars({ items, max = 4 }: { items: GarmentSummary[]; max?: number }) {
   return (
-    <article className="space-card" aria-label={s.path}>
-      <div className="space-head">
-        <span className="space-name">{s.path}</span>
-        <span className={`space-meta${over ? ' over' : ''}`}>
-          {s.spaceTypeLabel}{s.capacity ? `, ${s.count}/${s.capacity}벌` : isParent ? '' : `, ${s.count}벌`}{over ? `, ${s.overBy}벌 초과` : ''}
+    <span className="map-avatars" aria-hidden>
+      {items.slice(0, max).map((g) => (
+        <span key={g.id} className="map-avatar">
+          {g.imageUrl ? <img src={g.imageUrl} alt="" /> : <GarmentArt subType={g.subType} colorHex={g.colorHex} />}
         </span>
+      ))}
+      {items.length > max && <span className="map-avatar more">+{items.length - max}</span>}
+    </span>
+  )
+}
+
+function SpaceIcon({ type }: { type: string }) {
+  if (type === 'BOX' || type === 'LONG_TERM') return <IconBox />
+  if (type === 'OFFSITE') return <IconMove />
+  if (type === 'HANG') return <IconHanger />
+  return <IconShirt />
+}
+
+/** 최상위 공간 하나를 카드로. 안쪽 공간은 한 줄씩(이름·옷 동그라미·벌 수), 줄을 누르면 넣어 둔 옷이 펼쳐진다. */
+function SpaceCard({ root, slots, onPut }: { root: SpaceView; slots: SpaceView[]; onPut: (s: SpaceView) => void }) {
+  const single = slots.length === 1 && slots[0].id === root.id
+  const count = slots.reduce((n, s) => n + s.count, 0)
+  const capacity = slots.reduce((n, s) => n + (s.capacity ?? 0), 0)
+  const over = slots.some((s) => s.overBy > 0)
+  const pct = capacity ? Math.min(100, (count / capacity) * 100) : 0
+  return (
+    <article className="space-card map-space" aria-label={root.path}>
+      <div className="map-space-head">
+        <span className="map-space-ico"><SpaceIcon type={root.spaceType} /></span>
+        <div className="map-space-title">
+          <h3>{root.name}</h3>
+          <small>{single ? root.spaceTypeLabel : `${root.spaceTypeLabel} · 안쪽 ${slots.length}곳`}</small>
+        </div>
+        {!capacity && !single && <span className={`map-cap-num${over ? ' over' : ''}`}>{count}벌</span>}
       </div>
-      {s.capacity ? <div className={`meter${over ? ' over' : ''}`}><span style={{ width: `${pct}%` }} /></div> : <div style={{ height: 10 }} />}
-      {isParent ? <p className="field-hint" style={{ margin: 0 }}>안쪽 공간에 옷을 넣어요</p>
-        : s.garments.length > 0 ? <div className="mini-list">{s.garments.map((g) => <Mini key={g.id} g={g} />)}</div>
-          : <p className="field-hint" style={{ margin: 0 }}>비어 있어요</p>}
-      {!isParent && (
-        <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
-          <button type="button" className="btn btn-sm btn-outline" onClick={onPut} aria-label={`${s.path}에 옷 넣기`}>
-            <IconPlus />옷 넣기
-          </button>
-          {s.spaceType === 'BOX' && (
-            <button type="button" className="btn btn-sm btn-ghost" onClick={() => setQr(true)} aria-label={`${s.path} QR 라벨`}>QR 라벨</button>
-          )}
+      {capacity > 0 && (
+        <div className="map-cap">
+          <div className={`meter${over ? ' over' : ''}`}><span style={{ width: `${pct}%` }} /></div>
+          <span className={`map-cap-num${over ? ' over' : ''}`}>{count}/{capacity}벌{over ? ' · 넘침' : ''}</span>
         </div>
       )}
-      {qr && <QrLabelSheet s={s} onClose={() => setQr(false)} />}
+      {slots.length === 0 && <p className="field-hint" style={{ margin: '12px 0 4px' }}>안쪽 공간을 추가하면 옷을 넣을 수 있어요</p>}
+      <div className="map-slots">
+        {slots.map((s) => <Slot key={s.id} s={s} name={single ? null : s.path.slice(root.path.length).replace(/^\s*→\s*/, '')} onPut={() => onPut(s)} />)}
+      </div>
     </article>
   )
 }
 
-/** 박스에 붙일 QR 라벨. 휴대폰 카메라로 찍으면 이 박스가 골라진 '옮기기' 화면이 열린다. */
-function QrLabelSheet({ s, onClose }: { s: SpaceView; onClose: () => void }) {
-  const [src, setSrc] = useState('')
-  const url = `${window.location.origin}/move?to=${s.id}`
-  useEffect(() => {
-    QRCode.toDataURL(url, { margin: 1, width: 440, errorCorrectionLevel: 'M' }).then(setSrc).catch(() => setSrc(''))
-  }, [url])
+function Slot({ s, name, onPut }: { s: SpaceView; name: string | null; onPut: () => void }) {
+  const [open, setOpen] = useState(false)
+  const over = s.overBy > 0
+  const has = s.garments.length > 0
   return (
-    <Sheet title="QR 라벨" onClose={onClose}>
-      <div className="qr-label">
-        {src ? <img src={src} alt={`${s.path} 옮기기 QR`} /> : <Loading />}
-        <strong>{s.path}</strong>
-        <span style={{ fontSize: 12 }}>옷결 · 찍으면 이 박스로 옮기기</span>
+    <div className={`map-slot${open ? ' open' : ''}`}>
+      <div className="map-slot-row">
+        <button type="button" className="map-slot-main" aria-expanded={has ? open : undefined} disabled={!has} onClick={() => setOpen(!open)}>
+          {name !== null && <span className="map-slot-name">{name}</span>}
+          {has ? <Avatars items={s.garments} /> : <span className="map-slot-empty">비어 있어요</span>}
+          <span className={`map-slot-count${over ? ' over' : ''}`}>{s.capacity ? `${s.count}/${s.capacity}` : s.count}<span className="sr-only">벌</span></span>
+          {has && <svg className="map-chev" viewBox="0 0 24 24" aria-hidden><path d="m9 6 6 6-6 6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+        </button>
+        <div className="map-slot-actions">
+          <button type="button" className="btn btn-sm btn-soft" onClick={onPut} aria-label={`${s.path}에 옷 넣기`}><IconPlus />옷 넣기</button>
+        </div>
       </div>
-      <p className="field-hint">출력해서 박스에 붙여 두세요. 옷을 넣거나 꺼낼 때 휴대폰 카메라로 찍으면 바로 기록할 수 있어요.</p>
-      <div className="sheet-actions">
-        <button type="button" className="btn btn-outline" onClick={onClose}>닫기</button>
-        <button type="button" className="btn" onClick={() => window.print()} disabled={!src}>인쇄</button>
-      </div>
-    </Sheet>
+      {open && has && <div className="mini-list map-slot-list">{s.garments.map((g) => <Mini key={g.id} g={g} />)}</div>}
+    </div>
   )
 }
 

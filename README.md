@@ -12,7 +12,7 @@
 | --- | --- |
 | [`docs/problem.yaml`](docs/problem.yaml) | 문제정의 캔버스, 공개 자료 근거(SRC1~SRC6), 5 Whys, 해법 경로, 통찰, 기능 명세(R00~R12, R05·R06 제외) |
 | [`docs/scenarios.yaml`](docs/scenarios.yaml) | 사용자 핵심 흐름 S1~S8과 주 사용 플랫폼 |
-| [`docs/db/schema.sql`](docs/db/schema.sql) | DB 스키마(5NF, MariaDB). 앱의 Flyway 마이그레이션과 같은 파일 |
+| [`docs/db/schema.sql`](docs/db/schema.sql) | DB 스키마(5NF, MariaDB). 앱의 마이그레이션(`server/db/migration/V*.sql`)을 차례로 이은 것과 같은 파일 |
 | [`docs/db/ERD.md`](docs/db/ERD.md) | ER 다이어그램, 정규화 단계별 근거, 교차 검증 결과(`ERD.html`은 브라우저용) |
 | 아래 「구현 설계」 | 기능별 저장 정보·권한·실패 규칙, 데이터 구조, 구현 순서 |
 | `progress.md` | 팀 진행 기록 |
@@ -125,15 +125,15 @@
 
 | 계층 | 선택 |
 | --- | --- |
-| 백엔드 | Spring Boot 4.1(Java 21): REST API(`/api/**`), 세션 쿠키 로그인(Spring Security), Bean Validation |
-| DB | MariaDB(docker는 `mariadb:11.4`, 로컬 개발은 PC의 MariaDB 10.4) + Flyway. 마이그레이션 `V1__init.sql`·`V2__move_batches.sql`을 이은 것이 `docs/db/schema.sql`과 같다(CI가 비교) |
-| 프런트엔드 | Vite + React(TypeScript), 반응형. 빌드 결과를 Spring이 같은 주소에서 제공한다(app 컨테이너 하나, 3000 포트) |
+| 백엔드 | Node.js 22 + Express 5(TypeScript): REST API(`/api/**`), 세션 쿠키 로그인(HttpOnly·SameSite=Lax), 입력 검사. 2026-10-30에 Spring Boot에서 옮겼다(같은 API·응답 형식·DB, 기동 21초 → 3초, 메모리 343MB → 약 75MB) |
+| DB | MariaDB(docker는 `mariadb:11.4`, 로컬 개발은 PC의 MariaDB 10.4, 접속은 `mysql2`). 서버가 시작하며 `server/db/migration/V*.sql`을 번호 순서로 한 번씩 적용한다(기록은 Flyway와 같은 `flyway_schema_history`라 Spring 때 만든 DB를 그대로 이어 쓴다). 마이그레이션을 이은 것이 `docs/db/schema.sql`과 같다(CI가 비교) |
+| 프런트엔드 | Vite + React(TypeScript), 반응형. 빌드 결과를 Express가 같은 주소에서 제공한다(app 컨테이너 하나, 3000 포트) |
 | 파일 | 업로드 이미지는 DB(`images.data`, 한 장 10MB 이하)에 저장 |
 | 이미지 정리 | 브라우저 캔버스에서 가장자리와 이어진 단색(완만한 조명 차이 허용) 배경을 투명 처리하고 외곽 한 줄은 반투명으로 부드럽게, 정사각 1024px 가운데 정렬. 실패 시 원본 유지 |
 | QR | 라벨 생성 `qrcode`, 읽기는 브라우저 `BarcodeDetector` → 없으면 `jsQR` |
-| AI | 서버에서 Vercel AI Gateway HTTP API 호출(`AI_GATEWAY_API_KEY`) |
-| 테스트 | 백엔드 통합 테스트(JUnit, 실제 MariaDB: 로컬 인스턴스·CI의 `mariadb:11.4`), DB 도메인 값과 코드 일치 검사, Playwright E2E(`e2e/`), GitHub Actions |
-| 배포 | 컨테이너 배포(Spring은 Vercel에서 실행되지 않음), `/__health`에서 실제 배포 commit SHA 응답 |
+| AI | 서버에서 OpenAI 호환 chat completions 호출(`AI_GATEWAY_API_KEY`). Vercel AI Gateway 키면 Gateway로, Google AI Studio(Gemini) 키면 Google로 바로 보낸다 |
+| 테스트 | 백엔드 통합 테스트(`node:test`, 실제 MariaDB: 로컬 인스턴스·CI의 `mariadb:11.4`), DB 도메인 값과 코드 일치 검사, Playwright E2E(`e2e/`), GitHub Actions |
+| 배포 | 서버 한 대(Ubuntu): nginx(HTTPS·리버스 프록시) → Express(127.0.0.1:3000) → MariaDB. `deploy/make_bundle.py`가 FTP로 올릴 묶음을 만들고 서버에서 `sudo bash install.sh 도메인` 한 줄로 설치·업데이트. `/__health`에서 실제 배포 commit SHA 응답 |
 
 #### API 요약
 
@@ -156,7 +156,7 @@
 
 ### 11. 데이터 모델
 
-5NF까지 정규화한 49개 테이블(핵심 32 + 도메인 17)이다. V2가 옮기는 묶음 5개를 더했고, V3가 제외한 코디 테이블 3개를 지우고 검색 연결 1개를 더했다. 전체 다이어그램과 단계별 근거는 [`docs/db/ERD.md`](docs/db/ERD.md)에 있다.
+5NF까지 정규화한 49개 테이블(핵심 32 + 도메인 17)이다. V2가 옮기는 묶음 5개를 더했고, V3가 제외한 코디 테이블 3개를 지우고 검색 연결 1개를 더했다. V4는 회수 시각(UTC 저장)과 맡긴 날(서울 날짜)을 서울 날짜로 비교하도록 CHECK 하나를 고쳤다. 전체 다이어그램과 단계별 근거는 [`docs/db/ERD.md`](docs/db/ERD.md)에 있다.
 
 - 개체: `users`, `garments`, `storage_spaces`, `collections`, `images`, `label_extractions`, `product_searches`, `product_candidates`, `care_events`, `placement_proposals`, `move_batches`
 - 연결: 확정 위치 `garment_placements`, 공간 계층 `storage_space_parents`, 이미지 `garment_images`·`garment_cover_images`·`image_processings`, 택 판독 `label_extraction_images`·`label_extraction_values`·`garment_label_extractions`, 제품 `label_extraction_searches`·`garment_products`, 옮기는 묶음 `move_batch_spaces`·`move_batch_space_garments`·`move_batch_care_events`·`move_batch_images`, 옷 ↔ 등록 때 한 제품 검색 `garment_product_searches`(V3)
@@ -210,17 +210,18 @@
 ## 설치·실행
 
 ```bash
-docker compose up --build        # app(Spring + 화면) + MariaDB + 시드 데이터 → http://localhost:3000
+docker compose up --build        # app(Express + 화면) + MariaDB + 시드 데이터 → http://localhost:3000
 ```
 
 로컬 개발(docker 없이):
 
 ```bash
-cd backend
-# 통합 테스트: 실제 MariaDB가 필요하다. 기본값은 127.0.0.1:3399/otgyeol_test(root, 비밀번호 없음)이고
-# TEST_DATABASE_URL·TEST_DATABASE_USERNAME·TEST_DATABASE_PASSWORD로 바꿀 수 있다. 테스트 시작 때 스키마를 지우고 다시 만든다.
-./mvnw test
-./mvnw spring-boot:run           # MariaDB(기본 127.0.0.1:3306/otgyeol) 사용. 다른 포트면 DATABASE_URL로 지정
+cd server
+npm install
+# 통합 테스트: 실제 MariaDB가 필요하다. 기본값은 127.0.0.1:3399/otgyeol_ntest(root, 비밀번호 없음)이고
+# TEST_DATABASE_URL·TEST_DATABASE_USERNAME·TEST_DATABASE_PASSWORD로 바꿀 수 있다. 테스트 파일마다 스키마를 지우고 다시 만든다.
+npm test
+npm run dev                      # MariaDB(기본 127.0.0.1:3306/otgyeol) 사용. 다른 포트면 DATABASE_URL로 지정
 ```
 
 화면 개발(백엔드가 3000에서 실행 중일 때, `/api`는 Vite가 3000으로 넘긴다):
@@ -229,7 +230,7 @@ cd backend
 cd frontend
 npm install
 npm run dev        # http://localhost:5173
-npm run build      # 타입 검사 + 빌드(docker 이미지에서는 Spring 정적 파일로 들어간다)
+npm run build      # 타입 검사 + 빌드(docker 이미지에서는 Express가 제공하는 정적 파일로 들어간다)
 ```
 
 로컬 MariaDB에는 utf8mb4 데이터베이스와 계정을 먼저 만든다.
@@ -253,27 +254,24 @@ npx playwright test              # BASE_URL로 다른 주소 지정 가능(기�
 
 `e2e/fixtures/tag-care.jpg`, `tag-brand.jpg`는 화면에서 그려 만든 예시 택 사진이다. 실제 택 사진으로 바꿔도 된다.
 
-백엔드 통합 테스트는 로컬 JDK·MariaDB 없이 docker로도 돌릴 수 있다.
+배포 서버에 올릴 묶음(FTP용 폴더·zip)은 이렇게 만든다. 키가 든 `env`는 저장소 밖 `../deploy_upload/otgyeol/env`에만 둔다.
 
 ```bash
-docker network create otg-test
-docker run -d --name otg-test-db --network otg-test -e MARIADB_ROOT_PASSWORD=root -e MARIADB_DATABASE=otgyeol_test mariadb:11.4
-docker run --rm --network otg-test -v "$PWD/backend:/src" -w /src maven:3.9-eclipse-temurin-21 \
-  bash -c "TEST_DATABASE_URL=jdbc:mariadb://otg-test-db:3306/otgyeol_test TEST_DATABASE_USERNAME=root TEST_DATABASE_PASSWORD=root mvn -B test"
+python deploy/make_bundle.py     # ../deploy_upload/otgyeol 과 otgyeol-deploy-<sha>.zip
+# 서버에서: sudo bash install.sh 도메인   (자세한 순서는 deploy/README.txt)
 ```
 
 ## 환경변수
 
 | 이름 | 용도 | 설정 위치 |
 | ---- | ---- | --------- |
-| `DATABASE_URL` | MariaDB JDBC 주소(`jdbc:mariadb://호스트:포트/otgyeol`) | `docker-compose.yml`, 배포 환경변수 |
+| `DATABASE_URL` | MariaDB 주소(`jdbc:mariadb://호스트:포트/otgyeol` 또는 `mysql://…`) | `docker-compose.yml`, 배포 환경변수 |
 | `DATABASE_USERNAME`, `DATABASE_PASSWORD` | DB 계정 | `docker-compose.yml`(로컬 전용 값), 배포 환경변수 |
 | `AI_GATEWAY_API_KEY` | 택 분석·제품 검색·추천 AI 호출 | 로컬 환경변수, 배포 환경변수, GitHub Secrets |
-| `AI_MODEL` | AI Gateway 모델 식별자(기본 `google/gemini-2.5-flash`) | 선택, 배포 환경변수 |
+| `AI_MODEL` | AI 모델(비우면 Gateway 키는 `google/gemini-2.5-flash`, Gemini 키는 `gemini-flash-lite-latest`) | 선택, 배포 환경변수 |
 | `RELEASE_ID` | `/__health`가 응답하는 배포 commit | 빌드 인자·환경변수로 주입 |
 | `SEED_USER_EMAIL`, `SEED_USER_PASSWORD` | docker 시드 계정(로컬 전용, 배포에서는 비움) | `docker-compose.yml` |
 | `KMA_API_KEY` | 현재 위치 날씨(R12) 기상청 인증키(인코딩·디코딩 키 모두 가능). 비우면 날씨 카드만 안내 문구 | 배포 서버 `.env`, GitHub Secrets |
 | `PORT` | 앱 포트(기본 3000) | 선택, 배포 서버 `.env` |
-| `JAVA_OPTS` | JVM 메모리(배포 묶음 `start.sh`가 읽음, 기본 `-Xmx768m`) | 선택, 배포 서버 `.env` |
 
 배포 서버용 예시는 [`.env.example`](.env.example)에 있다(키 값은 비워 둠).

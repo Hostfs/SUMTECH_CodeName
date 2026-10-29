@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import type { GarmentSummary } from '../types'
 import GarmentArt from './GarmentArt'
-import { IconPin, IconPinQuestion } from './Icons'
+import { IconCheck, IconPin, IconPinQuestion, IconTakeOut } from './Icons'
 import StatusPill from './StatusPill'
 
 export function GarmentTile({ g }: { g: GarmentSummary }) {
@@ -29,8 +29,26 @@ export function LocationLine({ g }: { g: GarmentSummary }) {
   return <div className="gcard-loc unplaced"><IconPinQuestion /><span>미배치</span></div>
 }
 
-export default function GarmentCard({ g }: { g: GarmentSummary }) {
-  return (
+/**
+ * 옷 카드. selected를 넘기면 선택 모드: 눌러도 상세로 가지 않고 체크만 바뀐다.
+ * onTakeOut을 넘기면 박스·집 밖에 있는 옷 카드 아래에 '꺼내기'가 붙는다(찾은 자리에서 바로 집 안 위치로 옮김).
+ */
+export default function GarmentCard({ g, selected, onToggle, onTakeOut }: {
+  g: GarmentSummary; selected?: boolean; onToggle?: (id: number) => void; onTakeOut?: (g: GarmentSummary) => void
+}) {
+  if (onToggle) {
+    return (
+      <button type="button" className="gcard gcard-select" data-testid="garment-card" aria-pressed={Boolean(selected)} onClick={() => onToggle(g.id)}>
+        <GarmentTile g={g} />
+        <span className="gcard-check" aria-hidden><IconCheck /></span>
+        <div className="gcard-body">
+          <p className="gcard-name">{g.name}</p>
+          <LocationLine g={g} />
+        </div>
+      </button>
+    )
+  }
+  const card = (
     <Link to={`/closet/${g.id}`} className="gcard" data-testid="garment-card">
       <GarmentTile g={g} />
       <div className="gcard-body">
@@ -38,5 +56,14 @@ export default function GarmentCard({ g }: { g: GarmentSummary }) {
         <LocationLine g={g} />
       </div>
     </Link>
+  )
+  if (!onTakeOut || !g.locationPath || (g.locationKind !== 'BOX' && g.locationKind !== 'OFFSITE')) return card
+  return (
+    <div className="gcard-wrap">
+      {card}
+      <button type="button" className="gcard-takeout" aria-label={`${g.name} 꺼내기`} onClick={() => onTakeOut(g)}>
+        <IconTakeOut />꺼내기
+      </button>
+    </div>
   )
 }

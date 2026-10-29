@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useState, type ChangeEvent } from 'react'
+import { useEffect, useMemo, useState, type ChangeEvent, type JSX } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api, errorMessage } from '../api'
 import GarmentForm from '../components/GarmentForm'
 import { processCoverIfNeeded } from '../imageCleanup'
 import { emptyForm, toInput, type GarmentFormValue } from '../garmentForm'
 import { COLOR_PALETTE } from '../colors'
-import { IconCamera, IconClose, IconSearch, IconSparkle } from '../components/Icons'
+import { IconCamera, IconClose, IconSearch, IconShirt, IconSparkle } from '../components/Icons'
 import { Notice, Spinner } from '../components/Ui'
 import type { Candidate, Extraction, GarmentDetail, MapView, SpaceView } from '../types'
 
@@ -17,6 +17,14 @@ type AnalyzeResult = { extraction: Extraction; suggestion: Suggestion; aiFields:
 type SearchResult = { id: number; status: 'SUCCEEDED' | 'FAILED'; candidates: Candidate[]; message: string | null }
 
 const MAX_PHOTOS = 4
+
+// 등록 방법. 어떤 구역을 보여 줄지만 바꾼다(저장 흐름은 같다).
+type Method = 'tag' | 'photo' | 'manual'
+const METHODS: { value: Method; title: string; sub: string; icon: JSX.Element }[] = [
+  { value: 'tag', title: '택 사진으로', sub: '브랜드·소재·세탁법을 AI가 읽어요', icon: <IconSparkle /> },
+  { value: 'photo', title: '사진 한 장으로', sub: '옷 사진을 찍고 정보는 직접', icon: <IconCamera /> },
+  { value: 'manual', title: '직접 입력', sub: '사진 없이 이름·종류만', icon: <IconShirt /> },
+]
 
 // AI가 채운 항목 코드 → 입력 칸. 저장 전에 사용자가 고친 칸은 'AI가 채운 항목'에서 뺀다.
 const FIELD_KEYS: Record<string, keyof GarmentFormValue> = {
@@ -42,6 +50,7 @@ export default function Register() {
   const [analysis, setAnalysis] = useState<AnalyzeResult | null>(null)
   const [analyzeError, setAnalyzeError] = useState('')
   const [manual, setManual] = useState(false)
+  const [method, setMethod] = useState<Method>('tag')
   // 분석 직후의 입력값(사용자가 고쳤는지 비교용)
   const [suggested, setSuggested] = useState<GarmentFormValue | null>(null)
 
@@ -63,10 +72,11 @@ export default function Register() {
   const [cleaning, setCleaning] = useState(false)
   const [saveError, setSaveError] = useState('')
 
-  const step = !analysis && !manual ? 1 : !search ? 2 : 3
   // 분석이 끝난 뒤에만 택 사진을 잠근다. 실패하면 사진을 바꾸거나 '택 분석하기'로 다시 시도할 수 있다.
   const analyzed = analysis?.extraction.status === 'DONE'
-  const showForm = Boolean(analysis) || manual
+  const showForm = Boolean(analysis) || manual || method !== 'tag'
+  const showTag = method === 'tag' || Boolean(analysis)
+  const step = !showForm ? 1 : !search ? 2 : 3
 
   const flags = useMemo(() => {
     const f: Record<string, 'ai' | 'check'> = {}
@@ -170,13 +180,49 @@ export default function Register() {
 
   const canSave = form.name.trim() !== '' && form.subType !== ''
 
+  const photoSection = (
+    <section className={`card${method === 'photo' ? ' reg-photo-first' : ''}`} aria-label="옷 사진" style={{ marginTop: 16 }}>
+      <h2 className="section-title">옷 사진 <small>{method === 'photo' ? '한 장이면 충분해요. 목록 카드의 대표 이미지가 돼요' : '선택, 목록 카드의 대표 이미지가 돼요'}</small></h2>
+      <label className="upload">
+        <IconCamera />
+        <strong>옷 사진 추가</strong>
+        <span className="field-hint">배경을 지우고 가운데 맞춰 정리해요. 원본도 남아요. 없으면 고른 제품 이미지나 종류·색으로 그린 그림을 써요</span>
+        <input className="sr-only" type="file" accept="image/jpeg,image/png,image/webp" aria-label="옷 사진 추가" onChange={(e) => addFiles(e, 'photo')} disabled={photoFiles.length >= MAX_PHOTOS} />
+      </label>
+      {photoFiles.length > 0 && (
+        <div className="photo-row">
+          {photoUrls.map((u, i) => (
+            <div className="photo" key={u}>
+              <img src={u} alt={`옷 사진 ${i + 1}`} />
+              <button type="button" aria-label={`옷 사진 ${i + 1} 빼기`} onClick={() => setPhotoFiles(photoFiles.filter((_, j) => j !== i))}><IconClose /></button>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  )
+
   return (
     <>
       <div className="page-head"><h1 className="page-title">옷 등록</h1></div>
       <p className="page-lead">택을 찍으면 브랜드·소재·세탁법을 읽어 와요. 읽은 값은 저장 전에 확인하고 고칠 수 있어요.</p>
       <div className="steps" aria-hidden><span className="on" /><span className={step >= 2 ? 'on' : ''} /><span className={step >= 3 ? 'on' : ''} /></div>
 
-      <section className="card" aria-label="택 사진">
+      <section className="reg-methods" aria-label="등록 방법">
+        <h2 className="section-title">어떻게 등록할까요?</h2>
+        <div className="reg-method-grid" role="radiogroup" aria-label="등록 방법">
+          {METHODS.map((m) => (
+            <button key={m.value} type="button" role="radio" aria-checked={method === m.value} className="reg-method" onClick={() => setMethod(m.value)}>
+              <span className="reg-method-ico">{m.icon}</span>
+              <span className="reg-method-text"><b>{m.title}</b><small>{m.sub}</small></span>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {method === 'photo' && photoSection}
+
+      {showTag && <section className="card" aria-label="택 사진">
         <h2 className="section-title">택 사진 <small>세탁·혼용률 택과 브랜드·품번 택, 최대 {MAX_PHOTOS}장</small></h2>
         <label className="upload">
           <IconCamera />
@@ -220,7 +266,7 @@ export default function Register() {
             )}
           </div>
         )}
-      </section>
+      </section>}
 
       {showForm && (
         <section className="card" aria-label="옷 정보" style={{ marginTop: 16 }}>
@@ -263,27 +309,7 @@ export default function Register() {
         </section>
       )}
 
-      {showForm && (
-        <section className="card" aria-label="옷 사진" style={{ marginTop: 16 }}>
-          <h2 className="section-title">옷 사진 <small>선택, 목록 카드의 대표 이미지가 돼요</small></h2>
-          <label className="upload">
-            <IconCamera />
-            <strong>옷 사진 추가</strong>
-            <span className="field-hint">배경을 지우고 가운데 맞춰 정리해요. 원본도 남아요. 없으면 고른 제품 이미지나 종류·색으로 그린 그림을 써요</span>
-            <input className="sr-only" type="file" accept="image/jpeg,image/png,image/webp" aria-label="옷 사진 추가" onChange={(e) => addFiles(e, 'photo')} disabled={photoFiles.length >= MAX_PHOTOS} />
-          </label>
-          {photoFiles.length > 0 && (
-            <div className="photo-row">
-              {photoUrls.map((u, i) => (
-                <div className="photo" key={u}>
-                  <img src={u} alt={`옷 사진 ${i + 1}`} />
-                  <button type="button" aria-label={`옷 사진 ${i + 1} 빼기`} onClick={() => setPhotoFiles(photoFiles.filter((_, j) => j !== i))}><IconClose /></button>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-      )}
+      {showForm && method !== 'photo' && photoSection}
 
       {showForm && (
         <section className="card" aria-label="보관 위치" style={{ marginTop: 16 }}>

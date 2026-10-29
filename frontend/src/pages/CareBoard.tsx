@@ -6,6 +6,7 @@ import { Loading, Notice, Sheet, Spinner, Toast } from '../components/Ui'
 import { formatDate } from '../format'
 import { useSession } from '../session'
 import type { Board, BoardItem } from '../types'
+import { downloadCareIcs } from '../calendar'
 
 type Tab = 'overdue' | 'dueToday' | 'inProgress' | 'history'
 const TABS: { key: Tab; label: string }[] = [
@@ -82,7 +83,7 @@ export default function CareBoard() {
           </div>
         )}
         {items.map((it) => (
-          <div className="row-item" key={it.care.id} aria-label={`${it.garment.name} ${it.care.careTypeLabel}`}>
+          <div className={`row-item care-row${it.overdue ? ' late' : it.dueToday ? ' today' : ''}`} key={it.care.id} aria-label={`${it.garment.name} ${it.care.careTypeLabel}`}>
             <div className="row-thumb">{it.garment.imageUrl ? <img src={it.garment.imageUrl} alt="" /> : <GarmentArt subType={it.garment.subType} colorHex={it.garment.colorHex} title={it.garment.name} />}</div>
             <div className="row-main">
               <Link className="row-title" to={`/closet/${it.garment.id}`}>{it.garment.name}</Link>
@@ -101,6 +102,10 @@ export default function CareBoard() {
             </div>
             {!it.care.completedAt && (
               <div className="row-actions">
+                {/* 앱을 열지 않는 날을 위해 회수 예정일을 휴대폰 달력으로 넘긴다(지난 날짜는 넘기지 않는다). */}
+                {it.care.dueOn && !it.overdue && (
+                  <button type="button" className="btn btn-sm btn-ghost" onClick={() => { downloadCareIcs(it); setToast('달력 파일을 받았어요. 열면 달력에 추가돼요') }}>달력에 넣기</button>
+                )}
                 <button type="button" className="btn btn-sm btn-ghost" onClick={() => setEditing(it)}>예정일 변경</button>
                 <button type="button" className="btn btn-sm" onClick={() => complete(it)} disabled={busy !== null}>{busy === it.care.id && <Spinner />}회수 완료</button>
               </div>

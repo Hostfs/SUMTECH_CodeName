@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useSession } from '../session'
 import { IconBox, IconHanger, IconMap, IconMove, IconPlus } from './Icons'
+import TopBar from './TopBar'
 
 // 수정안(2026-10-29)에서 3D 코디·추천(R05·R06)을 범위에서 빼고 옮기기(R11)를 넣었다.
 const LINKS = [
@@ -13,7 +14,7 @@ const LINKS = [
 
 /** 로그인 후 화면 틀. 휴대폰은 하단 탭(가운데 옷 등록 버튼), PC는 왼쪽 메뉴. 메뉴 이름은 두 화면에서 같다. */
 export default function AppShell() {
-  const { careBadge, me, logout } = useSession()
+  const { careBadge } = useSession()
   const { pathname } = useLocation()
   const hasActionbar = /^\/closet\/\d+/.test(pathname)
   const badge = careBadge > 0 ? <span className="badge" aria-label={`처리할 관리 ${careBadge}건`}>{careBadge}</span> : null
@@ -27,18 +28,11 @@ export default function AppShell() {
             {l.icon}{l.label}{l.to === '/care' && badge}
           </NavLink>
         ))}
-        <div className="rail-foot">
-          <div>{me?.email}</div>
-          <button type="button" onClick={logout}>로그아웃</button>
-        </div>
       </nav>
 
       <main className={`app-main${hasActionbar ? ' has-actionbar' : ''}`}>
-        {/* 휴대폰에는 왼쪽 메뉴가 없어서 로그인한 계정과 로그아웃을 화면 위에 둔다. */}
-        <div className="account-bar" aria-label="로그인한 계정">
-          <span>{me?.email}</span>
-          <button type="button" onClick={logout}>로그아웃</button>
-        </div>
+        {/* 알림과 계정(이메일·로그아웃)은 휴대폰·PC 모두 화면 위 오른쪽에 둔다. */}
+        <TopBar />
         <Outlet />
       </main>
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { api, errorMessage } from '../api'
 import GarmentArt from '../components/GarmentArt'
@@ -11,8 +11,6 @@ import type { GarmentDetail, GarmentSummary, MapView, MoveBatch, SpaceView } fro
 
 type Dest = 'SPACE' | 'LAUNDRY'
 type NewPlace = { name: string; spaceType: 'BOX' | 'OFFSITE' }
-
-const MAX_PHOTOS = 4
 
 function iso(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -34,51 +32,21 @@ function ro(word: string) {
 }
 
 /** 옮길 수 있는 박스·집 밖 공간(하위 공간이 없는 곳). */
+/** 보낼 곳: 박스·집 밖 공간과 그 아래 가장 안쪽 공간('본가 → 안방 옷장'). 옷은 가장 안쪽 공간에만 넣는다. */
 function boxPlaces(map: MapView): SpaceView[] {
-  return map.spaces.filter((s) => (s.spaceType === 'BOX' || s.spaceType === 'OFFSITE') && !map.spaces.some((o) => o.parentId === s.id))
-}
-
-type Detector = new (o: { formats: string[] }) => { detect(s: ImageBitmap): Promise<{ rawValue: string }[]> }
-
-function spaceIdFrom(text: string): number | null {
-  const m = /[?&]to=(\d+)/.exec(text)
-  return m ? Number(m[1]) : null
-}
-
-/**
- * 박스 라벨 사진에서 QR을 읽어 공간 ID를 찾는다. 못 읽으면 null.
- * 브라우저 내장 BarcodeDetector(안드로이드 Chrome 등)를 먼저 쓰고, 없으면(PC Chrome·iOS Safari) jsQR로 직접 읽는다.
- */
-async function readBoxQr(file: File): Promise<number | null> {
-  try {
-    const bitmap = await createImageBitmap(file)
-    const BD = (window as unknown as { BarcodeDetector?: Detector }).BarcodeDetector
-    if (BD) {
-      for (const c of await new BD({ formats: ['qr_code'] }).detect(bitmap)) {
-        const id = spaceIdFrom(c.rawValue)
-        if (id) return id
-      }
+  const byId = new Map(map.spaces.map((s) => [s.id, s]))
+  const away = (s: SpaceView | undefined): boolean => {
+    for (let cur = s, depth = 0; cur && depth < 10; cur = cur.parentId ? byId.get(cur.parentId) : undefined, depth++) {
+      if (cur.spaceType === 'BOX' || cur.spaceType === 'OFFSITE') return true
     }
-    // 휴대폰 사진은 커서 긴 변 1280px로 줄여 읽는다(QR은 이 크기에서도 충분히 크다).
-    const scale = Math.min(1, 1280 / Math.max(bitmap.width, bitmap.height))
-    const canvas = document.createElement('canvas')
-    canvas.width = Math.round(bitmap.width * scale)
-    canvas.height = Math.round(bitmap.height * scale)
-    const ctx = canvas.getContext('2d', { willReadFrequently: true })
-    if (!ctx) return null
-    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
-    const { default: jsQR } = await import('jsqr')
-    const data = ctx.getImageData(0, 0, canvas.width, canvas.height)
-    const code = jsQR(data.data, data.width, data.height, { inversionAttempts: 'attemptBoth' })
-    return code ? spaceIdFrom(code.data) : null
-  } catch {
-    return null
+    return false
   }
+  return map.spaces.filter((s) => away(s) && !map.spaces.some((o) => o.parentId === s.id))
 }
 
 /**
  * 옮기기(R11): 박스·집 밖·세탁소로 여러 벌을 한 번에 옮긴다. 옮기는 순간을 짧게 끝내도록
- * 보낼 곳·업체·날짜는 박스 라벨 QR이나 가장 최근 기록으로 미리 채우고, 옷만 체크하면 된다.
+ * 보낼 곳·업체·날짜는 가장 최근 기록으로 미리 채우고, 옷만 체크하면 된다.
  */
 export default function Move() {
   const { meta, refreshBadge } = useSession()
@@ -96,35 +64,37 @@ export default function Move() {
   const [movedOn, setMovedOn] = useState(today)
   const [dueOn, setDueOn] = useState(addDays(today, 3))
   const [picked, setPicked] = useState<number[]>([])
-  const [photos, setPhotos] = useState<File[]>([])
   const [query, setQuery] = useState('')
-  const [qrNote, setQrNote] = useState('')
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState<MoveBatch | null>(null)
   const [adding, setAdding] = useState(false)
   const [toast, setToast] = useState('')
   const defaulted = useRef(false)
 
-  const photoUrls = useMemo(() => photos.map((f) => URL.createObjectURL(f)), [photos])
-  useEffect(() => () => photoUrls.forEach((u) => URL.revokeObjectURL(u)), [photoUrls])
-
-  // 처음 열 때 한 번: 박스 라벨 QR로 열었으면 그 박스, 아니면 가장 최근 묶음의 보낸 곳·업체·회수 간격을 기본값으로 채운다.
+  // 처음 열 때 한 번: 가장 최근 묶음의 보낸 곳·업체·회수 간격을 기본값으로 채운다.
   useEffect(() => {
     if (defaulted.current) return
     defaulted.current = true
-    api.get<GarmentSummary[]>('/api/garments').then(setGarments).catch((e) => setError(errorMessage(e)))
-    Promise.all([api.get<MapView>('/api/spaces'), api.get<MoveBatch[]>('/api/moves').catch(() => [] as MoveBatch[])])
-      .then(([m, r]) => {
+    const all = api.get<GarmentSummary[]>('/api/garments')
+    all.then(setGarments).catch((e) => setError(errorMessage(e)))
+    Promise.all([api.get<MapView>('/api/spaces'), api.get<MoveBatch[]>('/api/moves').catch(() => [] as MoveBatch[]), all.catch(() => [] as GarmentSummary[])])
+      .then(([m, r, list]) => {
         const leaves = boxPlaces(m)
-        const qr = Number(params.get('to'))
-        const fromQr = Boolean(qr) && m.spaces.some((s) => s.id === qr)
         const lastSpace = r.find((b) => b.destination === 'SPACE' && leaves.some((p) => p.id === b.spaceId))
         const lastLaundry = r.find((b) => b.destination === 'LAUNDRY')
-        setDest(fromQr ? 'SPACE' : r[0]?.destination ?? 'SPACE')
-        setSpaceId(fromQr ? qr : lastSpace?.spaceId ?? leaves[0]?.id ?? null)
-        if (fromQr) setQrNote(`라벨 QR로 열었어요: ${m.spaces.find((s) => s.id === qr)!.path}`)
+        const d: Dest = r[0]?.destination ?? 'SPACE'
+        const sid = lastSpace?.spaceId ?? leaves[0]?.id ?? null
+        setDest(d)
+        setSpaceId(sid)
         if (lastLaundry?.shopName) setShopName(lastLaundry.shopName)
         if (lastLaundry?.movedOn && lastLaundry.dueOn) setDueOn(addDays(today, Math.max(0, daysBetween(lastLaundry.movedOn, lastLaundry.dueOn))))
+        // 내 옷장 '선택'에서 넘어왔으면(?ids=1,2) 그 옷을 미리 체크한다. 목록에 보이는 옷만 담는다.
+        const wanted = (params.get('ids') ?? '').split(',').map(Number).filter((n) => Number.isInteger(n) && n > 0)
+        if (wanted.length > 0) {
+          const pre = wanted.filter((id) => list.some((g) => g.id === id && g.locationKind !== 'CARE' && !(d === 'SPACE' && g.spaceId === sid && g.locationPath)))
+          setPicked(pre)
+          if (pre.length > 0) setToast(pre.length === wanted.length ? `고른 ${pre.length}벌을 담았어요` : `고른 ${wanted.length}벌 중 ${pre.length}벌을 담았어요`)
+        }
         setMap(m)
         setRecent(r)
       })
@@ -141,41 +111,17 @@ export default function Move() {
   const destName = dest === 'LAUNDRY' ? (shopName.trim() || '세탁소') : newPlace ? newPlace.name.trim() : target?.name ?? ''
   const ready = picked.length > 0 && (dest === 'LAUNDRY' ? Boolean(dueOn) : Boolean(target || newPlace?.name.trim()))
 
-  async function addPhoto(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    e.target.value = ''
-    if (!file) return
-    setPhotos((p) => [...p, file].slice(0, MAX_PHOTOS))
-    if (dest !== 'SPACE') return
-    const id = await readBoxQr(file)
-    if (id && map?.spaces.some((s) => s.id === id)) {
-      setSpaceId(id)
-      setNewPlace(null)
-      setQrNote(`라벨 QR을 읽었어요: ${map.spaces.find((s) => s.id === id)!.path}`)
-    } else {
-      setQrNote('라벨 QR을 읽지 못했어요. 사진은 그대로 남기고, 아래에서 박스를 골라 주세요.')
-    }
-  }
-
   async function submit(e: FormEvent) {
     e.preventDefault()
     setBusy(true)
     setError('')
     try {
-      const imageIds: number[] = []
-      for (const f of photos) {
-        const body = new FormData()
-        body.append('file', f)
-        imageIds.push((await api.post<{ id: number }>('/api/images', body)).id)
-      }
       const batch = await api.post<MoveBatch>('/api/moves', dest === 'SPACE'
-        ? { destination: 'SPACE', spaceId: newPlace ? null : spaceId, newSpace: newPlace, movedOn, garmentIds: picked, imageIds }
-        : { destination: 'LAUNDRY', shopName, movedOn, dueOn, garmentIds: picked, imageIds })
+        ? { destination: 'SPACE', spaceId: newPlace ? null : spaceId, newSpace: newPlace, movedOn, garmentIds: picked }
+        : { destination: 'LAUNDRY', shopName, movedOn, dueOn, garmentIds: picked })
       setDone(batch)
       setRecent((r) => [batch, ...(r ?? [])])
       setPicked([])
-      setPhotos([])
-      setQrNote('')
       if (newPlace) {
         setNewPlace(null)
         setSpaceId(batch.spaceId)
@@ -215,30 +161,11 @@ export default function Move() {
 
       <form onSubmit={submit} noValidate>
         <div className="chips" role="tablist" aria-label="보낼 곳 종류">
-          <button type="button" role="tab" className="chip" aria-selected={dest === 'SPACE'} aria-pressed={dest === 'SPACE'} onClick={() => { setDest('SPACE'); setQrNote('') }}>박스·집 밖</button>
-          <button type="button" role="tab" className="chip" aria-selected={dest === 'LAUNDRY'} aria-pressed={dest === 'LAUNDRY'} onClick={() => { setDest('LAUNDRY'); setQrNote('') }}>세탁소</button>
+          <button type="button" role="tab" className="chip" aria-selected={dest === 'SPACE'} aria-pressed={dest === 'SPACE'} onClick={() => setDest('SPACE')}>박스·집 밖</button>
+          <button type="button" role="tab" className="chip" aria-selected={dest === 'LAUNDRY'} aria-pressed={dest === 'LAUNDRY'} onClick={() => setDest('LAUNDRY')}>세탁소</button>
         </div>
 
         <section className="card" aria-label="보낼 곳" style={{ marginTop: 12 }}>
-          <label className="upload upload-row">
-            <IconCamera />
-            <strong>{dest === 'SPACE' ? '박스 라벨 찍기' : '영수증 찍기'}</strong>
-            <span className="field-hint">{dest === 'SPACE' ? '라벨 QR을 읽어 박스를 골라요. 사진은 이 묶음에 남아요.' : '영수증 사진은 이 묶음에 남아요.'}</span>
-            <input className="sr-only" type="file" accept="image/jpeg,image/png,image/webp" capture="environment"
-              aria-label={dest === 'SPACE' ? '박스 라벨 찍기' : '영수증 찍기'} onChange={addPhoto} disabled={photos.length >= MAX_PHOTOS} />
-          </label>
-          {photos.length > 0 && (
-            <div className="photo-row">
-              {photoUrls.map((u, i) => (
-                <div className="photo" key={u}>
-                  <img src={u} alt={`묶음 사진 ${i + 1}`} />
-                  <button type="button" aria-label={`묶음 사진 ${i + 1} 빼기`} onClick={() => setPhotos(photos.filter((_, j) => j !== i))}><IconClose /></button>
-                </div>
-              ))}
-            </div>
-          )}
-          {qrNote && <p className="field-hint" style={{ margin: '10px 0 0' }}>{qrNote}</p>}
-
           {dest === 'SPACE' ? (
             <div className="field" style={{ marginTop: 14 }}>
               <span className="field-label" id="move-place">보낼 곳</span>
@@ -335,7 +262,7 @@ export default function Move() {
               <li key={b.id}>
                 <span>{b.destination === 'LAUNDRY' ? `${b.shopName ?? '세탁소'}에 맡김` : `${ro(b.spacePath ?? '')} 보냄`} · {b.garments.length}벌</span>
                 <span className="row-sub">
-                  {formatDate(b.movedOn)}{b.dueOn ? `, ${formatDate(b.dueOn)} 회수 예정` : ''}{b.imageUrls.length ? `, 사진 ${b.imageUrls.length}장` : ''}
+                  {formatDate(b.movedOn)}{b.dueOn ? `, ${formatDate(b.dueOn)} 회수 예정` : ''}
                 </span>
               </li>
             ))}

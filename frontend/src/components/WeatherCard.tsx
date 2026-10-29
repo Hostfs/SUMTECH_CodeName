@@ -4,6 +4,7 @@ import { api, errorMessage } from '../api'
 import type { GarmentSummary, Weather } from '../types'
 import { isNight, pickForWeather, sceneOf, type Scene } from '../weatherPicks'
 import GarmentArt from './GarmentArt'
+import { Precip, Sky as SkyScene, type SkyKind } from './SkyScene'
 import { IconPin, IconShirt } from './Icons'
 import { Spinner } from './Ui'
 
@@ -63,20 +64,23 @@ function bigIcon(scene: Scene, night: boolean) {
   return scene === 'overcast' ? 'cloud' : scene
 }
 
-/** 화면 위쪽 절반에 까는 날씨 배경(디자인 시스템 1절). 카드는 그 위에 흰색 그대로 둔다. */
+/** 기상청 장면(맑음·구름 많음·흐림·비·눈)을 초안 하늘의 장면 이름으로 바꾼다. */
+function skyKind(scene: Scene): SkyKind {
+  if (scene === 'clear') return 'clear'
+  if (scene === 'rain' || scene === 'snow') return scene
+  return 'cloudy'
+}
+
+/**
+ * 화면 위쪽에 넓게 까는 날씨 배경. 기상청 실황(하늘 상태·강수)과 밤낮에 따라
+ * 맑은 낮·노을 진 밤·구름·비·눈 하늘로 바뀐다(그림은 프론트엔드 초안의 하늘).
+ */
 function Sky({ scene, night }: { scene: Scene; night: boolean }) {
+  const kind = skyKind(scene)
   return (
     <div className={`wx-sky wx-sky-${scene}${night ? ' night' : ''}`} aria-hidden>
-      {(scene === 'clear' || scene === 'cloudy') && !night && <span className="wx-sun" />}
-      {scene !== 'rain' && scene !== 'snow' && (
-        <svg className="wx-clouds" viewBox="0 0 390 300" preserveAspectRatio="xMidYMin slice">
-          {(scene === 'clear' ? [[60, 150, 0.55, 0.9], [340, 230, 0.45, 0.8]] : [[80, 120, 1.0, 0.7], [350, 100, 1.1, 0.65], [230, 220, 0.9, 0.7]]).map(([x, y, k, o], i) => (
-            <g key={i} transform={`translate(${x},${y}) scale(${k})`} opacity={o}>
-              <ellipse cx="0" cy="0" rx="78" ry="24" /><circle cx="-28" cy="-16" r="28" /><circle cx="10" cy="-26" r="36" /><circle cx="48" cy="-10" r="24" />
-            </g>
-          ))}
-        </svg>
-      )}
+      <SkyScene scene={`${kind}-${night ? 'night' : 'day'}`} />
+      <Precip kind={kind} />
     </div>
   )
 }
@@ -116,6 +120,14 @@ export default function WeatherCard({ items }: { items: GarmentSummary[] }) {
 
   const result = useMemo(() => (weather ? pickForWeather(items, weather) : null), [items, weather])
 
+  // 받은 날씨를 화면 전체에 알린다: <html data-wx="rain-night"> → 하늘 배경과 그 위 제목·버튼 색이 날씨·밤낮에 맞춰 바뀐다.
+  useEffect(() => {
+    if (!weather) return
+    const root = document.documentElement
+    root.dataset.wx = `${sceneOf(weather)}${night ? '-night' : ''}`
+    return () => { delete root.dataset.wx }
+  }, [weather, night])
+
   if (!weather || !result) {
     return (
       <section className="wx-card wx-empty" aria-label="오늘 날씨">
@@ -139,7 +151,7 @@ export default function WeatherCard({ items }: { items: GarmentSummary[] }) {
   return (
     <>
       <Sky scene={scene} night={night} />
-      <section className="wx-card" aria-label="오늘 날씨" data-scene={scene}>
+      <section className="wx-card wx-hero" aria-label="오늘 날씨" data-scene={scene} data-night={night ? 'true' : undefined}>
         <div className="wx-head">
           <b><IconPin />현재 위치</b>
           <span>{dateLabel()}</span>
@@ -170,7 +182,7 @@ export default function WeatherCard({ items }: { items: GarmentSummary[] }) {
         )}
         <div className="wx-tip">
           <span className="wx-tip-icon"><IconShirt /></span>
-          <p>{tip}{result.tips.length > 1 && <><br />{result.tips[1]}</>}</p>
+          <p><small>옷결의 한마디</small>{tip}{result.tips.length > 1 && <><br />{result.tips[1]}</>}</p>
         </div>
         <p className="wx-src">기상청 {weather.observedAt} 관측{weather.humidity !== null ? ` · 습도 ${weather.humidity}%` : ''}</p>
       </section>
