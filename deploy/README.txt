@@ -15,7 +15,11 @@ DB 표(테이블·트리거)는 앱이 시작하며 스스로 만든다(마이�
 
 [업데이트]
 새 묶음을 같은 방식으로 올리고 같은 명령을 다시 실행한다:  sudo bash install.sh 도메인
-.env와 DB 자료는 그대로 남는다.
+.env와 DB 자료는 그대로 남는다. 새 묶음에 새로 생긴 설정(예: GUEST_MODE)은 .env에 없을 때만 묶음 값으로 더해진다.
+
+[게스트 체험(발표·QR용)]
+GUEST_MODE=on이면 첫 화면·로그인 화면에 '게스트로 체험하기'가 생기고, 누를 때마다 데모 옷장이 든 새 계정으로 들어간다.
+켜기·끄기: sudo nano /opt/otgyeol/.env 에서 GUEST_MODE=on 또는 off로 고친 뒤  sudo systemctl restart otgyeol
 
 [자주 쓰는 명령]
 상태:   systemctl status otgyeol

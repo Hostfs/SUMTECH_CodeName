@@ -48,6 +48,14 @@ fi
 chmod 600 .env
 get() { grep -E "^$1=" .env | tail -1 | cut -d= -f2- | tr -d '\r'; }
 put() { if grep -qE "^$1=" .env; then sed -i "s|^$1=.*|$1=$2|" .env; else echo "$1=$2" >> .env; fi; }
+# 업데이트: 새 묶음에 새로 생긴 설정(GUEST_MODE 등)은 서버 .env에 없을 때만 묶음 값으로 더한다. 이미 있는 값은 바꾸지 않는다.
+tr -d '\r' < env | while IFS= read -r line; do
+  case "$line" in ''|'#'*|*' '*=*) continue ;; esac
+  key="${line%%=*}"
+  grep -qE "^${key}=" .env || { echo "$line" >> .env; echo ".env에 새 설정 ${key}를 더했어요."; }
+done
+# Spring 때 값(google/gemini-2.5-flash)은 Gemini 키에 더 열리지 않는다. 비우면 키 종류에 맞는 기본 모델을 쓴다.
+[ "$(get AI_MODEL)" != "google/gemini-2.5-flash" ] || put AI_MODEL ""
 DB_URL="$(get DATABASE_URL)"; DB_URL="${DB_URL:-jdbc:mariadb://127.0.0.1:3306/otgyeol}"
 DB_NAME="$(echo "$DB_URL" | sed -E 's#.*/([^/?]+).*#\1#')"
 DB_USER="$(get DATABASE_USERNAME)"; DB_USER="${DB_USER:-otgyeol}"
