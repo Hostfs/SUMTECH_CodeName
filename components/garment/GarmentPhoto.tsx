@@ -10,5 +10,16 @@ export function GarmentPhoto({ src, alt, size }: { src?: string; alt: string; si
       </span>
     );
   }
-  return <img src={src} alt={alt} width={size} height={size} className="block object-contain" draggable={false} />;
+  // Tailwind 기본 스타일이 img 높이를 auto로 바꾸므로 크기를 style로 고정한다 (세로 사진이 넘치지 않게)
+  return (
+    <img
+      src={src}
+      alt={alt}
+      width={size}
+      height={size}
+      style={{ width: size, height: size }}
+      className="block object-contain"
+      draggable={false}
+    />
+  );
 }

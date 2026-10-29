@@ -41,8 +41,15 @@ export default function ClosetPage() {
     const q = params.get("q");
     if (q !== null) setQuery({ ...EMPTY_QUERY, q });
     const created = params.get("new");
+    // 새로고침해도 다시 적용되지 않게 주소에서 지운다
+    if (q !== null || created) window.history.replaceState(window.history.state, "", "/closet");
     if (created) {
+      // 새 카드가 보이도록 검색·필터를 풀고(정렬은 유지) 그 카드로 스크롤한다
+      setQuery((cur) => ({ ...EMPTY_QUERY, sort: cur.sort }));
       setHighlight(created);
+      requestAnimationFrame(() =>
+        document.getElementById(`card-${created}`)?.scrollIntoView({ block: "center", behavior: "smooth" }),
+      );
       const t = setTimeout(() => setHighlight(null), 2400);
       return () => clearTimeout(t);
     }

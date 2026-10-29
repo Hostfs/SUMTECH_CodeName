@@ -14,6 +14,8 @@
   /* 폰 프레임 안 상태바 높이. 실제 폰에서는 safe area로 바뀐다. */
   --status-h: 38px;
   --tabbar-h: 84px;
+  /* 상세·등록 화면 하단 고정 버튼 바 */
+  --botbar-h: 92px;
 }
 
 :root,
@@ -154,6 +156,7 @@
   :root {
     --status-h: env(safe-area-inset-top, 0px);
     --tabbar-h: calc(64px + env(safe-area-inset-bottom, 0px));
+    --botbar-h: calc(78px + env(safe-area-inset-bottom, 0px));
   }
   .phone-stage {
     display: block;

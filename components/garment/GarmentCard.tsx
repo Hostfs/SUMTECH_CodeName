@@ -59,11 +59,11 @@ export function GarmentCard({
     (selected || highlighted ? "border-2 border-primary px-[7px] pt-[7px] pb-[11px]" : "border border-line px-2 pt-2 pb-3");
 
   return selecting ? (
-    <button type="button" className={cls + " w-full"} onClick={onToggle} aria-pressed={selected}>
+    <button id={`card-${garment.id}`} type="button" className={cls + " w-full"} onClick={onToggle} aria-pressed={selected}>
       {body}
     </button>
   ) : (
-    <Link href={`/closet/${garment.id}`} className={cls}>
+    <Link id={`card-${garment.id}`} href={`/closet/${garment.id}`} className={cls}>
       {body}
     </Link>
   );

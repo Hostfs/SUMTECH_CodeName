@@ -105,3 +105,24 @@ export const UserIcon = (p: IconProps) => (
     <path d="M5 20 C5.5 15.5 8.5 14 12 14 C15.5 14 18.5 15.5 19 20" />
   </Icon>
 );
+
+export const BackIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M15 5 L8 12 L15 19" />
+  </Icon>
+);
+
+export const MoreIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <circle cx="5" cy="12" r="1.1" />
+    <circle cx="12" cy="12" r="1.1" />
+    <circle cx="19" cy="12" r="1.1" />
+  </Icon>
+);
+
+export const CameraIcon = (p: IconProps) => (
+  <Icon size={18} {...p}>
+    <path d="M4 8h3l1.5-2h7L17 8h3v11H4z" />
+    <circle cx="12" cy="13" r="3.2" />
+  </Icon>
+);
