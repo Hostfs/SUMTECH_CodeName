@@ -31,6 +31,7 @@ public class AiGateway {
     public static final JsonMapper JSON = JsonMapper.builder().build();
 
     private final String key;
+    private static final int REASONING_TOKENS = 4000;
     private final String model;
     private final String baseUrl;
     private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
@@ -47,10 +48,15 @@ public class AiGateway {
         return !key.isEmpty();
     }
 
+    /**
+     * 요청 틀. 추론형 모델(gemini-2.5-flash 등)은 생각하는 토큰도 max_tokens에 들어가 JSON이 중간에 잘리므로
+     * 출력 몫에 추론 몫(REASONING_TOKENS)을 더해 한도를 잡고, 응답은 JSON 객체로만 받는다.
+     */
     public ObjectNode newRequest(int maxTokens) {
         ObjectNode req = JSON.createObjectNode();
         req.put("model", model);
-        req.put("max_tokens", maxTokens);
+        req.put("max_tokens", maxTokens + REASONING_TOKENS);
+        req.putObject("response_format").put("type", "json_object");
         req.put("temperature", 0.2);
         req.putArray("messages");
         return req;
@@ -67,6 +73,10 @@ public class AiGateway {
         if (!configured()) {
             log.warn("AI Gateway 호출 안 함: AI 키(AI_GATEWAY_API_KEY)가 비어 있음");
             throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "AI 키가 설정되지 않아 AI 기능을 쓸 수 없어요. 직접 입력으로 계속할 수 있어요.");
+        }
+        if (request.has("tools")) {
+            // 도구 호출과 JSON 형식 지정은 함께 쓸 수 없다(Gemini 400). 이때는 프롬프트의 JSON 지시와 parseObject에 맡긴다.
+            request.remove("response_format");
         }
         HttpRequest req = HttpRequest.newBuilder(URI.create(baseUrl + "/chat/completions"))
                 .timeout(timeout)
@@ -101,7 +111,12 @@ public class AiGateway {
             throw new ApiException(HttpStatus.BAD_GATEWAY, "AI 서비스가 요청을 처리하지 못했어요. 잠시 뒤 다시 시도해 주세요.");
         }
         JsonNode body = JSON.readTree(res.body());
-        JsonNode content = body.path("choices").path(0).path("message").path("content");
+        JsonNode choice = body.path("choices").path(0);
+        JsonNode content = choice.path("message").path("content");
+        if ("length".equals(choice.path("finish_reason").asString(""))) {
+            log.warn("AI 응답이 출력 한도에서 잘림(모델 {}, 사용 {})", model, body.path("usage"));
+            throw new ApiException(HttpStatus.BAD_GATEWAY, "AI 응답이 너무 길어 중간에 끊겼어요. 다시 시도해 주세요.");
+        }
         if (content.isMissingNode() || content.isNull()) {
             log.warn("AI Gateway 빈 응답: {}", abbreviate(res.body()));
             throw new ApiException(HttpStatus.BAD_GATEWAY, "AI가 빈 응답을 보냈어요. 다시 시도해 주세요.");
