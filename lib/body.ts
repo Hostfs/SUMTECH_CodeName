@@ -26,6 +26,20 @@ export function bodyShape(b: Body) {
   return { sy, wf, k };
 }
 
+/**
+ * 입력 중인 값으로 마네킹을 미리 보여 준다. 칸마다 따로 보고, 올바른 칸만 반영한다
+ * (키만 먼저 입력해도 바로 바뀌도록). 올바르지 않은 칸은 저장된 값(없으면 기본값)을 쓴다.
+ */
+export function previewBody(height: string, weight: string, base?: Body): Body {
+  const fallback = base ?? DEFAULT_BODY;
+  const h = Number(height.replace(",", "."));
+  const w = Number(weight.replace(",", "."));
+  return {
+    heightCm: height.trim() && h >= HEIGHT_RANGE.min && h <= HEIGHT_RANGE.max ? h : fallback.heightCm,
+    weightKg: weight.trim() && w >= WEIGHT_RANGE.min && w <= WEIGHT_RANGE.max ? w : fallback.weightKg,
+  };
+}
+
 /** 입력 문자열 → 검증된 체형. 틀리면 칸별 오류 문구를 돌려준다. */
 export function parseBody(height: string, weight: string): { body?: Body; heightError?: string; weightError?: string } {
   const h = Number(height.replace(",", "."));

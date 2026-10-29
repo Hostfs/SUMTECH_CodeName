@@ -14,8 +14,8 @@ import {
   PinIcon,
   PlusIcon,
   SearchIcon,
-  ShirtIcon,
   SunIcon,
+  UserIcon,
 } from "@/components/icons";
 import { Screen } from "@/components/layout/Screen";
 import { dueItems, useNotifySettings } from "@/lib/notify";
@@ -75,17 +75,27 @@ export default function HomePage() {
               </span>
               내 옷장
             </span>
-            <button
-              type="button"
-              aria-label={dueCount > 0 ? `알림 ${dueCount}개` : "알림"}
-              className="relative flex size-10 items-center justify-center rounded-full border border-line bg-white/85"
-              onClick={() => router.push("/notifications")}
-            >
-              <BellIcon />
-              {dueCount > 0 && (
-                <span className="absolute top-[7px] right-[8px] size-2.5 rounded-full border-2 border-white bg-primary" aria-hidden />
-              )}
-            </button>
+            <span className="flex items-center gap-2">
+              <button
+                type="button"
+                aria-label={dueCount > 0 ? `알림 ${dueCount}개` : "알림"}
+                className="relative flex size-10 items-center justify-center rounded-full border border-line bg-white/85"
+                onClick={() => router.push("/notifications")}
+              >
+                <BellIcon />
+                {dueCount > 0 && (
+                  <span className="absolute top-[7px] right-[8px] size-2.5 rounded-full border-2 border-white bg-primary" aria-hidden />
+                )}
+              </button>
+              <button
+                type="button"
+                aria-label="프로필"
+                className="flex size-10 items-center justify-center rounded-full border border-line bg-white/85 text-deep"
+                onClick={() => router.push("/my")}
+              >
+                <UserIcon size={22} stroke={1.6} />
+              </button>
+            </span>
           </div>
         </div>
 
@@ -150,7 +160,6 @@ export default function HomePage() {
         <nav className="mx-4 mt-3.5 flex justify-center gap-2" aria-label="바로가기">
           {[
             { href: "/storage", label: "위치 정하기", Icon: PinIcon },
-            { href: "/outfits", label: "코디 만들기", Icon: ShirtIcon },
             { href: "/closet/new", label: "옷 등록", Icon: CameraIcon },
           ].map(({ href, label, Icon }) => (
             <Link

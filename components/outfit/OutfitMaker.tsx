@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useData } from "@/components/DataProvider";
 import { GarmentPhoto } from "@/components/garment/GarmentPhoto";
+import { BodyFields, useBodyDraft } from "./BodyEditor";
 import { Mannequin, type Worn } from "./Mannequin";
 import { CheckIcon, PlusIcon, SmallCloseIcon } from "@/components/icons";
 import { buttonClass } from "@/components/ui/Button";
@@ -38,8 +39,9 @@ export function OutfitMaker({
 }) {
   const { garments, profile } = useData();
   const [cat, setCat] = useState<Category | "all">("all");
-  /** 칸으로 보기(목업) / 마네킹으로 입어 보기 */
-  const [view, setView] = useState<"slots" | "mannequin">("slots");
+  /** 마네킹으로 입어 보기(기본) / 칸으로 보기(목업) */
+  const [view, setView] = useState<"slots" | "mannequin">("mannequin");
+  const bodyDraft = useBodyDraft();
 
   const byId = useMemo(() => new Map(garments.map((g) => [g.id, g])), [garments]);
   const pickable = garments.filter((g) => g.category !== "etc" && (cat === "all" || g.category === cat));
@@ -57,7 +59,8 @@ export function OutfitMaker({
     const g = draft.slots[slot] ? byId.get(draft.slots[slot]!) : undefined;
     if (g) worn[slot] = g;
   }
-  const body = profile.body;
+  // 입력하는 동안에는 입력 중인 값으로 마네킹을 바로 바꿔 보여 준다
+  const body = bodyDraft.touched || bodyDraft.saved ? bodyDraft.preview : profile.body;
 
   return (
     <>
@@ -66,23 +69,9 @@ export function OutfitMaker({
           <div className="flex justify-center">
             <Mannequin body={body} worn={worn} height={330} />
           </div>
-          <p className="mt-1 px-4 text-center text-[13px] leading-normal text-sub">
-            {body ? (
-              <>
-                키 {body.heightCm}cm · 몸무게 {body.weightKg}kg 체형이에요.
-              </>
-            ) : (
-              <>
-                키와 몸무게를 등록하면
-                <br />
-                내 체형에 맞게 보여 줘요.
-              </>
-            )}
-            <br />
-            <Link href="/my/body" className="font-semibold text-deep">
-              {body ? "내 체형 바꾸기 ›" : "내 체형 등록하기 ›"}
-            </Link>
-          </p>
+          <div className="mt-2 px-4">
+            <BodyFields draft={bodyDraft} />
+          </div>
         </div>
       )}
       <div

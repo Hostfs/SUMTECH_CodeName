@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BoxIcon, HangerIcon, HomeIcon, Icon, UserIcon } from "@/components/icons";
+import { BoxIcon, HangerIcon, HomeIcon, Icon, ShirtIcon } from "@/components/icons";
 
 const TABS = [
   { href: "/", label: "홈", Icon: HomeIcon },
   { href: "/closet", label: "내 옷장", Icon: HangerIcon },
   null, // 가운데 + 버튼
   { href: "/storage", label: "보관함", Icon: BoxIcon },
-  { href: "/my", label: "마이", Icon: UserIcon },
+  { href: "/outfits", label: "코디", Icon: ShirtIcon },
 ] as const;
 
 function isActive(pathname: string, href: string) {
@@ -43,7 +43,7 @@ export function TabBar() {
             aria-current={isActive(pathname, tab.href) ? "page" : undefined}
             className="flex w-[62px] flex-col items-center gap-[3px] pt-1 text-tab text-sub aria-[current=page]:font-semibold aria-[current=page]:text-deep"
           >
-            <tab.Icon />
+            <tab.Icon size={24} />
             <span>{tab.label}</span>
           </Link>
         ),

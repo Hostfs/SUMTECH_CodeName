@@ -4,10 +4,8 @@ import Link from "next/link";
 import { useData } from "@/components/DataProvider";
 import {
   BellIcon,
-  BodyIcon,
   BoxIcon,
   ChevronRightIcon,
-  GearIcon,
   HelpIcon,
   LogoutIcon,
   PaletteIcon,
@@ -15,6 +13,7 @@ import {
   UserIcon,
 } from "@/components/icons";
 import { Screen } from "@/components/layout/Screen";
+import { TopBar } from "@/components/layout/TopBar";
 import { useTheme } from "@/components/ThemeProvider";
 import { useToast } from "@/components/ui/Toast";
 import { useNotifySettings } from "@/lib/notify";
@@ -23,7 +22,8 @@ import { SEASON_LABEL } from "@/lib/theme";
 
 const SOON = "준비 중인 기능이에요";
 
-export default function MyPage() {
+/** 프로필: 홈 오른쪽 위 프로필 버튼으로 들어온다. (예전 '마이' 탭의 내용) */
+export default function ProfilePage() {
   const { garments, outfits, places, profile } = useData();
   const { setting, season } = useTheme();
   const toast = useToast();
@@ -44,12 +44,6 @@ export default function MyPage() {
         </>
       ),
     },
-    {
-      label: "내 체형",
-      Icon: BodyIcon,
-      href: "/my/body",
-      value: profile.body ? `${profile.body.heightCm}cm · ${profile.body.weightKg}kg` : "등록 안 함",
-    },
     { label: "저장한 코디", Icon: ShirtIcon, href: "/outfits?tab=saved", value: `${outfits.length}개` },
     { label: "보관 장소 관리", Icon: BoxIcon, href: "/storage", value: `${placeCount}곳` },
     { label: "알림 설정", Icon: BellIcon, href: "/my/notifications", value: notify.enabled ? "켜짐" : "꺼짐" },
@@ -59,13 +53,8 @@ export default function MyPage() {
   const rowCls = "flex h-[54px] w-full items-center gap-3 border-b border-line px-4 text-left text-[15.5px] last:border-0";
 
   return (
-    <Screen withTabBar>
-      <div className="flex h-[52px] items-center justify-between pt-2 pr-3 pl-5">
-        <h1 className="text-2xl font-semibold tracking-[-0.02em]">마이</h1>
-        <Link href="/my/theme" aria-label="설정" className="flex size-11 items-center justify-center">
-          <GearIcon />
-        </Link>
-      </div>
+    <Screen>
+      <TopBar title="프로필" fallbackHref="/" />
 
       <div className="mx-4 mt-2 flex items-center gap-3.5 rounded-card-lg border border-line bg-card p-4">
         <span className="flex size-14 flex-none items-center justify-center rounded-full bg-soft text-deep">
