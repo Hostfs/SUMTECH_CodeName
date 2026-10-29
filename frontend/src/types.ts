@@ -74,6 +74,17 @@ export type Candidate = {
 
 export type SearchView = { id: number; status: string; searchedAt: string; candidates: Candidate[] }
 
+/** kind: LABEL 택 사진, PROCESSED 정리본, PRODUCT_ORIGINAL 제품 이미지, GARMENT_ORIGINAL 옷 사진.
+ *  processing: 원본의 정리 결과(DONE 성공, FAILED 실패해 원본 사용, null 처리 전). */
+export type GarmentImage = {
+  id: number
+  kind: string
+  url: string
+  sourceUrl: string | null
+  processedFromId: number | null
+  processing: 'DONE' | 'FAILED' | null
+}
+
 export type GarmentDetail = {
   summary: GarmentSummary
   productCode: string | null
@@ -86,7 +97,8 @@ export type GarmentDetail = {
   materials: { part: string; partLabel: string; fiber: string; fiberLabel: string; percent: number }[]
   careLines: string[]
   measurements: { part: string; partLabel: string; kind: string; kindLabel: string; valueCm: number; source: string | null }[]
-  images: { id: number; kind: string; url: string; sourceUrl: string | null }[]
+  coverImageId: number | null
+  images: GarmentImage[]
   extraction: Extraction | null
   search: SearchView | null
   product: { candidateId: number; name: string; brand: string | null; sourceUrl: string; searchedAt: string | null } | null

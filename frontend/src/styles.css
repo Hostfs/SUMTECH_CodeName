@@ -312,6 +312,15 @@ a { color: inherit; }
 .thumbs button[aria-pressed="true"] { border-color: var(--accent); }
 .thumbs img { width: 100%; height: 100%; object-fit: cover; }
 
+.cover-card { margin-top: 12px; }
+.cover-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.cover-compare figure { margin: 0; }
+.cover-compare figcaption { font-size: .85rem; color: var(--ink-2); text-align: center; margin-top: 6px; }
+.cover-img { aspect-ratio: 1; border-radius: 12px; overflow: hidden; background: var(--tile); }
+.cover-img img { width: 100%; height: 100%; object-fit: contain; }
+/* 투명하게 지운 배경이 보이도록 체크무늬를 깐다 */
+.cover-img.checker { background: repeating-conic-gradient(var(--tile) 0% 25%, var(--surface) 0% 50%) 50% / 16px 16px; }
+
 .detail-title { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.02em; margin: 0; line-height: 1.3; }
 .detail-sub { color: var(--ink-2); margin: 4px 0 0; }
 

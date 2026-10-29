@@ -76,7 +76,11 @@ public final class GarmentDtos {
             String source, boolean confirmed) {
     }
 
-    public record ImageView(long id, String kind, String url, String sourceUrl) {
+    /**
+     * processedFromId: 정리본이면 원본 이미지 ID. processing: 원본(옷 사진·제품 이미지)의 정리 결과
+     * (DONE 성공, FAILED 실패해 원본 사용, null 아직 처리 안 함). 택 사진·정리본은 null.
+     */
+    public record ImageView(long id, String kind, String url, String sourceUrl, Long processedFromId, String processing) {
     }
 
     public record FieldValueView(String field, String fieldLabel, String readValue, String correctedValue, boolean unread) {
@@ -111,7 +115,7 @@ public final class GarmentDtos {
     public record GarmentDetail(GarmentSummary summary, String productCode, String sizeLabel, String origin,
             String homeStatus, boolean usableWhenPending, List<String> aiFields, Instant placedAt,
             List<MaterialView> materials, List<String> careLines, List<MeasurementView> measurements,
-            List<ImageView> images, ExtractionView extraction, SearchView search, ProductView product, List<CareView> careHistory,
+            Long coverImageId, List<ImageView> images, ExtractionView extraction, SearchView search, ProductView product, List<CareView> careHistory,
             Long suggestedSpaceId, String suggestedLocationPath) {
     }
 }

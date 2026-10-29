@@ -1,10 +1,12 @@
 package ai.otgyeol.garment;
 
+import java.io.IOException;
 import java.util.List;
 
 import jakarta.validation.Valid;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import ai.otgyeol.common.CurrentUser;
 import ai.otgyeol.garment.GarmentDtos.ConfirmPlacementInput;
@@ -64,6 +67,13 @@ public class GarmentController {
     @PostMapping("/{id}/confirm-placement")
     GarmentDetail confirmPlacement(@PathVariable long id, @RequestBody(required = false) ConfirmPlacementInput body) {
         return service.confirmPlacement(CurrentUser.id(), id, body == null ? null : body.spaceId());
+    }
+
+    /** 브라우저에서 정리한 대표 이미지를 기록한다. file이 없으면 처리 실패로 기록하고 원본을 대표로 쓴다. */
+    @PostMapping(value = "/{id}/images/{imageId}/processing", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    GarmentDetail processing(@PathVariable long id, @PathVariable long imageId,
+            @RequestParam(value = "file", required = false) MultipartFile file) throws IOException {
+        return service.recordProcessing(CurrentUser.id(), id, imageId, file);
     }
 
     @DeleteMapping("/{id}")

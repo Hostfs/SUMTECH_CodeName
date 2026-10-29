@@ -4,8 +4,15 @@ Agent가 서비스 저장소 루트의 `progress.md`로 복사해 이어 쓴다(
 
 ## 현재 상태
 
-- 실제 서비스 저장소 폴더: C:UsersootDesktopSUMTECHSUMTECH_CodeName
-- 현재 단계 / 다음 행동: 2단계 문서 push 완료(466ab76). 3단계 진행 중: Spring Boot + MariaDB 백엔드, 5NF 스키마(docs/db/schema.sql, ERD.md), 백엔드 테스트 8개 통과(로컬 MariaDB 10.4). 다음: Vite + React 화면(frontend/ 뼈대만 있음, 미커밋), AI(택 분석·제품 검색·추천) API, Docker·CI(scenarios)·배포
+- 실제 서비스 저장소 폴더: C:\projects\SUMTECH_CodeName
+- 현재 단계 / 다음 행동: 2단계 문서 push 완료(466ab76). 3단계 진행 중: Spring Boot + MariaDB 백엔드·5NF 스키마(823f4eb), Vite + React 화면과 AI(택 분석·제품 검색·추천) API 커밋 완료(06122d7). 다음: R03 대표 이미지 정리 구현, workflows/scenarios.yml·e2e/ 추가, docker CI 확인, 첫 배포
+- 2026-10-29 기획안(캔버스) 대비 구현 점검(코드 정독, 실행 검증은 안 함):
+  - 구현됨: R00 회원가입·로그인·계정 분리, R01 택 다중 사진 AI 판독·원문·확인 필요 표시·직접 입력 대체, R02 웹 검색 후보(실제 열리는 페이지만, 출처·조회 시점·일치 근거)·검색 실패 시 계속, R04 보기 기준 6종·다중 계절·컬렉션, R05 회색 3D 모형·치수·기본 비율 표시·면책 문구·코디 저장, R06 사용 가능 옷만·없는 ID 버림·3D로 입혀 보기, R07 공간 트리·배치 추천(미확정)·배치 완료·초과 수량·위치 경로, R08 관리함 오늘/기한 지남·회수 완료→위치 미확인→재배치 확인, R09 같은 의류 ID 기반 상태 계산, R10 404 화면·AI 실패 문구
+  - 미구현 → 2026-10-29 구현: R03 브라우저 캔버스에서 가장자리와 이어진 단색 배경만 투명 처리(픽셀 색은 그대로), 정사각 1024px 가운데 정렬·여백 12%. 등록 저장 직후 대표 이미지 자동 정리, 옷 상세에 정리본·원본 나란히 보기와 '다시 처리'. 실패하면 image_processings.result_image_id=NULL로 기록하고 원본이 대표 이미지로 남음. API POST /api/garments/{id}/images/{imageId}/processing. 백엔드 통합 테스트 1개 추가(로컬에 JDK 21·MariaDB 없어 CI로 확인), 프런트 lint·build 통과
+  - R02 보완: 직접 찍은 사진 없이 제품 후보를 고르면 서버가 후보 이미지를 내려받아(공인 주소만, 10MB·JPG/PNG/WEBP) 제품 이미지 원본으로 저장하고 대표 이미지로 씀
+  - 미흡: R00 '예시 옷장 둘러보기'는 랜딩의 고정 미리보기뿐, 문제정의 근거(experiences·sources·인터뷰) 비어 있음
+  - 한계: 배경이 복잡하거나 옷과 배경색이 비슷하면 지우지 않고 원본 유지(정밀 누끼 모델은 쓰지 않음)
+  - 운영 미완: e2e/ 없음, workflows/scenarios.yml 없음(backend·frontend CI만), 배포 URL 없음, AI 키 연결 실요청 미확인
 - 2026-10-29 학생 결정: 백엔드 Spring, DB MariaDB, 프런트 Vite+React. DB는 5NF까지 정규화하고 ER 다이어그램과 교차 검증 결과를 제공(docs/db/ERD.md). 이 PC에 Docker 없음 → docker 검증은 GitHub Actions로
 - 로컬 테스트용 일회용 MariaDB 10.4 인스턴스: 127.0.0.1:3399(root, 비밀번호 없음, 데이터는 세션 scratchpad). 학생 PC의 MariaDB 서비스(3307)는 건드리지 않음
 - 학생에게 확인할 내용: 팀원 실제 경험(experiences E1 when/workaround/quote 학생 답 대기), sources(학생 요청 시 검색), S2용 실제 택 사진 2장(e2e/fixtures)

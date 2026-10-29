@@ -1,5 +1,6 @@
 package ai.otgyeol.garment;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Comparator;
@@ -17,6 +18,7 @@ import java.util.stream.Stream;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import ai.otgyeol.care.CareEvent;
 import ai.otgyeol.care.CareEventRepository;
@@ -40,10 +42,13 @@ import ai.otgyeol.image.GarmentCoverImage;
 import ai.otgyeol.image.GarmentCoverImageRepository;
 import ai.otgyeol.image.GarmentImage;
 import ai.otgyeol.image.GarmentImageRepository;
+import ai.otgyeol.image.ImageAsset;
 import ai.otgyeol.image.ImageAssetRepository;
 import ai.otgyeol.image.ImageController;
 import ai.otgyeol.image.ImageKind;
+import ai.otgyeol.image.ImageProcessing;
 import ai.otgyeol.image.ImageProcessingRepository;
+import ai.otgyeol.image.RemoteImageFetcher;
 import ai.otgyeol.label.GarmentLabelExtraction;
 import ai.otgyeol.label.GarmentLabelExtractionRepository;
 import ai.otgyeol.label.GarmentProduct;
@@ -83,6 +88,8 @@ public class GarmentService {
     private final CareEventRepository careEvents;
     private final GarmentPlacementRepository placements;
     private final StorageSpaceRepository spaces;
+    private final ImageController imageStore;
+    private final RemoteImageFetcher remoteImages;
 
     public GarmentService(GarmentRepository garments, ClosetContext.Loader contextLoader,
             ClosetCollectionRepository collections, ImageAssetRepository images, GarmentImageRepository garmentImages,
@@ -90,7 +97,10 @@ public class GarmentService {
             LabelExtractionRepository extractions, GarmentLabelExtractionRepository garmentExtractions,
             LabelExtractionSearchRepository extractionSearches, ProductSearchRepository searches,
             ProductCandidateRepository candidates, GarmentProductRepository garmentProducts,
-            CareEventRepository careEvents, GarmentPlacementRepository placements, StorageSpaceRepository spaces) {
+            CareEventRepository careEvents, GarmentPlacementRepository placements, StorageSpaceRepository spaces,
+            ImageController imageStore, RemoteImageFetcher remoteImages) {
+        this.imageStore = imageStore;
+        this.remoteImages = remoteImages;
         this.garments = garments;
         this.contextLoader = contextLoader;
         this.collections = collections;
@@ -138,11 +148,20 @@ public class GarmentService {
         List<Long> imageIds = garmentImages.findByGarmentIdOrderByImageIdAsc(g.id).stream().map(i -> i.imageId).toList();
         Map<Long, ImageKind> kinds = imageKinds(imageIds);
         Map<Long, String> sources = new HashMap<>();
+        Map<Long, Long> processedFrom = new HashMap<>();
+        Map<Long, String> processing = new HashMap<>();
         if (!imageIds.isEmpty()) {
             images.findMeta(imageIds).forEach(m -> sources.put(m.getId(), m.getSourceUrl()));
+            processings.findBySourceImageIdIn(imageIds).forEach(p -> {
+                processing.put(p.sourceImageId, p.resultImageId == null ? "FAILED" : "DONE");
+                if (p.resultImageId != null) {
+                    processedFrom.put(p.resultImageId, p.sourceImageId);
+                }
+            });
         }
         List<ImageView> imageViews = imageIds.stream()
-                .map(id -> new ImageView(id, kinds.get(id).name(), ImageController.url(id), sources.get(id)))
+                .map(id -> new ImageView(id, kinds.get(id).name(), ImageController.url(id), sources.get(id),
+                        processedFrom.get(id), processing.get(id)))
                 .toList();
 
         LabelExtraction latest = extractions.findLatestForGarment(g.id).orElse(null);
@@ -174,7 +193,7 @@ public class GarmentService {
                         .map(m -> new MeasurementView(m.part().name(), m.part().label, m.kind().name(), m.kind().label,
                                 m.valueCm(), m.source(), m.confirmed()))
                         .toList(),
-                imageViews, extraction, search, product, care,
+                ctx.covers().get(g.id), imageViews, extraction, search, product, care,
                 awaitingConfirm ? placement.spaceId : null,
                 awaitingConfirm ? ctx.paths().get(placement.spaceId) : null);
     }
@@ -210,14 +229,7 @@ public class GarmentService {
                 }
             }
         }
-        Long cover = in.coverImageId() != null ? in.coverImageId()
-                : in.imageIds() != null && !in.imageIds().isEmpty() ? in.imageIds().get(0) : null;
-        if (cover != null) {
-            if (!linked.contains(cover)) {
-                throw ApiException.badRequest("대표 사진은 이 옷에 올린 사진 중에서 골라 주세요.");
-            }
-            covers.save(new GarmentCoverImage(g.id, cover));
-        }
+        Long productImage = null;
         if (in.candidateId() != null) {
             ProductCandidate candidate = candidates.findOwned(in.candidateId(), userId)
                     .orElseThrow(() -> ApiException.notFound("제품 후보"));
@@ -226,7 +238,69 @@ public class GarmentService {
                 throw ApiException.badRequest("이 택 분석에서 찾은 후보가 아니에요.");
             }
             garmentProducts.save(new GarmentProduct(g.id, candidate.id));
+            // 직접 찍은 사진이 없으면 고른 제품의 이미지를 가져와 대표 이미지로 쓴다(못 가져오면 그림으로 표시).
+            if ((in.imageIds() == null || in.imageIds().isEmpty()) && candidate.imageUrl != null) {
+                productImage = remoteImages.fetch(userId, candidate.imageUrl).map(asset -> {
+                    garmentImages.save(new GarmentImage(asset.id, g.id));
+                    linked.add(asset.id);
+                    return asset.id;
+                }).orElse(null);
+            }
         }
+        Long cover = in.coverImageId() != null ? in.coverImageId()
+                : in.imageIds() != null && !in.imageIds().isEmpty() ? in.imageIds().get(0) : productImage;
+        if (cover != null) {
+            if (!linked.contains(cover)) {
+                throw ApiException.badRequest("대표 사진은 이 옷에 올린 사진 중에서 골라 주세요.");
+            }
+            covers.save(new GarmentCoverImage(g.id, cover));
+        }
+        return detail(userId, g.id);
+    }
+
+    /**
+     * 대표 이미지 정리(배경 제거·정사각 정렬) 결과를 기록한다. 처리는 브라우저가 하고, 결과 파일이 없으면 실패로 남겨 원본을 대표로 쓴다.
+     * 다시 처리하면 이전 정리본을 지우고 새 결과로 바꾼다. 원본은 지우지 않는다.
+     */
+    @Transactional
+    public GarmentDetail recordProcessing(long userId, long garmentId, long sourceImageId, MultipartFile result) throws IOException {
+        Garment g = owned(userId, garmentId);
+        garmentImages.findById(sourceImageId).filter(i -> i.garmentId.equals(g.id))
+                .orElseThrow(() -> ApiException.notFound("사진"));
+        ImageKind kind = imageKinds(List.of(sourceImageId)).get(sourceImageId);
+        if (kind != ImageKind.GARMENT_ORIGINAL && kind != ImageKind.PRODUCT_ORIGINAL) {
+            throw ApiException.badRequest("옷 사진이나 제품 이미지만 정리할 수 있어요.");
+        }
+        ImageProcessing p = processings.findById(sourceImageId).orElseGet(() -> {
+            ImageProcessing created = new ImageProcessing();
+            created.sourceImageId = sourceImageId;
+            return created;
+        });
+        Long oldResult = p.resultImageId;
+        Long newResult = null;
+        if (result != null && !result.isEmpty()) {
+            ImageAsset asset = imageStore.store(userId, result, null);
+            garmentImages.save(new GarmentImage(asset.id, g.id));
+            newResult = asset.id;
+        }
+        p.resultImageId = newResult;
+        p.processedAt = Instant.now();
+        processings.save(p);
+
+        // 원본이나 이전 정리본이 대표였으면(또는 대표가 없으면) 새 정리본, 실패했으면 원본을 대표로 쓴다.
+        Long coverTarget = newResult != null ? newResult : sourceImageId;
+        GarmentCoverImage cover = covers.findById(g.id).orElse(null);
+        if (cover == null) {
+            covers.save(new GarmentCoverImage(g.id, coverTarget));
+        } else if (cover.imageId.equals(sourceImageId) || cover.imageId.equals(oldResult)) {
+            cover.imageId = coverTarget;
+        }
+        if (oldResult != null) {
+            // 처리 기록·대표 이미지가 새 값으로 바뀐 뒤(flush 순서: 수정 → 삭제) 이전 정리본을 지운다.
+            garmentImages.deleteById(oldResult);
+            images.deleteById(oldResult);
+        }
+        g.updatedAt = Instant.now();
         return detail(userId, g.id);
     }
 

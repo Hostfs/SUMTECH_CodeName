@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type ChangeEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api, errorMessage } from '../api'
 import GarmentForm from '../components/GarmentForm'
+import { processCoverIfNeeded } from '../imageCleanup'
 import { emptyForm, toInput, type GarmentFormValue } from '../garmentForm'
 import { IconCamera, IconClose, IconSearch, IconSparkle } from '../components/Icons'
 import { Notice, Spinner } from '../components/Ui'
@@ -42,6 +43,7 @@ export default function Register() {
   const [candidateId, setCandidateId] = useState<number | null>(null)
 
   const [saving, setSaving] = useState(false)
+  const [cleaning, setCleaning] = useState(false)
   const [saveError, setSaveError] = useState('')
 
   const step = !analysis && !manual ? 1 : !search ? 2 : 3
@@ -125,6 +127,9 @@ export default function Register() {
       const created = await api.post<GarmentDetail>('/api/garments', {
         ...toInput(form), imageIds, extractionId: analysis?.extraction.id ?? null, candidateId, aiFields,
       })
+      // 옷은 이미 저장됐으므로 대표 이미지 정리가 실패해도 상세 화면으로 간다(상세에서 '다시 처리' 가능).
+      setCleaning(true)
+      await processCoverIfNeeded(created).catch(() => undefined)
       navigate(`/closet/${created.summary.id}`, { replace: true })
     } catch (e) {
       setSaveError(errorMessage(e))
@@ -234,7 +239,7 @@ export default function Register() {
           <label className="upload">
             <IconCamera />
             <strong>옷 사진 추가</strong>
-            <span className="field-hint">없으면 종류와 색으로 그린 그림을 써요</span>
+            <span className="field-hint">배경을 지우고 가운데 맞춰 정리해요. 원본도 남아요. 없으면 고른 제품 이미지나 종류·색으로 그린 그림을 써요</span>
             <input className="sr-only" type="file" accept="image/jpeg,image/png,image/webp" aria-label="옷 사진 추가" onChange={(e) => addFiles(e, 'photo')} disabled={photoFiles.length >= MAX_PHOTOS} />
           </label>
           {photoFiles.length > 0 && (
@@ -254,7 +259,7 @@ export default function Register() {
         <div style={{ marginTop: 20, display: 'grid', gap: 10 }}>
           {saveError && <Notice>{saveError}</Notice>}
           {!canSave && <span className="field-hint">옷 이름과 옷 종류를 채우면 저장할 수 있어요.</span>}
-          <button type="button" className="btn btn-block" onClick={save} disabled={!canSave || saving}>{saving && <Spinner />}저장하기</button>
+          <button type="button" className="btn btn-block" onClick={save} disabled={!canSave || saving}>{saving && <Spinner />}{cleaning ? '대표 이미지 정리 중' : '저장하기'}</button>
         </div>
       )}
     </>

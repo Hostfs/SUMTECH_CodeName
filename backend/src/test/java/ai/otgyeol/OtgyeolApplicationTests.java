@@ -56,6 +56,27 @@ class OtgyeolApplicationTests {
             return send("POST", path, body);
         }
 
+        /** multipart 요청. png가 null이면 파일 없이 text 칸 하나만 보낸다. */
+        Res multipart(String path, byte[] png) throws Exception {
+            String boundary = "----otgyeol" + System.nanoTime();
+            java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+            out.write(("--" + boundary + "\r\n").getBytes(StandardCharsets.UTF_8));
+            if (png != null) {
+                out.write(("Content-Disposition: form-data; name=\"file\"; filename=\"a.png\"\r\nContent-Type: image/png\r\n\r\n")
+                        .getBytes(StandardCharsets.UTF_8));
+                out.write(png);
+            } else {
+                out.write("Content-Disposition: form-data; name=\"failed\"\r\n\r\n1".getBytes(StandardCharsets.UTF_8));
+            }
+            out.write(("\r\n--" + boundary + "--\r\n").getBytes(StandardCharsets.UTF_8));
+            HttpRequest req = HttpRequest.newBuilder(URI.create("http://localhost:" + port + path))
+                    .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+                    .POST(HttpRequest.BodyPublishers.ofByteArray(out.toByteArray())).build();
+            HttpResponse<String> r = http.send(req, HttpResponse.BodyHandlers.ofString());
+            String t = r.body().trim();
+            return new Res(r.statusCode(), t.startsWith("{") || t.startsWith("[") ? json.readTree(t) : null, r.body());
+        }
+
         Client login() throws Exception {
             assertThat(post("/api/auth/login", "{\"email\":\"student@example.com\",\"password\":\"loopthon-2026\"}").status())
                     .isEqualTo(200);
@@ -154,6 +175,63 @@ class OtgyeolApplicationTests {
                 + "\"measurements\":[{\"part\":\"TOTAL_LENGTH\",\"kind\":\"LENGTH\",\"valueCm\":73}],"
                 + "\"materials\":[{\"part\":\"SHELL\",\"fiber\":\"COTTON\",\"percent\":60},{\"part\":\"SHELL\",\"fiber\":\"POLYESTER\",\"percent\":40}]}");
         assertThat(edited.body().get("aiFields").toString()).contains("MATERIAL").doesNotContain("BRAND");
+    }
+
+    static byte[] png(int rgb) throws Exception {
+        java.awt.image.BufferedImage img = new java.awt.image.BufferedImage(8, 8, java.awt.image.BufferedImage.TYPE_INT_RGB);
+        for (int x = 0; x < 8; x++) {
+            for (int y = 0; y < 8; y++) {
+                img.setRGB(x, y, rgb);
+            }
+        }
+        java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+        javax.imageio.ImageIO.write(img, "png", out);
+        return out.toByteArray();
+    }
+
+    @Test
+    void coverImageProcessingKeepsOriginalAndCanRetry() throws Exception {
+        Client c = new Client().login();
+        long original = c.multipart("/api/images", png(0x1f2a44)).body().get("id").asLong();
+        JsonNode created = c.post("/api/garments", "{\"name\":\"사진 셔츠\",\"subType\":\"SHIRT\",\"imageIds\":[" + original + "]}").body();
+        long id = created.get("summary").get("id").asLong();
+        assertThat(created.get("coverImageId").asLong()).isEqualTo(original);
+        assertThat(created.get("images").get(0).get("processing").isNull()).isTrue();
+        String path = "/api/garments/" + id + "/images/" + original + "/processing";
+
+        // 성공: 정리본이 대표가 되고 원본은 그대로 남는다
+        JsonNode done = c.multipart(path, png(0xffffff)).body();
+        long result = done.get("coverImageId").asLong();
+        assertThat(result).isNotEqualTo(original);
+        assertThat(done.get("summary").get("imageUrl").asString()).isEqualTo("/api/images/" + result);
+        assertThat(imageById(done.get("images"), original).get("processing").asString()).isEqualTo("DONE");
+        JsonNode processed = imageById(done.get("images"), result);
+        assertThat(processed.get("kind").asString()).isEqualTo("PROCESSED");
+        assertThat(processed.get("processedFromId").asLong()).isEqualTo(original);
+        assertThat(c.get("/api/images/" + original).status()).isEqualTo(200);
+
+        // 다시 처리했는데 실패: 이전 정리본은 지워지고 원본이 대표로 돌아온다
+        JsonNode failed = c.multipart(path, null).body();
+        assertThat(failed.get("coverImageId").asLong()).isEqualTo(original);
+        assertThat(failed.get("images").size()).isEqualTo(1);
+        assertThat(failed.get("images").get(0).get("processing").asString()).isEqualTo("FAILED");
+        assertThat(c.get("/api/images/" + result).status()).isEqualTo(404);
+
+        // 정리본을 다시 정리하거나 남의 옷 사진을 처리할 수 없다
+        long again = c.multipart(path, png(0xeeeeee)).body().get("coverImageId").asLong();
+        assertThat(c.multipart("/api/garments/" + id + "/images/" + again + "/processing", null).status()).isEqualTo(400);
+        Client other = new Client();
+        other.post("/api/auth/signup", "{\"email\":\"img" + System.nanoTime() + "@example.com\",\"password\":\"password123\"}");
+        assertThat(other.multipart(path, null).status()).isEqualTo(404);
+    }
+
+    static JsonNode imageById(JsonNode images, long imageId) {
+        for (JsonNode n : images) {
+            if (n.get("id").asLong() == imageId) {
+                return n;
+            }
+        }
+        throw new AssertionError(imageId + " not found in " + images);
     }
 
     @Test

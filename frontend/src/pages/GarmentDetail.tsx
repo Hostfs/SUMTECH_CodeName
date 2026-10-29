@@ -6,6 +6,7 @@ import { IconBack, IconNeedle, IconPin, IconPinQuestion, IconWash } from '../com
 import { Loading, Notice, Sheet, Spinner, Toast } from '../components/Ui'
 import { formatDate } from '../format'
 import GarmentForm from '../components/GarmentForm'
+import { processGarmentImage } from '../imageCleanup'
 import { toInput, type GarmentFormValue } from '../garmentForm'
 import { useSession } from '../session'
 import type { GarmentDetail, MapView } from '../types'
@@ -71,13 +72,14 @@ export default function GarmentDetailPage() {
                 <button type="button" aria-pressed={photo === null} onClick={() => setPhoto(null)} aria-label="대표 이미지"><GarmentThumb d={d} /></button>
                 {d.images.map((img) => (
                   <button key={img.id} type="button" aria-pressed={photo === img.id} onClick={() => setPhoto(img.id)}
-                    aria-label={img.kind === 'LABEL' ? '택 사진' : '옷 사진'} data-kind={img.kind}>
-                    <img src={img.url} alt={img.kind === 'LABEL' ? '택 사진' : '옷 사진'} />
+                    aria-label={KIND_LABEL[img.kind] ?? '사진'} data-kind={img.kind}>
+                    <img src={img.url} alt={KIND_LABEL[img.kind] ?? '사진'} />
                   </button>
                 ))}
               </div>
             )}
           </div>
+          <CoverSection d={d} onChange={(next, message) => { setD(next); setPhoto(null); setToast(message) }} />
         </div>
 
         <div>
@@ -177,6 +179,53 @@ export default function GarmentDetailPage() {
       )}
       {toast && <Toast message={toast} onDone={() => setToast('')} />}
     </>
+  )
+}
+
+const KIND_LABEL: Record<string, string> = { LABEL: '택 사진', PROCESSED: '정리된 대표 이미지', PRODUCT_ORIGINAL: '제품 이미지', GARMENT_ORIGINAL: '옷 사진' }
+
+/** 대표 이미지 정리 결과: 정리본과 원본을 나란히 보여 주고, 실패했거나 마음에 들지 않으면 다시 처리한다. */
+function CoverSection({ d, onChange }: { d: GarmentDetail; onChange: (d: GarmentDetail, message: string) => void }) {
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const cover = d.images.find((i) => i.id === d.coverImageId)
+  const source = cover?.kind === 'PROCESSED' ? d.images.find((i) => i.id === cover.processedFromId)
+    : cover && (cover.kind === 'GARMENT_ORIGINAL' || cover.kind === 'PRODUCT_ORIGINAL') ? cover : undefined
+  if (!source) return null
+  const result = d.images.find((i) => i.processedFromId === source.id)
+
+  async function run() {
+    setBusy(true)
+    setError('')
+    try {
+      const { detail, error: failure } = await processGarmentImage(d.summary.id, source!.id)
+      if (failure) setError(failure)
+      onChange(detail, failure ? '원본을 대표 이미지로 유지했어요' : '대표 이미지를 정리했어요')
+    } catch (e) {
+      setError(errorMessage(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <section className="card cover-card" aria-label="대표 이미지 정리">
+      <h3 className="section-title">대표 이미지</h3>
+      {source.processing === 'DONE' && result ? (
+        <div className="cover-compare">
+          <figure><div className="cover-img checker"><img src={result.url} alt="정리된 대표 이미지" /></div><figcaption>정리본</figcaption></figure>
+          <figure><div className="cover-img"><img src={source.url} alt="원본 사진" /></div><figcaption>원본</figcaption></figure>
+        </div>
+      ) : source.processing === 'FAILED' ? (
+        <Notice kind="warn">배경을 지우지 못해 원본 사진을 대표 이미지로 쓰고 있어요.</Notice>
+      ) : (
+        <p className="field-hint" style={{ margin: 0 }}>아직 정리하지 않은 원본 사진이에요. 배경을 지우고 가운데 맞출 수 있어요.</p>
+      )}
+      {error && <div style={{ marginTop: 8 }}><Notice kind="warn">{error}</Notice></div>}
+      <button type="button" className="btn btn-sm btn-outline" style={{ marginTop: 10 }} onClick={run} disabled={busy}>
+        {busy && <Spinner />}{source.processing ? '다시 처리' : '대표 이미지 정리'}
+      </button>
+    </section>
   )
 }
 
