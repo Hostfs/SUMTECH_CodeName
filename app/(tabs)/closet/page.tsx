@@ -92,6 +92,11 @@ export default function ClosetPage() {
   return (
     <Screen
       withTabBar
+      floating={
+        selecting && (
+          <SelectionBar count={selected.length} onClear={() => setSelected([])} onMove={() => setMoveOpen(true)} />
+        )
+      }
       // 제목·검색·칩·필터 줄은 위에 고정하고 카드 목록만 스크롤한다
       header={
         <div>
@@ -214,10 +219,6 @@ export default function ClosetPage() {
             />
           ))}
         </div>
-      )}
-
-      {selecting && (
-        <SelectionBar count={selected.length} onClear={() => setSelected([])} onMove={() => setMoveOpen(true)} />
       )}
 
       <FilterSheet

@@ -79,7 +79,18 @@ function PlaceDetailPage() {
   const removeCount = target.id === place.id ? garmentsInPlace(garments, places, place.id).length : list.length;
 
   return (
-    <Screen>
+    <Screen
+      floating={
+        selecting && (
+          <SelectionBar
+            aboveTabBar={false}
+            count={selected.length}
+            onClear={() => setSelected([])}
+            onMove={() => setMoveOpen(true)}
+          />
+        )
+      }
+    >
       <TopBar
         title={place.name}
         fallbackHref="/storage"
@@ -178,15 +189,6 @@ function PlaceDetailPage() {
             );
           })}
         </div>
-      )}
-
-      {selecting && (
-        <SelectionBar
-          aboveTabBar={false}
-          count={selected.length}
-          onClear={() => setSelected([])}
-          onMove={() => setMoveOpen(true)}
-        />
       )}
 
       <PlacePickerSheet open={moveOpen} onClose={() => setMoveOpen(false)} onConfirm={move} />

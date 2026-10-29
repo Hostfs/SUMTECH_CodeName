@@ -14,7 +14,10 @@ export interface Cutout {
 
 const MAX = 480; // 처리용으로 줄이는 최대 크기(px)
 const ALPHA_MIN = 24;
-const BG_TOLERANCE = 38; // 배경색과 이 정도까지 비슷하면 배경으로 본다 (RGB 거리)
+// 배경 걷어내기 기준 (RGB 거리)
+const SEED_TOL = 55; // 가장자리 픽셀이 모서리 색과 이 정도까지 비슷하면 배경 씨앗
+const STEP_TOL = 22; // 이웃 픽셀과 이 정도까지 비슷해야 배경이 이어진다
+const FAR_TOL = 85; // 씨앗 색에서 이보다 멀어지면 멈춘다 (서서히 변하는 옷 가장자리가 새는 것 방지)
 
 const cache = new Map<string, Promise<Cutout | null>>();
 const ready = new Map<string, Cutout | null>();
@@ -47,43 +50,121 @@ async function compute(src: string): Promise<Cutout | null> {
     const d = image.data;
     const isSvg = src.startsWith("data:image/svg");
 
-    // 사진: 네 모서리 색이 비슷하면 그 색을 배경으로 보고, 가장자리에서 이어진 배경 픽셀만 투명하게 만든다
+    // 사진: 가장자리에서부터 배경을 걷어낸다. 배경이 한 가지 색이 아니어도(벽+바닥, 그라데이션) 되도록,
+    // 모서리 색과 비슷한 가장자리 픽셀을 씨앗으로 삼아 '이웃과 색이 비슷하게 이어지는 동안'만 번져 나간다.
+    // 옷의 가장자리는 배경과 색이 확 달라서 거기서 멈춘다.
     if (!isSvg) {
-      const corners = [0, (w - 1) * 4, (h - 1) * w * 4, ((h - 1) * w + (w - 1)) * 4].filter((i) => d[i + 3] > 200);
-      if (corners.length >= 3) {
-        const bg = [0, 1, 2].map((c) => corners.map((i) => d[i + c]).sort((a, b) => a - b)[Math.floor(corners.length / 2)]);
-        const agree = corners.every((i) => dist(d, i, bg) < 60);
-        if (agree) {
-          const seen = new Uint8Array(w * h);
-          const queue = new Int32Array(w * h);
-          let head = 0;
-          let tail = 0;
-          const push = (p: number) => {
-            if (seen[p]) return;
-            seen[p] = 1;
-            if (d[p * 4 + 3] < ALPHA_MIN || dist(d, p * 4, bg) < BG_TOLERANCE) queue[tail++] = p;
-          };
-          for (let x = 0; x < w; x++) {
-            push(x);
-            push((h - 1) * w + x);
+      const patch = (cx: number, cy: number): number[] | null => {
+        let r = 0;
+        let g = 0;
+        let b = 0;
+        let n = 0;
+        for (let y = cy - 1; y <= cy + 1; y++) {
+          for (let x = cx - 1; x <= cx + 1; x++) {
+            const i = (Math.min(h - 1, Math.max(0, y)) * w + Math.min(w - 1, Math.max(0, x))) * 4;
+            if (d[i + 3] < 200) continue;
+            r += d[i];
+            g += d[i + 1];
+            b += d[i + 2];
+            n++;
           }
-          for (let y = 0; y < h; y++) {
-            push(y * w);
-            push(y * w + w - 1);
-          }
-          while (head < tail) {
-            const p = queue[head++];
-            d[p * 4 + 3] = 0;
-            const x = p % w;
-            const y = (p - x) / w;
-            if (x > 0) push(p - 1);
-            if (x < w - 1) push(p + 1);
-            if (y > 0) push(p - w);
-            if (y < h - 1) push(p + w);
-          }
-          ctx.putImageData(image, 0, 0);
         }
+        return n ? [r / n, g / n, b / n] : null;
+      };
+      const corners = [patch(1, 1), patch(w - 2, 1), patch(1, h - 2), patch(w - 2, h - 2)].filter((c): c is number[] => !!c);
+      const seen = new Uint8Array(w * h);
+      const queue = new Int32Array(w * h);
+      const sr = new Uint8Array(w * h); // 번지기 시작한 씨앗의 색
+      const sg = new Uint8Array(w * h);
+      const sb = new Uint8Array(w * h);
+      let head = 0;
+      let tail = 0;
+
+      const seed = (p: number) => {
+        if (seen[p]) return;
+        seen[p] = 1;
+        const i = p * 4;
+        if (d[i + 3] >= ALPHA_MIN && !corners.some((c) => dist(d, i, c) < SEED_TOL)) return;
+        sr[p] = d[i];
+        sg[p] = d[i + 1];
+        sb[p] = d[i + 2];
+        queue[tail++] = p;
+      };
+      const grow = (q: number, from: number) => {
+        if (seen[q]) return;
+        seen[q] = 1;
+        const i = q * 4;
+        const j = from * 4;
+        if (d[i + 3] >= ALPHA_MIN) {
+          if (Math.hypot(d[i] - d[j], d[i + 1] - d[j + 1], d[i + 2] - d[j + 2]) > STEP_TOL) return;
+          if (Math.hypot(d[i] - sr[from], d[i + 1] - sg[from], d[i + 2] - sb[from]) > FAR_TOL) return;
+        }
+        sr[q] = sr[from];
+        sg[q] = sg[from];
+        sb[q] = sb[from];
+        queue[tail++] = q;
+      };
+
+      for (let x = 0; x < w; x++) {
+        seed(x);
+        seed((h - 1) * w + x);
       }
+      for (let y = 0; y < h; y++) {
+        seed(y * w);
+        seed(y * w + w - 1);
+      }
+      while (head < tail) {
+        const p = queue[head++];
+        d[p * 4 + 3] = 0;
+        const x = p % w;
+        const y = (p - x) / w;
+        if (x > 0) grow(p - 1, p);
+        if (x < w - 1) grow(p + 1, p);
+        if (y > 0) grow(p - w, p);
+        if (y < h - 1) grow(p + w, p);
+      }
+      ctx.putImageData(image, 0, 0);
+    }
+
+    // 사진: 가장 큰 덩어리(옷)만 남기고 떨어져 있는 작은 조각(쇼핑몰 화면의 화살표·'AI' 버튼, 먼지 등)은 지운다.
+    // 옷의 일부(두 짝의 신발, 소매 등)는 큰 덩어리의 10% 이상이면 남긴다.
+    if (!isSvg) {
+      const label = new Int32Array(w * h);
+      const stack = new Int32Array(w * h);
+      const sizes: number[] = [0];
+      let id = 0;
+      for (let start = 0; start < w * h; start++) {
+        if (label[start] || d[start * 4 + 3] < ALPHA_MIN) continue;
+        id++;
+        let sp = 0;
+        let size = 0;
+        stack[sp++] = start;
+        label[start] = id;
+        while (sp > 0) {
+          const p = stack[--sp];
+          size++;
+          const px = p % w;
+          const py = (p - px) / w;
+          for (let dy = -1; dy <= 1; dy++) {
+            for (let dx = -1; dx <= 1; dx++) {
+              if (!dx && !dy) continue;
+              const nx = px + dx;
+              const ny = py + dy;
+              if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+              const q = ny * w + nx;
+              if (label[q] || d[q * 4 + 3] < ALPHA_MIN) continue;
+              label[q] = id;
+              stack[sp++] = q;
+            }
+          }
+        }
+        sizes.push(size);
+      }
+      const largest = sizes.reduce((a, b) => Math.max(a, b), 0);
+      for (let p = 0; p < w * h; p++) {
+        if (label[p] && sizes[label[p]] < largest * 0.1) d[p * 4 + 3] = 0;
+      }
+      ctx.putImageData(image, 0, 0);
     }
 
     // 옷 윤곽 상자: 투명하지 않은 픽셀이 2개 이상 있는 가장 바깥 줄·칸

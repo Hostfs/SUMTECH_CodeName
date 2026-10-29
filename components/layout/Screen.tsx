@@ -3,6 +3,8 @@
  * background를 넘기면 화면 맨 위(상태바 뒤)부터 깔린다 (홈 날씨 배경용).
  * header는 스크롤 밖 위에 고정된다 (내 옷장의 제목·검색·칩·필터 줄).
  * bottomBar는 스크롤 밖 아래에 고정된다 (상세·등록 화면의 버튼 바).
+ * floating은 스크롤 밖에서 화면 위에 떠 있는 요소(선택 액션 바, 코디 저장 버튼)다.
+ * 스크롤 영역 안에 absolute로 두면 내용을 내릴 때 같이 밀려 올라가므로 반드시 여기에 넣는다.
  */
 export function Screen({
   children,
@@ -10,12 +12,14 @@ export function Screen({
   background,
   header,
   bottomBar,
+  floating,
 }: {
   children: React.ReactNode;
   withTabBar?: boolean;
   background?: React.ReactNode;
   header?: React.ReactNode;
   bottomBar?: React.ReactNode;
+  floating?: React.ReactNode;
 }) {
   const inset = withTabBar ? "var(--tabbar-h)" : bottomBar ? "var(--botbar-h)" : undefined;
   return (
@@ -31,6 +35,7 @@ export function Screen({
           {children}
         </main>
       </div>
+      {floating && <div className="pointer-events-none absolute inset-0 z-30 [&>*]:pointer-events-auto">{floating}</div>}
       {bottomBar && (
         <div className="absolute inset-x-0 bottom-0 z-30 flex h-[var(--botbar-h)] items-start gap-2 border-t border-line bg-white px-4 pt-3.5">
           {bottomBar}

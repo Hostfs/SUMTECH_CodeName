@@ -46,6 +46,15 @@ export default function OutfitsPage() {
   return (
     <Screen
       withTabBar
+      floating={
+        showSave && (
+          <div className="absolute inset-x-4 bottom-[calc(var(--tabbar-h)+10px)]">
+            <Button size="lg" className="w-full" disabled={itemCount === 0} onClick={save}>
+              코디 저장
+            </Button>
+          </div>
+        )
+      }
       header={
         <>
           <div className="flex h-12 items-center px-5 pt-1.5">
@@ -103,14 +112,6 @@ export default function OutfitsPage() {
             </li>
           ))}
         </ul>
-      )}
-
-      {showSave && (
-        <div className="absolute inset-x-4 bottom-[calc(var(--tabbar-h)+10px)] z-30">
-          <Button size="lg" className="w-full" disabled={itemCount === 0} onClick={save}>
-            코디 저장
-          </Button>
-        </div>
       )}
     </Screen>
   );
