@@ -5,7 +5,9 @@ Agent가 서비스 저장소 루트의 `progress.md`로 복사해 이어 쓴다(
 ## 현재 상태
 
 - 실제 서비스 저장소 폴더: C:UsersootDesktopSUMTECHSUMTECH_CodeName
-- 현재 단계 / 다음 행동: 2단계 문서 초안 작성(docs/problem.yaml, docs/scenarios.yaml, README 구현 설계). 학생 검토 후 push → 3단계
+- 현재 단계 / 다음 행동: 2단계 문서 push 완료(466ab76). 3단계 진행 중: Spring Boot + MariaDB 백엔드, 5NF 스키마(docs/db/schema.sql, ERD.md), 백엔드 테스트 8개 통과(로컬 MariaDB 10.4). 다음: Vite + React 화면(frontend/ 뼈대만 있음, 미커밋), AI(택 분석·제품 검색·추천) API, Docker·CI(scenarios)·배포
+- 2026-10-29 학생 결정: 백엔드 Spring, DB MariaDB, 프런트 Vite+React. DB는 5NF까지 정규화하고 ER 다이어그램과 교차 검증 결과를 제공(docs/db/ERD.md). 이 PC에 Docker 없음 → docker 검증은 GitHub Actions로
+- 로컬 테스트용 일회용 MariaDB 10.4 인스턴스: 127.0.0.1:3399(root, 비밀번호 없음, 데이터는 세션 scratchpad). 학생 PC의 MariaDB 서비스(3307)는 건드리지 않음
 - 학생에게 확인할 내용: 팀원 실제 경험(experiences E1 when/workaround/quote 학생 답 대기), sources(학생 요청 시 검색), S2용 실제 택 사진 2장(e2e/fixtures)
 - 2026-10-29 결정(학생 지시): 기획 내용은 학생이 제공한 캔버스 PDF·서비스 구체화 md에서 그대로 옮김. R02 제품 검색은 AI Gateway 검색·수집 도구로 실제 구현 유지(학생: "API 키 있음, 크롤링해서 해도 됨"). platform both, 로그인 있음·역할 '사용자', R03은 md 기준 유지(브라우저 배경 제거 + 실패 시 원본) — md의 권고안을 학생이 "계획서 작성" 지시로 채택, 이견 시 수정
 

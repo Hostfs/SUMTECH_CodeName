@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>옷결 ER 다이어그램</title>
+<style>
+  body { margin: 0; padding: 24px 16px 64px; font-family: system-ui, sans-serif; background: #fbfafd; color: #23305e; }
+  h1 { font-size: 1.4rem; margin: 0 0 4px; }
+  h2 { font-size: 1.1rem; margin: 40px 0 8px; }
+  p { max-width: 72ch; line-height: 1.6; }
+  .diagram { overflow-x: auto; border: 1px solid #d6d2e4; border-radius: 4px; padding: 16px; background: #fff; }
+  #status { font-weight: 600; }
+</style>
+</head>
+<body>
+<h1>옷결 ER 다이어그램</h1>
+<p>schema.sql을 MariaDB 10.4.12에 적용한 뒤 information_schema에서 자동 생성했다. 자세한 정규화 검토는 ERD.md를 본다.</p>
+<p id="status">그리는 중…</p>
+<h2>핵심 테이블 29개</h2>
+<div class="diagram"><pre class="mermaid">erDiagram
+    body_profiles {
+        bigint user_id PK, FK
+        decimal height_cm &quot;NULL 허용&quot;
+        decimal shoulder_cm &quot;NULL 허용&quot;
+        decimal chest_cm &quot;NULL 허용&quot;
+        decimal waist_cm &quot;NULL 허용&quot;
+        decimal hip_cm &quot;NULL 허용&quot;
+        decimal inseam_cm &quot;NULL 허용&quot;
+    }
+    care_events {
+        bigint id PK
+        bigint garment_id FK
+        varchar care_type_code FK
+        varchar place_code FK
+        varchar shop_name &quot;NULL 허용&quot;
+        varchar description &quot;NULL 허용&quot;
+        date dropped_on
+        date due_on &quot;NULL 허용&quot;
+        datetime completed_at &quot;NULL 허용&quot;
+        datetime created_at
+        bigint ongoing_garment_id UK &quot;NULL 허용&quot;
+    }
+    collections {
+        bigint id PK
+        bigint user_id FK
+        varchar name
+    }
+    garment_ai_fields {
+        bigint garment_id PK, FK
+        varchar field_code PK, FK
+    }
+    garment_care_instructions {
+        bigint garment_id PK, FK
+        int line_no PK
+        varchar instruction
+    }
+    garment_collections {
+        bigint garment_id PK, FK
+        bigint collection_id PK, FK
+    }
+    garment_cover_images {
+        bigint garment_id PK, FK
+        bigint image_id FK, UK
+    }
+    garment_images {
+        bigint image_id PK, FK
+        bigint garment_id FK
+    }
+    garment_label_extractions {
+        bigint extraction_id PK, FK
+        bigint garment_id FK
+    }
+    garment_materials {
+        bigint garment_id PK, FK
+        varchar part_code PK, FK
+        varchar fiber_code PK, FK
+        decimal percent
+    }
+    garment_measurements {
+        bigint garment_id PK, FK
+        varchar part_code PK, FK
+        varchar kind_code PK, FK
+        decimal value_cm
+        varchar source &quot;NULL 허용&quot;
+        tinyint confirmed
+    }
+    garment_placements {
+        bigint garment_id PK, FK
+        bigint space_id FK
+        datetime placed_at
+    }
+    garment_products {
+        bigint garment_id PK, FK
+        bigint candidate_id FK, UK
+        datetime confirmed_at
+    }
+    garment_seasons {
+        bigint garment_id PK, FK
+        varchar season_code PK, FK
+    }
+    garments {
+        bigint id PK
+        bigint user_id FK
+        varchar name
+        varchar brand &quot;NULL 허용&quot;
+        varchar product_code &quot;NULL 허용&quot;
+        varchar color_name &quot;NULL 허용&quot;
+        char color_hex &quot;NULL 허용&quot;
+        varchar size_label &quot;NULL 허용&quot;
+        varchar origin &quot;NULL 허용&quot;
+        varchar sub_type_code FK
+        varchar wear_frequency_code FK
+        varchar status_code FK
+        tinyint usable_when_pending
+        datetime created_at
+        datetime updated_at
+    }
+    image_processings {
+        bigint source_image_id PK, FK
+        bigint result_image_id FK, UK &quot;NULL 허용&quot;
+        datetime processed_at
+    }
+    images {
+        bigint id PK
+        bigint user_id FK
+        varchar content_type
+        longblob data
+        varchar source_url &quot;NULL 허용&quot;
+        datetime created_at
+    }
+    label_extraction_images {
+        bigint extraction_id PK, FK
+        bigint image_id PK, FK
+    }
+    label_extraction_searches {
+        bigint search_id PK, FK
+        bigint extraction_id FK
+    }
+    label_extraction_values {
+        bigint extraction_id PK, FK
+        varchar field_code PK, FK
+        varchar read_value &quot;NULL 허용&quot;
+        varchar corrected_value &quot;NULL 허용&quot;
+    }
+    label_extractions {
+        bigint id PK
+        bigint user_id FK
+        text raw_text &quot;NULL 허용&quot;
+        varchar status_code FK
+        varchar error_message &quot;NULL 허용&quot;
+        datetime created_at
+    }
+    outfit_garments {
+        bigint outfit_id PK, FK
+        bigint garment_id PK, FK
+    }
+    outfits {
+        bigint id PK
+        bigint user_id FK
+        varchar name
+        datetime created_at
+    }
+    placement_proposals {
+        bigint id PK
+        bigint garment_id FK, UK
+        bigint space_id FK
+        varchar reason &quot;NULL 허용&quot;
+        datetime created_at
+    }
+    product_candidates {
+        bigint id PK
+        bigint search_id FK
+        varchar name
+        varchar brand &quot;NULL 허용&quot;
+        varchar product_code &quot;NULL 허용&quot;
+        varchar color_name &quot;NULL 허용&quot;
+        varchar image_url &quot;NULL 허용&quot;
+        varchar source_url
+        varchar match_reason &quot;NULL 허용&quot;
+    }
+    product_searches {
+        bigint id PK
+        bigint user_id FK
+        varchar query_brand &quot;NULL 허용&quot;
+        varchar query_product_code &quot;NULL 허용&quot;
+        varchar status_code FK
+        datetime searched_at
+    }
+    storage_space_parents {
+        bigint space_id PK, FK
+        bigint parent_space_id FK
+    }
+    storage_spaces {
+        bigint id PK
+        bigint user_id FK
+        varchar name
+        varchar space_type_code FK
+        int capacity &quot;NULL 허용&quot;
+        datetime created_at
+    }
+    users {
+        bigint id PK
+        varchar email UK
+        varchar password_hash
+        datetime created_at
+    }
+    users ||--o| body_profiles : &quot;user_id&quot;
+    garments ||--o{ care_events : &quot;garment_id&quot;
+    users ||--o{ collections : &quot;user_id&quot;
+    users ||--o{ garments : &quot;user_id&quot;
+    garments ||--o{ garment_ai_fields : &quot;garment_id&quot;
+    garments ||--o{ garment_care_instructions : &quot;garment_id&quot;
+    collections ||--o{ garment_collections : &quot;collection_id&quot;
+    garments ||--o{ garment_collections : &quot;garment_id&quot;
+    garments ||--o| garment_cover_images : &quot;garment_id&quot;
+    garment_images ||--o| garment_cover_images : &quot;image_id&quot;
+    garment_images ||--o| garment_cover_images : &quot;garment_id&quot;
+    garments ||--o{ garment_images : &quot;garment_id&quot;
+    images ||--o| garment_images : &quot;image_id&quot;
+    label_extractions ||--o| garment_label_extractions : &quot;extraction_id&quot;
+    garments ||--o{ garment_label_extractions : &quot;garment_id&quot;
+    garments ||--o{ garment_materials : &quot;garment_id&quot;
+    garments ||--o{ garment_measurements : &quot;garment_id&quot;
+    garments ||--o| garment_placements : &quot;garment_id&quot;
+    storage_spaces ||--o{ garment_placements : &quot;space_id&quot;
+    product_candidates ||--o| garment_products : &quot;candidate_id&quot;
+    garments ||--o| garment_products : &quot;garment_id&quot;
+    garments ||--o{ garment_seasons : &quot;garment_id&quot;
+    users ||--o{ images : &quot;user_id&quot;
+    images |o--o| image_processings : &quot;result_image_id&quot;
+    images ||--o| image_processings : &quot;source_image_id&quot;
+    users ||--o{ label_extractions : &quot;user_id&quot;
+    label_extractions ||--o{ label_extraction_images : &quot;extraction_id&quot;
+    images ||--o{ label_extraction_images : &quot;image_id&quot;
+    label_extractions ||--o{ label_extraction_searches : &quot;extraction_id&quot;
+    product_searches ||--o| label_extraction_searches : &quot;search_id&quot;
+    label_extractions ||--o{ label_extraction_values : &quot;extraction_id&quot;
+    users ||--o{ outfits : &quot;user_id&quot;
+    garments ||--o{ outfit_garments : &quot;garment_id&quot;
+    outfits ||--o{ outfit_garments : &quot;outfit_id&quot;
+    garments ||--o| placement_proposals : &quot;garment_id&quot;
+    storage_spaces ||--o{ placement_proposals : &quot;space_id&quot;
+    product_searches ||--o{ product_candidates : &quot;search_id&quot;
+    users ||--o{ product_searches : &quot;user_id&quot;
+    users ||--o{ storage_spaces : &quot;user_id&quot;
+    storage_spaces ||--o{ storage_space_parents : &quot;parent_space_id&quot;
+    storage_spaces ||--o| storage_space_parents : &quot;space_id&quot;</pre></div>
+<h2>도메인(코드) 테이블 17개</h2>
+<div class="diagram"><pre class="mermaid">erDiagram
+    care_places {
+        varchar code PK
+        varchar label UK
+    }
+    care_types {
+        varchar code PK
+        varchar label UK
+        varchar garment_status_code FK, UK
+    }
+    categories {
+        varchar code PK
+        varchar label UK
+    }
+    clothing_templates {
+        varchar code PK
+        varchar label UK
+        varchar category_code FK
+    }
+    extraction_statuses {
+        varchar code PK
+        varchar label UK
+    }
+    fibers {
+        varchar code PK
+        varchar label UK
+    }
+    garment_fields {
+        varchar code PK
+        varchar label UK
+    }
+    garment_statuses {
+        varchar code PK
+        varchar label UK
+    }
+    material_parts {
+        varchar code PK
+        varchar label UK
+    }
+    measurement_kinds {
+        varchar code PK
+        varchar label UK
+    }
+    measurement_parts {
+        varchar code PK
+        varchar label UK
+    }
+    search_statuses {
+        varchar code PK
+        varchar label UK
+    }
+    seasons {
+        varchar code PK
+        varchar label UK
+        int sort_order UK
+    }
+    space_types {
+        varchar code PK
+        varchar label UK
+    }
+    sub_type_templates {
+        varchar sub_type_code PK, FK
+        varchar template_code FK
+    }
+    sub_types {
+        varchar code PK
+        varchar label UK
+        varchar category_code FK
+        int sort_order UK
+    }
+    wear_frequencies {
+        varchar code PK
+        varchar label UK
+        int sort_order UK
+    }
+    care_places ||--o{ care_events : &quot;place_code&quot;
+    care_types ||--o{ care_events : &quot;care_type_code&quot;
+    garment_statuses ||--o| care_types : &quot;garment_status_code&quot;
+    categories ||--o{ clothing_templates : &quot;category_code&quot;
+    wear_frequencies ||--o{ garments : &quot;wear_frequency_code&quot;
+    garment_statuses ||--o{ garments : &quot;status_code&quot;
+    sub_types ||--o{ garments : &quot;sub_type_code&quot;
+    garment_fields ||--o{ garment_ai_fields : &quot;field_code&quot;
+    fibers ||--o{ garment_materials : &quot;fiber_code&quot;
+    material_parts ||--o{ garment_materials : &quot;part_code&quot;
+    measurement_kinds ||--o{ garment_measurements : &quot;kind_code&quot;
+    measurement_parts ||--o{ garment_measurements : &quot;part_code&quot;
+    seasons ||--o{ garment_seasons : &quot;season_code&quot;
+    extraction_statuses ||--o{ label_extractions : &quot;status_code&quot;
+    garment_fields ||--o{ label_extraction_values : &quot;field_code&quot;
+    search_statuses ||--o{ product_searches : &quot;status_code&quot;
+    space_types ||--o{ storage_spaces : &quot;space_type_code&quot;
+    categories ||--o{ sub_types : &quot;category_code&quot;
+    sub_types ||--o| sub_type_templates : &quot;sub_type_code&quot;
+    clothing_templates ||--o{ sub_type_templates : &quot;template_code&quot;</pre></div>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: false, theme: "neutral", er: { useMaxWidth: false } });
+  const status = document.getElementById("status");
+  try {
+    await mermaid.run({ querySelector: ".mermaid" });
+    status.textContent = "다이어그램 " + document.querySelectorAll(".mermaid svg").length + "개를 그렸다.";
+    status.dataset.ok = "true";
+  } catch (e) {
+    status.textContent = "다이어그램 오류: " + e.message;
+    status.dataset.ok = "false";
+  }
+</script>
+</body>
+</html>

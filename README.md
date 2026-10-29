@@ -10,6 +10,8 @@
 | --- | --- |
 | [`docs/problem.yaml`](docs/problem.yaml) | 문제정의 캔버스, 5 Whys, 해법 경로, 통찰, 기능 명세(R00~R10) |
 | [`docs/scenarios.yaml`](docs/scenarios.yaml) | 사용자 핵심 흐름 S1~S8과 주 사용 플랫폼 |
+| [`docs/db/schema.sql`](docs/db/schema.sql) | DB 스키마(5NF, MariaDB). 앱의 Flyway 마이그레이션과 같은 파일 |
+| [`docs/db/ERD.md`](docs/db/ERD.md) | ER 다이어그램, 정규화 단계별 근거, 교차 검증 결과(`ERD.html`은 브라우저용) |
 | 아래 「구현 설계」 | 기능별 저장 정보·권한·실패 규칙, 데이터 구조, 구현 순서 |
 | `progress.md` | 팀 진행 기록 |
 
@@ -41,15 +43,15 @@
 | R01 | `LabelExtraction`: 원본 택 사진, 원문, 추출값, 판독 여부, 사용자 정정값 | 소유자만 | 이미지가 아니거나 10MB 초과면 거부. AI 실패·키 없음·예산 부족은 입력 유지, '다시 분석'과 '직접 입력' 제공. 읽지 못한 값은 '확인 필요' |
 | R02 | `ProductCandidate`: 상품명, 이미지 URL, 색상, 출처 URL, 조회 시점, 일치 근거, 확정 여부 | 소유자만 | 결과 없음·차단·시간 초과(20초)는 '검색 결과 없음'과 '직접 입력으로 계속'. 페이지 내용 속 지시문은 데이터로만 취급 |
 | R03 | `ImageAsset`: 원본, 정리본, 출처, 처리 상태 | 소유자만 | 처리 실패 시 원본을 대표 이미지로 유지, '다시 처리' 제공. 로고·무늬·색을 생성·변경하지 않음 |
-| R04 | `Garment`의 종류·세부 종류·계절(복수)·브랜드·색상·소재·컬렉션(복수), 값별 출처(AI/사용자) | 소유자만 | 옷 이름이 비면 저장 거부. 사용자 수정값은 AI 재분석으로 덮어쓰지 않음. 같은 품번은 중복 후보 안내만, 자동 병합 안 함 |
+| R04 | `garments`(세부 종류에서 종류 계산), `garment_seasons`, `garment_collections`, `garment_materials`(부위·섬유·혼용률), `garment_care_instructions`, `garment_ai_fields` | 소유자만 | 옷 이름이 비면 저장 거부. 부위별 혼용률 합계가 100%가 아니면 거부. 사용자 수정값은 AI 재분석으로 덮어쓰지 않음. 같은 품번은 중복 후보 안내만, 자동 병합 안 함 |
 | R05 | `BodyProfile`(cm, 비워 둘 수 있음), `Outfit`(상의 ID, 하의 ID, 이름) | 소유자만, 신체 치수는 삭제 가능 | 범위 밖 치수(예 키 100~230cm 밖)는 거부. 템플릿이 없는 종류는 '3D 미지원' 표시 후 2D 카드로 보여 줌 |
 | R06 | 추천 요청 조건과 결과(의류 ID, 이유) | 소유자만 | 사용 불가 옷과 존재하지 않는 ID는 결과에서 제거. 조합이 불가능하면 이유 안내. AI 실패 시 재시도 |
-| R07 | `StorageSpace`(상위 공간, 이름, 유형, 용량), `PlacementProposal`(추천 위치, 적용 여부), 확정 위치 | 소유자만 | 이름이 비거나 용량이 1 미만이면 거부. 용량 초과는 초과 수량 표시. 추천만으로 현재 위치 변경 안 함 |
-| R08 | `CareEvent`(종류, 자택/업체, 업체명, 내용, 맡긴 날, 예정일, 완료일) | 소유자만 | 예정일이 맡긴 날보다 앞서면 거부. 상태는 의류 한 곳에만 두고 모든 화면이 같은 값을 읽음 |
-| R09 | 위 모든 기록이 같은 `Garment.id`를 참조 | 서버에서 소유권 검사 | 다른 계정 자료 접근은 404 |
+| R07 | `storage_spaces`, `storage_space_parents`(계층), `placement_proposals`(미확정 추천), `garment_placements`(확정 위치) | 소유자만 | 이름이 비거나 용량이 1 미만이면 거부. 용량 초과는 초과 수량 표시. 추천만으로 현재 위치 변경 안 함. 안쪽 공간이나 옷이 있는 공간은 삭제 거부 |
+| R08 | `care_events`(종류, 자택/업체, 업체명, 내용, 맡긴 날, 예정일, 회수 시각) | 소유자만 | 예정일이 맡긴 날보다 앞서면 거부. 진행 중 기록은 한 벌에 하나. 세탁 중·수선 중·회수 후 위치 미확인은 저장하지 않고 이 기록에서 계산해 모든 화면이 같은 값을 읽음 |
+| R09 | 위 모든 기록이 같은 `garments.id`를 참조 | 서버에서 소유권 검사 + DB 트리거로 같은 주인 강제 | 다른 계정 자료 접근은 404 |
 | R10 | — | — | 없는 주소는 404 화면. 외부 호출은 시간 제한과 재시도 1회, 실패 시 입력 유지 |
 
-**의류 상태 값**: `보관 중` · `착용·보관 전` · `세탁 대기` · `세탁 중` · `수선 중` · `회수 완료·위치 미확인`. 코디 추천 기본 후보는 `보관 중`, `회수 완료·위치 미확인`, (사용자가 사용 가능으로 지정한) `착용·보관 전`.
+**의류 상태 값**: 보관 중, 착용·보관 전, 세탁 대기, 세탁 중, 수선 중, 회수 완료·위치 미확인. 앞의 셋은 사용자가 정해 저장하고, 뒤의 셋은 세탁·수선 기록과 위치 확정 시각에서 계산한다(`docs/db/ERD.md` 5절). 코디 추천 기본 후보는 보관 중, 회수 완료·위치 미확인, 그리고 사용자가 사용 가능으로 지정한 착용·보관 전이다.
 
 ### 4. 기능별 완료 조건
 
@@ -111,26 +113,45 @@
 
 | 계층 | 선택 |
 | --- | --- |
-| 앱 | Next.js(App Router, TypeScript), 반응형 |
+| 백엔드 | Spring Boot 4.1(Java 21): REST API(`/api/**`), 세션 쿠키 로그인(Spring Security), Bean Validation |
+| DB | MariaDB(docker는 `mariadb:11.4`, 로컬 개발은 PC의 MariaDB 10.4) + Flyway. 마이그레이션 `V1__init.sql`은 `docs/db/schema.sql`과 같은 파일(CI가 비교) |
+| 프런트엔드 | Vite + React(TypeScript), 반응형. 빌드 결과를 Spring이 같은 주소에서 제공한다(app 컨테이너 하나, 3000 포트) |
 | 3D | Three.js(@react-three/fiber): 기본 도형으로 만든 회색 신체모형과 반소매·긴소매·재킷·긴바지 템플릿 |
-| DB | PostgreSQL + Prisma (docker에서는 compose의 db, 배포에서는 무료 등급 Postgres) |
-| 파일 | 업로드 이미지는 DB에 저장(용량 제한), 배포 후 필요하면 스토리지로 분리 |
+| 파일 | 업로드 이미지는 DB(`images.data`, 한 장 10MB 이하)에 저장 |
 | 이미지 정리 | 브라우저 안 배경 제거 라이브러리 + 정사각 캔버스 정렬, 실패 시 원본 유지 |
-| AI | Vercel AI SDK + AI Gateway |
-| 테스트 | Playwright E2E(`e2e/`), GitHub Actions |
-| 배포 | Vercel, `/__health`에서 실제 배포 commit SHA 응답 |
+| AI | 서버에서 Vercel AI Gateway HTTP API 호출(`AI_GATEWAY_API_KEY`) |
+| 테스트 | 백엔드 통합 테스트(JUnit, 실제 MariaDB: 로컬 인스턴스·CI의 `mariadb:11.4`), DB 도메인 값과 코드 일치 검사, Playwright E2E(`e2e/`), GitHub Actions |
+| 배포 | 컨테이너 배포(Spring은 Vercel에서 실행되지 않음), `/__health`에서 실제 배포 commit SHA 응답 |
+
+#### API 요약
+
+| 경로 | 기능 |
+| --- | --- |
+| `POST /api/auth/signup`·`login`·`logout`, `GET /api/auth/me` | R00 회원가입·로그인 |
+| `GET/POST /api/garments`, `GET/PUT/DELETE /api/garments/{id}` | R04·R09 옷 목록(검색 `q`)·상세·등록·수정 |
+| `PATCH /api/garments/{id}/status`, `POST /api/garments/{id}/confirm-placement` | 상태 변경, 위치 확정(재배치 확인) |
+| `POST /api/images`, `GET /api/images/{id}` | 사진 업로드·조회(본인만). 사진은 옷을 저장할 때 그 옷에 연결됨 |
+| `GET/POST/PUT/DELETE /api/spaces` | R07 옷장 지도·공간 |
+| `POST /api/placements/recommend`, `PUT /api/placements/{id}`, `POST /api/placements/{id}/apply` | R07 배치 추천(미확정)·수정·배치 완료 |
+| `GET /api/care`, `POST /api/garments/{id}/care`, `PATCH /api/care/{id}`, `POST /api/care/{id}/complete` | R08 관리함·맡기기·예정일 변경·회수 완료 |
+| `GET/PUT/DELETE /api/body`, `GET/POST/DELETE /api/outfits` | R05 신체 치수·코디 저장 |
+| `GET /api/meta` | 선택지와 한국어 표시 이름(DB 도메인 테이블을 그대로 읽음) |
+| `GET /__health` | 배포 상태(`releaseId`) |
 
 ### 11. 데이터 모델
 
-`User` · `Garment`(ID, 이름, 브랜드, 품번, 색상, 실제 사이즈, 분류, 확정 위치, 현재 상태) · `LabelExtraction` · `ProductCandidate` · `ImageAsset` · `Measurement`(대상, 부위, 값, cm, 단면/둘레, 출처) · `StorageSpace`(상위 공간 계층) · `PlacementProposal` · `CareEvent` · `BodyProfile` · `Outfit`.
+5NF까지 정규화한 46개 테이블(핵심 29 + 도메인 17)이다. 전체 다이어그램과 단계별 근거는 [`docs/db/ERD.md`](docs/db/ERD.md)에 있다.
 
-모든 하위 기록은 `Garment.id`와 `userId`를 갖고, 서버의 모든 조회는 `userId`로 거른다.
+- 개체: `users`, `garments`, `storage_spaces`, `collections`, `images`, `label_extractions`, `product_searches`, `product_candidates`, `care_events`, `placement_proposals`, `outfits`, `body_profiles`
+- 연결: 확정 위치 `garment_placements`, 공간 계층 `storage_space_parents`, 이미지 `garment_images`·`garment_cover_images`·`image_processings`, 택 판독 `label_extraction_images`·`label_extraction_values`·`garment_label_extractions`, 제품 `label_extraction_searches`·`garment_products`, 코디 `outfit_garments`
+- 다치 속성: `garment_seasons`, `garment_collections`, `garment_ai_fields`, `garment_materials`, `garment_care_instructions`, `garment_measurements`
+- 무결성: 코드 값은 도메인 테이블 FK, 값 범위는 CHECK, 같은 주인 규칙은 트리거 22개, 진행 중 세탁·수선 1건은 생성 열 + UNIQUE
 
 ### 12. 시드 데이터 (docker 첫 기동 시)
 
 `사용자` 시드 계정에 들어가는 데이터:
 
-- **의류 7벌**: 네이비 옥스퍼드 셔츠, 화이트 반소매 티셔츠, 그레이 울 재킷, 블랙 슬랙스, 연청 데님 팬츠(미배치), 베이지 니트(세탁 중, 예정일 어제 → 기한 지남), 카키 치노 팬츠(수선 중, 예정일 오늘)
+- **의류 7벌**(소재·총장 포함): 네이비 옥스퍼드 셔츠, 화이트 반소매 티셔츠, 그레이 울 재킷, 블랙 슬랙스, 연청 데님 팬츠(미배치), 베이지 니트(세탁 중, 예정일 어제 → 기한 지남), 카키 치노 팬츠(수선 중, 예정일 오늘)
 - **공간 3곳**: 옷장 A > 왼쪽 행거, 서랍장 > 2단, 침대 아래 > 겨울 박스
 
 날짜는 기동 시점을 기준으로 계산한다.
@@ -141,7 +162,7 @@
 
 | 시간 | 작업 | 확인 |
 | --- | --- | --- |
-| 10/29 17:00~19:00 | 문서 push, Next.js 뼈대·`/__health`·Dockerfile·compose·CI, Vercel 첫 배포, 대시보드 등록 | CI 통과, UP 표시 |
+| 10/29 17:00~19:00 | 문서 push, Spring·MariaDB 백엔드·`/__health`·Dockerfile·compose·CI, 첫 배포, 대시보드 등록 | CI 통과, UP 표시 |
 | 20:00~22:00 | R00 인증, R09 데이터 모델·시드, R04 내 옷장·옷 상세·분류 수정 | S1·S3 |
 | 22:00~01:00 | R01 택 분석, R02 제품 검색·확정·대체 등록 | S2 |
 | 01:00~03:00 | R07 옷장 지도·배치, R08 관리함 | S6·S7·S8 |
@@ -171,7 +192,25 @@
 ## 설치·실행
 
 ```bash
-docker compose up --build        # 앱 + Postgres + 시드 데이터, http://localhost:3000
+docker compose up --build        # app(Spring + 화면) + MariaDB + 시드 데이터 → http://localhost:3000
+```
+
+로컬 개발(docker 없이):
+
+```bash
+cd backend
+# 통합 테스트: 실제 MariaDB가 필요하다. 기본값은 127.0.0.1:3399/otgyeol_test(root, 비밀번호 없음)이고
+# TEST_DATABASE_URL·TEST_DATABASE_USERNAME·TEST_DATABASE_PASSWORD로 바꿀 수 있다. 테스트 시작 때 스키마를 지우고 다시 만든다.
+./mvnw test
+./mvnw spring-boot:run           # 로컬 MariaDB(기본 localhost:3307/otgyeol) 사용
+```
+
+로컬 MariaDB에는 utf8mb4 데이터베이스와 계정을 먼저 만든다.
+
+```sql
+CREATE DATABASE otgyeol CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'otgyeol'@'localhost' IDENTIFIED BY 'otgyeol';
+GRANT ALL ON otgyeol.* TO 'otgyeol'@'localhost';
 ```
 
 E2E 테스트는 `e2e/` 폴더에서 `npm install`, `npx playwright install chromium`, `npx playwright test`로 실행한다(구현 단계에서 추가).
@@ -180,8 +219,8 @@ E2E 테스트는 `e2e/` 폴더에서 `npm install`, `npx playwright install chro
 
 | 이름 | 용도 | 설정 위치 |
 | ---- | ---- | --------- |
-| `DATABASE_URL` | Postgres 연결 주소 | `docker-compose.yml`(로컬), 배포 환경변수 |
-| `AI_GATEWAY_API_KEY` | 택 분석·제품 검색·분류·추천 AI 호출 | 로컬 `.env`, 배포 환경변수, GitHub Secrets |
-| `SESSION_SECRET` | 로그인 세션 서명 | `docker-compose.yml`(로컬 전용 값), 배포 환경변수 |
-| `RELEASE_ID` | `/__health`가 응답하는 배포 commit | 빌드 시 주입 |
-| `SEED_USER_EMAIL`, `SEED_USER_PASSWORD` | docker 시드 계정(로컬 전용) | `docker-compose.yml` |
+| `DATABASE_URL` | MariaDB JDBC 주소(`jdbc:mariadb://호스트:포트/otgyeol`) | `docker-compose.yml`, 배포 환경변수 |
+| `DATABASE_USERNAME`, `DATABASE_PASSWORD` | DB 계정 | `docker-compose.yml`(로컬 전용 값), 배포 환경변수 |
+| `AI_GATEWAY_API_KEY` | 택 분석·제품 검색·분류·추천 AI 호출 | 로컬 환경변수, 배포 환경변수, GitHub Secrets |
+| `RELEASE_ID` | `/__health`가 응답하는 배포 commit | 빌드 인자·환경변수로 주입 |
+| `SEED_USER_EMAIL`, `SEED_USER_PASSWORD` | docker 시드 계정(로컬 전용, 배포에서는 비움) | `docker-compose.yml` |

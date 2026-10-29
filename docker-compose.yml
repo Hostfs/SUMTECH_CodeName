@@ -1,0 +1,41 @@
+# 주최 측 실행과 CI가 이 파일로 앱을 빈 DB에서 띄운다.
+# - 서비스 이름 app, ports "3000:3000" 고정. db에는 ports·container_name을 두지 않는다. env_file을 쓰지 않는다.
+# - 시드 계정 값은 그대로 적는다(로컬 docker 전용 값).
+services:
+  app:
+    build:
+      context: .
+      args:
+        RELEASE_ID: ${RELEASE_ID:-dev}
+    ports:
+      - "3000:3000"
+    environment:
+      RELEASE_ID: ${RELEASE_ID:-dev}
+      DATABASE_URL: jdbc:mariadb://db:3306/otgyeol
+      DATABASE_USERNAME: otgyeol
+      DATABASE_PASSWORD: otgyeol
+      SEED_USER_EMAIL: student@example.com
+      SEED_USER_PASSWORD: loopthon-2026
+      AI_GATEWAY_API_KEY: ${AI_GATEWAY_API_KEY:-}
+    depends_on:
+      db:
+        condition: service_healthy
+  db:
+    image: mariadb:11.4
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci", "--max-allowed-packet=64M"]
+    environment:
+      MARIADB_DATABASE: otgyeol
+      MARIADB_USER: otgyeol
+      MARIADB_PASSWORD: otgyeol
+      MARIADB_ROOT_PASSWORD: otgyeol-root
+      TZ: Asia/Seoul
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 3s
+      timeout: 5s
+      retries: 30
+    volumes:
+      - db-data:/var/lib/mysql
+
+volumes:
+  db-data:
