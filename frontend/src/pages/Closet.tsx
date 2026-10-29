@@ -1,0 +1,150 @@
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
+import { api, errorMessage } from '../api'
+import GarmentCard from '../components/GarmentCard'
+import { IconSearch } from '../components/Icons'
+import { Loading, Notice } from '../components/Ui'
+import { useLabel, useSession } from '../session'
+import type { GarmentSummary } from '../types'
+
+const VIEWS = [
+  { value: 'category', label: '종류' },
+  { value: 'season', label: '계절' },
+  { value: 'brand', label: '브랜드' },
+  { value: 'location', label: '위치' },
+  { value: 'status', label: '상태' },
+  { value: 'collection', label: '컬렉션' },
+] as const
+type View = (typeof VIEWS)[number]['value']
+
+type Group = { key: string; title: string; items: GarmentSummary[] }
+
+export default function Closet() {
+  const { meta } = useSession()
+  const label = useLabel()
+  const [params, setParams] = useSearchParams()
+  const view = (VIEWS.some((v) => v.value === params.get('view')) ? params.get('view') : 'category') as View
+  const category = params.get('category') ?? 'ALL'
+  const [query, setQuery] = useState(params.get('q') ?? '')
+  const [items, setItems] = useState<GarmentSummary[] | null>(null)
+  const [total, setTotal] = useState<number | null>(null)
+  const [error, setError] = useState('')
+
+  // 검색어는 잠시 멈춘 뒤 서버에 보낸다(이름·브랜드·색상·종류·위치 경로에서 찾음).
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const q = query.trim()
+      api.get<GarmentSummary[]>(`/api/garments${q ? `?q=${encodeURIComponent(q)}` : ''}`)
+        .then((list) => { setItems(list); setError(''); if (!q) setTotal(list.length) })
+        .catch((e) => setError(errorMessage(e)))
+    }, query ? 250 : 0)
+    return () => clearTimeout(t)
+  }, [query])
+
+  function setParam(key: string, value: string | null) {
+    const next = new URLSearchParams(params)
+    if (value === null) next.delete(key)
+    else next.set(key, value)
+    setParams(next, { replace: true })
+  }
+
+  const filtered = useMemo(
+    () => (items ?? []).filter((g) => category === 'ALL' || g.category === category),
+    [items, category],
+  )
+
+  const groups = useMemo<Group[]>(() => groupBy(filtered, view, label, meta?.seasons.map((s) => s.value) ?? []), [filtered, view, label, meta])
+
+  return (
+    <>
+      <div className="page-head">
+        <h1 className="page-title">내 옷장{total !== null && <small>총 {total}벌</small>}</h1>
+        <Link className="btn btn-sm btn-soft" to="/register">옷 등록</Link>
+      </div>
+
+      <label className="search">
+        <IconSearch />
+        <span className="sr-only">검색창</span>
+        <input type="search" placeholder="이름·색상·위치로 검색" aria-label="검색창" value={query}
+          onChange={(e) => { setQuery(e.target.value); setParam('q', e.target.value || null) }} />
+      </label>
+
+      <div className="chips" role="group" aria-label="종류로 거르기">
+        <button type="button" className="chip" aria-pressed={category === 'ALL'} onClick={() => setParam('category', null)}>전체</button>
+        {meta?.categories.map((c) => (
+          <button key={c.value} type="button" className="chip" aria-pressed={category === c.value} onClick={() => setParam('category', c.value)}>{c.label}</button>
+        ))}
+      </div>
+
+      <div className="toolbar">
+        <span className="field-hint">{items ? `${filtered.length}벌 보는 중` : ''}</span>
+        <label className="inline-select">
+          보기 기준
+          <select aria-label="보기 기준" value={view} onChange={(e) => setParam('view', e.target.value)}>
+            {VIEWS.map((v) => <option key={v.value} value={v.value}>{v.label}</option>)}
+          </select>
+        </label>
+      </div>
+
+      {error && <Notice>{error}</Notice>}
+      {!items && !error && <Loading />}
+
+      {items && total === 0 && !query && (
+        <div className="empty">
+          <strong>등록된 옷이 0벌이에요</strong>
+          <p>새로 산 옷이나 오늘 입은 옷부터 한 벌씩 등록해 보세요. 택을 찍으면 브랜드와 세탁법을 읽어 드려요.</p>
+          <Link className="btn" to="/register">옷 등록</Link>
+        </div>
+      )}
+
+      {items && items.length === 0 && query && (
+        <div className="empty"><strong>‘{query}’와 맞는 옷이 없어요</strong><p>이름, 색상, 브랜드, 보관 위치로 찾을 수 있어요.</p></div>
+      )}
+
+      {groups.map((g) => (
+        <section className="group" key={g.key} aria-label={`${g.title} 묶음`}>
+          <h2 className="group-title">{g.title}<small>{g.items.length}벌</small></h2>
+          <div className="grid">
+            {g.items.map((item) => <GarmentCard key={`${g.key}-${item.id}`} g={item} />)}
+          </div>
+        </section>
+      ))}
+    </>
+  )
+}
+
+function groupBy(items: GarmentSummary[], view: View, label: ReturnType<typeof useLabel>, seasonOrder: string[]): Group[] {
+  const map = new Map<string, Group>()
+  const add = (key: string, title: string, g: GarmentSummary) => {
+    if (!map.has(key)) map.set(key, { key, title, items: [] })
+    map.get(key)!.items.push(g)
+  }
+  for (const g of items) {
+    switch (view) {
+      case 'category': add(g.category, g.categoryLabel, g); break
+      case 'season':
+        if (g.seasons.length === 0) add('~none', '계절 미지정', g)
+        g.seasons.forEach((s) => add(s, label('seasons', s), g))
+        break
+      case 'brand': add(g.brand ?? '~none', g.brand ?? '브랜드 미입력', g); break
+      case 'location': add(g.locationPath ?? `~${g.status}`, g.locationPath ?? (g.status === 'STORED' || g.status === 'PENDING' || g.status === 'WASH_WAITING' ? '미배치' : g.statusLabel), g); break
+      case 'status': add(g.status, g.statusLabel, g); break
+      case 'collection':
+        if (g.collections.length === 0) add('~none', '컬렉션 없음', g)
+        g.collections.forEach((c) => add(c, c, g))
+        break
+    }
+  }
+  const groups = [...map.values()]
+  if (view === 'season') {
+    groups.sort((a, b) => order(seasonOrder, a.key) - order(seasonOrder, b.key))
+  } else {
+    groups.sort((a, b) => (a.key.startsWith('~') ? 1 : 0) - (b.key.startsWith('~') ? 1 : 0) || a.title.localeCompare(b.title, 'ko'))
+  }
+  return groups
+}
+
+function order(list: string[], key: string): number {
+  const i = list.indexOf(key)
+  return i === -1 ? 99 : i
+}
