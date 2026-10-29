@@ -72,7 +72,7 @@ export default function Home() {
     : null
 
   return (
-    <div className={`home${status === 'loading' && !weather ? ' is-loading' : ''}`} data-phase={phase}>
+    <div className={`home${status === 'loading' && !weather ? ' is-loading' : ''}`} data-phase={phase} data-sky={weather?.kind ?? 'none'}>
       <header className="home-head">
         <div>
           <p className="home-date">{today()}</p>
@@ -104,7 +104,7 @@ export default function Home() {
           {geoError && <p className="wx-geo-error">{geoError}</p>}
           <p className="wx-cond">
             <Icon name={icon} size={18} />
-            {weather ? weather.label : status === 'error' ? '날씨를 불러오지 못했어요' : '날씨를 불러오고 있어요'}
+            {weather ? weather.label : status === 'off' ? '날씨 정보 없음' : status === 'error' ? '날씨를 불러오지 못했어요' : '날씨를 불러오고 있어요'}
             {status === 'error' && !weather && <button type="button" className="wx-retry" onClick={retry}>다시 불러오기</button>}
           </p>
 
@@ -140,6 +140,18 @@ export default function Home() {
                 )}
               </dl>
             </>
+          )}
+
+          {/* 날씨가 없을 때도 이유와 대신 보여 주는 것을 같은 자리에서 알린다(추천은 이번 계절의 집 안 옷으로 바뀐다) */}
+          {!weather && (status === 'off' || status === 'error') && (
+            <div className="advice">
+              <p className="advice-eyebrow"><Icon name="sparkle" size={13} />옷결의 한마디</p>
+              <p className="advice-text">
+                {status === 'off' ? '기상청 날씨가 연결되지 않았어요.' : '기상청 날씨를 잠시 받지 못했어요.'}
+                <br />
+                {picks.length > 0 ? <>대신 <em>이번 계절 옷</em>을 집 안에서 골랐어요.</> : <>옷을 등록하면 <em>이번 계절 옷</em>을 골라 드려요.</>}
+              </p>
+            </div>
           )}
 
           {advice && (
