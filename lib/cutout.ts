@@ -303,41 +303,65 @@ async function compute(src: string): Promise<Cutout | null> {
           clearRow(y);
           cut++;
         }
-        // 아래에서부터: 옷보다 훨씬 어두운 줄(모델이 신은 신발)이 이어지면 지운다. 신발은 따로 입히므로 바지에는 필요 없다.
-        const lum = (r: number, g: number, b: number) => 0.299 * r + 0.587 * g + 0.114 * b;
-        const medLum = lum(med[0], med[1], med[2]);
-        if (medLum > 30) {
-          const darkRow = (y: number) => {
-            let n = 0;
-            let sum = 0;
-            for (let x = 0; x < w; x++) {
-              const i = (y * w + x) * 4;
-              if (d[i + 3] < ALPHA_MIN) continue;
-              n++;
-              sum += lum(d[i], d[i + 1], d[i + 2]);
-            }
-            if (n === 0) return null;
-            const avg = sum / n;
-            // 어두운 신발뿐 아니라 흰 운동화처럼 옷보다 확 밝은 줄도 신발로 본다
-            return avg < medLum * 0.85 || (avg > medLum * 1.6 && avg - medLum > 45);
-          };
-          const maxDark = Math.round(h * 0.22);
-          // 줄 하나는 들쭉날쭉해서, 아래 5줄 평균으로 판단한다
-          const vals: (boolean | null)[] = [];
-          for (let y = h - 1; y >= Math.max(0, h - maxDark); y--) vals.push(darkRow(y));
-          // 맨 아래의 밝은 테두리(신발 밑창 가장자리 등) 몇 줄은 건너뛰고, 어두운 줄이 이어지는 끝까지를 신발로 본다
-          let lastDark = -1;
-          for (let k = 0; k < vals.length; k++) {
-            if (vals[k] === null) continue;
-            const win = vals.slice(k, k + 5).filter((v) => v !== null);
-            const mostlyDark = win.filter(Boolean).length * 2 > win.length;
-            if (mostlyDark) lastDark = k;
-            else if (lastDark >= 0 || k > 8) break;
+        // 아래에서부터: 옷 몸통 색과 확연히 다른 줄(모델이 신은 신발)이 이어지면 지운다. 신발은 따로 입히므로 바지에는 필요 없다.
+        // 기준색은 옷 윗부분~가운데 줄들의 평균 색이다. 어둡든 밝든(검정 구두, 흰 운동화) 기준색과 멀면 신발로 본다.
+        let top0 = -1;
+        let bot0 = -1;
+        for (let y = 0; y < h; y++) {
+          if (row(y).n > 0) {
+            if (top0 < 0) top0 = y;
+            bot0 = y;
           }
-          const found: number[] = [];
-          for (let k = 0; k <= lastDark; k++) found.push(h - 1 - k);
-          // 3줄 미만이면 그림자·솔기로 보고 둔다.
-          if (found.length >= 3) found.forEach(clearRow);
+        }
+        if (top0 >= 0 && bot0 - top0 > 60) {
+          const span = bot0 - top0;
+          const ref = [0, 0, 0];
+          let rn = 0;
+          for (let y = Math.round(top0 + span * 0.35); y <= Math.round(top0 + span * 0.65); y++) {
+            const s = row(y);
+            if (s.n === 0) continue;
+            for (let c = 0; c < 3; c++) ref[c] += s.avg[c];
+            rn++;
+          }
+          if (rn > 0) {
+            for (let c = 0; c < 3; c++) ref[c] /= rn;
+            const far = (r: number, g: number, b: number, t: number) => Math.hypot(r - ref[0], g - ref[1], b - ref[2]) > t;
+            const shoeRow = (y: number) => {
+              let n = 0;
+              let off = 0;
+              let ar = 0;
+              let ag = 0;
+              let ab = 0;
+              for (let x = 0; x < w; x++) {
+                const i = (y * w + x) * 4;
+                if (d[i + 3] < ALPHA_MIN) continue;
+                n++;
+                ar += d[i];
+                ag += d[i + 1];
+                ab += d[i + 2];
+                if (far(d[i], d[i + 1], d[i + 2], 60)) off++;
+              }
+              if (n === 0) return null;
+              return off / n >= 0.35 || far(ar / n, ag / n, ab / n, 32);
+            };
+            const maxShoe = Math.round(span * 0.3);
+            const vals: (boolean | null)[] = [];
+            for (let y = bot0; y >= bot0 - maxShoe; y--) vals.push(shoeRow(y));
+            // 줄 하나는 들쭉날쭉해서 아래 7줄 중 절반 넘게 신발색이면 신발 줄로 본다.
+            // 맨 아래 테두리 몇 줄과, 신발 중간에 끼어든 옷 색 줄(발목)은 건너뛴다.
+            let last = -1;
+            let gap = 0;
+            for (let k = 0; k < vals.length; k++) {
+              if (vals[k] === null) continue;
+              const win = vals.slice(k, k + 7).filter((v) => v !== null);
+              if (win.filter(Boolean).length * 2 > win.length) {
+                last = k;
+                gap = 0;
+              } else if (++gap > (last < 0 ? 10 : 6)) break;
+            }
+            // 3줄 미만이면 그림자·솔기로 보고 둔다.
+            if (last >= 2) for (let k = 0; k <= last; k++) clearRow(bot0 - k);
+          }
         }
         cut = 0;
         for (let y = h - 1; y >= 0 && cut < limit; y--) {
