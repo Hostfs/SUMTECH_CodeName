@@ -156,7 +156,7 @@
 
 ### 11. 데이터 모델
 
-5NF까지 정규화한 49개 테이블(핵심 32 + 도메인 17)이다. V2가 옮기는 묶음 5개를 더했고, V3가 제외한 코디 테이블 3개를 지우고 검색 연결 1개를 더했다. 전체 다이어그램과 단계별 근거는 [`docs/db/ERD.md`](docs/db/ERD.md)에 있다.
+5NF까지 정규화한 49개 테이블(핵심 32 + 도메인 17)이다. V2가 옮기는 묶음 5개를 더했고, V3가 제외한 코디 테이블 3개를 지우고 검색 연결 1개를 더했다. V4는 회수 시각(UTC 저장)과 맡긴 날(서울 날짜)을 서울 날짜로 비교하도록 CHECK 하나를 고쳤다. 전체 다이어그램과 단계별 근거는 [`docs/db/ERD.md`](docs/db/ERD.md)에 있다.
 
 - 개체: `users`, `garments`, `storage_spaces`, `collections`, `images`, `label_extractions`, `product_searches`, `product_candidates`, `care_events`, `placement_proposals`, `move_batches`
 - 연결: 확정 위치 `garment_placements`, 공간 계층 `storage_space_parents`, 이미지 `garment_images`·`garment_cover_images`·`image_processings`, 택 판독 `label_extraction_images`·`label_extraction_values`·`garment_label_extractions`, 제품 `label_extraction_searches`·`garment_products`, 옮기는 묶음 `move_batch_spaces`·`move_batch_space_garments`·`move_batch_care_events`·`move_batch_images`, 옷 ↔ 등록 때 한 제품 검색 `garment_product_searches`(V3)
