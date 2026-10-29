@@ -7,6 +7,12 @@ const base = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strok
 export const IconHanger = (p: P) => (
   <svg {...base} {...p}><path d="M12 7.2a2.2 2.2 0 1 1 2.2 2.2c-.9 0-1.6.7-1.6 1.6v.4l8.2 5.4c.8.5.4 1.7-.5 1.7H3.7c-.9 0-1.3-1.2-.5-1.7L11.4 11.4" /></svg>
 )
+export const IconEye = (p: P) => (
+  <svg {...base} {...p}><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" /><circle cx="12" cy="12" r="2.8" /></svg>
+)
+export const IconEyeOff = (p: P) => (
+  <svg {...base} {...p}><path d="M4 4l16 16M9.9 6A9.9 9.9 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a16 16 0 0 1-3 3.6M6.4 7.6A15.6 15.6 0 0 0 2.5 12S6 18.5 12 18.5c1.6 0 3-.4 4.2-1M10 10.1a2.8 2.8 0 0 0 3.9 3.9" /></svg>
+)
 export const IconMap = (p: P) => (
   <svg {...base} {...p}><rect x="3.5" y="4" width="17" height="16" rx="2" /><path d="M3.5 10h17M10 10v10M13.5 7h3" /></svg>
 )
