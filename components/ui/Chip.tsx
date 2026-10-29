@@ -10,7 +10,7 @@ export function Chip({
       type="button"
       aria-pressed={selected}
       className={
-        "flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-[13px] text-sm whitespace-nowrap " +
+        "flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-[13px] text-sm whitespace-nowrap disabled:opacity-40 " +
         (selected ? "border-primary bg-primary font-semibold text-on " : "border-line bg-card text-ink ") +
         className
       }

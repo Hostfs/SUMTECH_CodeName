@@ -18,7 +18,7 @@ import {
   SunIcon,
 } from "@/components/icons";
 import { Screen } from "@/components/layout/Screen";
-import { useToast } from "@/components/ui/Toast";
+import { dueItems, useNotifySettings } from "@/lib/notify";
 import { seasonOfMonth, seoulMonth, SEASONS, type Season } from "@/lib/theme";
 import { HOME_COPY, WEATHER_ERROR } from "@/lib/weather/copy";
 import { createMockWeather } from "@/lib/weather/mock";
@@ -43,8 +43,9 @@ function readOverrides() {
 
 export default function HomePage() {
   const router = useRouter();
-  const toast = useToast();
-  const { profile } = useData();
+  const { profile, garments } = useData();
+  const [notify] = useNotifySettings();
+  const dueCount = notify.enabled ? dueItems(garments, notify.leadDays).length : 0;
   const [weather, setWeather] = useState<WeatherState>({ status: "loading" });
   const [q, setQ] = useState("");
 
@@ -76,11 +77,14 @@ export default function HomePage() {
             </span>
             <button
               type="button"
-              aria-label="알림"
-              className="flex size-10 items-center justify-center rounded-full border border-line bg-white/85"
-              onClick={() => toast("새 알림이 없어요")}
+              aria-label={dueCount > 0 ? `알림 ${dueCount}개` : "알림"}
+              className="relative flex size-10 items-center justify-center rounded-full border border-line bg-white/85"
+              onClick={() => router.push("/notifications")}
             >
               <BellIcon />
+              {dueCount > 0 && (
+                <span className="absolute top-[7px] right-[8px] size-2.5 rounded-full border-2 border-white bg-primary" aria-hidden />
+              )}
             </button>
           </div>
         </div>

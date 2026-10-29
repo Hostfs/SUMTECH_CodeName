@@ -95,6 +95,7 @@ export function OutingSheet({
 
         <Label htmlFor="outing-due">찾을 날짜</Label>
         <input id="outing-due" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className={inputCls} />
+        <p className="mt-1.5 text-[13px] text-sub">날짜를 정하면 찾을 때가 됐을 때 알려 드려요.</p>
 
         <Label htmlFor="outing-memo">메모</Label>
         <input

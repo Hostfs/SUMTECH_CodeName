@@ -17,6 +17,7 @@ import {
 import { Screen } from "@/components/layout/Screen";
 import { useTheme } from "@/components/ThemeProvider";
 import { useToast } from "@/components/ui/Toast";
+import { useNotifySettings } from "@/lib/notify";
 import { rootPlaces } from "@/lib/places";
 import { SEASON_LABEL } from "@/lib/theme";
 
@@ -26,6 +27,7 @@ export default function MyPage() {
   const { garments, outfits, places, profile } = useData();
   const { setting, season } = useTheme();
   const toast = useToast();
+  const [notify] = useNotifySettings();
 
   const themeValue = setting === "auto" ? `자동 · ${SEASON_LABEL[season]}` : SEASON_LABEL[season];
   const placeCount = rootPlaces(places).length;
@@ -50,7 +52,7 @@ export default function MyPage() {
     },
     { label: "저장한 코디", Icon: ShirtIcon, href: "/outfits?tab=saved", value: `${outfits.length}개` },
     { label: "보관 장소 관리", Icon: BoxIcon, href: "/storage", value: `${placeCount}곳` },
-    { label: "알림 설정", Icon: BellIcon },
+    { label: "알림 설정", Icon: BellIcon, href: "/my/notifications", value: notify.enabled ? "켜짐" : "꺼짐" },
     { label: "도움말·문의", Icon: HelpIcon },
   ];
 

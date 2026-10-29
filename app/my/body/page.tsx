@@ -13,6 +13,49 @@ import { HEIGHT_RANGE, parseBody, WEIGHT_RANGE } from "@/lib/body";
 const inputCls =
   "h-[46px] w-full rounded-[14px] border border-line bg-card px-3.5 pr-11 text-base outline-none placeholder:text-muted focus:border-primary";
 
+/**
+ * 입력칸 하나. 반드시 페이지 함수 밖에 둔다 — 안에 두면 글자를 칠 때마다 새 컴포넌트로 보여서
+ * 입력칸이 다시 만들어지고 커서(포커스)가 사라진다.
+ */
+function Field({
+  id,
+  label,
+  unit,
+  value,
+  onChange,
+  error,
+  placeholder,
+}: {
+  id: string;
+  label: string;
+  unit: string;
+  value: string;
+  onChange: (v: string) => void;
+  error?: string;
+  placeholder: string;
+}) {
+  return (
+    <div className="px-5 pt-4">
+      <label htmlFor={id} className="mb-[7px] block text-sm font-semibold">
+        {label}
+      </label>
+      <div className="relative">
+        <input
+          id={id}
+          inputMode="decimal"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          aria-invalid={!!error}
+          className={inputCls + (error ? " border-deep" : "")}
+        />
+        <span className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-sm text-sub">{unit}</span>
+      </div>
+      {error && <p className="mt-1.5 text-[13px] text-deep">{error}</p>}
+    </div>
+  );
+}
+
 /** 내 체형: 키·몸무게를 등록하면 코디 마네킹이 그 체형으로 보인다 (목업 없음) */
 export default function BodyPage() {
   const router = useRouter();
@@ -55,43 +98,6 @@ export default function BodyPage() {
     toast("체형을 지웠어요");
   };
 
-  const Field = ({
-    id,
-    label,
-    unit,
-    value,
-    onChange,
-    error,
-    placeholder,
-  }: {
-    id: string;
-    label: string;
-    unit: string;
-    value: string;
-    onChange: (v: string) => void;
-    error?: string;
-    placeholder: string;
-  }) => (
-    <div className="px-5 pt-4">
-      <label htmlFor={id} className="mb-[7px] block text-sm font-semibold">
-        {label}
-      </label>
-      <div className="relative">
-        <input
-          id={id}
-          inputMode="decimal"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          aria-invalid={tried && !!error}
-          className={inputCls + (tried && error ? " border-deep" : "")}
-        />
-        <span className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-sm text-sub">{unit}</span>
-      </div>
-      {tried && error && <p className="mt-1.5 text-[13px] text-deep">{error}</p>}
-    </div>
-  );
-
   return (
     <Screen
       bottomBar={
@@ -111,8 +117,25 @@ export default function BodyPage() {
         <Mannequin body={parsed.body ?? saved} height={250} />
       </div>
 
-      <Field id="body-height" label="키" unit="cm" value={height} onChange={setHeight} error={parsed.heightError} placeholder="예: 165" />
-      <Field id="body-weight" label="몸무게" unit="kg" value={weight} onChange={setWeight} error={parsed.weightError} placeholder="예: 54" />
+      {/* 오류 문구는 저장을 눌러 본 뒤에만 보여 준다 (입력하는 동안 계속 뜨지 않게) */}
+      <Field
+        id="body-height"
+        label="키"
+        unit="cm"
+        value={height}
+        onChange={setHeight}
+        error={tried ? parsed.heightError : undefined}
+        placeholder="예: 165"
+      />
+      <Field
+        id="body-weight"
+        label="몸무게"
+        unit="kg"
+        value={weight}
+        onChange={setWeight}
+        error={tried ? parsed.weightError : undefined}
+        placeholder="예: 54"
+      />
 
       <p className="px-5 pt-3 text-[13px] text-sub">
         입력한 값은 이 기기에만 저장돼요.
@@ -126,7 +149,6 @@ export default function BodyPage() {
         </button>
       )}
       <div className="h-2" />
-      {/* 키 범위 안내는 오류 문구로만 보여 준다 */}
       <span className="sr-only">
         키 {HEIGHT_RANGE.min}~{HEIGHT_RANGE.max}cm, 몸무게 {WEIGHT_RANGE.min}~{WEIGHT_RANGE.max}kg
       </span>
