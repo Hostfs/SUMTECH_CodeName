@@ -1,0 +1,65 @@
+/* 색 토큰. 계절은 <html data-season>, 홈의 밤 화면은 <html data-tone="dark"> 로 바뀐다. */
+:root {
+  --font: 'Pretendard Variable', Pretendard, -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+
+  --bg: #faf8f4;
+  --surface: #ffffff;
+  --fg: #1c1b1a;
+  --muted: #8c8781;
+  --line: rgba(0, 0, 0, 0.07);
+  --line-strong: rgba(0, 0, 0, 0.16);
+  --tab-off: #8e8a85;
+  --danger: #d2452f;
+
+  --tile-bg: #f4f1ec;
+  /* 옷 그림이 놓이는 바탕. 밤에도 밝게 두어 검은 옷이 묻히지 않게 한다 */
+  --art-bg: #f4f1ec;
+  --danger-ink: #a8321f;
+  --loc: #3a3631;
+  --scrim: linear-gradient(to bottom, rgba(0, 0, 0, 0) 0%, rgba(20, 25, 40, 0.16) 30%, rgba(20, 20, 30, 0.28) 100%);
+  --glass-card: rgba(255, 255, 255, 0.86);
+  --glass-line: rgba(255, 255, 255, 0.7);
+}
+
+/* 계절 포인트 컬러: accent(채움), on-accent(채움 위 글자), accent-ink(밝은 배경 위 글자·아이콘), tint(옅은 바탕), accent-dark(어두운 배경용) */
+:root[data-season='spring'] {
+  --accent: #f4a9a6; --on-accent: #4a2323; --accent-ink: #b04a4a; --tint: #fcedec;
+  --accent-sh: rgba(244, 169, 166, 0.55); --accent-dark: #f4a9a6; --hl: rgba(244, 169, 166, 0.6);
+}
+:root[data-season='summer'] {
+  --accent: #2ec4b0; --on-accent: #ffffff; --accent-ink: #14897a; --tint: #e4f6f3;
+  --accent-sh: rgba(46, 196, 176, 0.45); --accent-dark: #2ec4b0; --hl: rgba(46, 196, 176, 0.5);
+}
+:root[data-season='autumn'] {
+  --accent: #ae7443; --on-accent: #ffffff; --accent-ink: #94602f; --tint: #f3e8df;
+  --accent-sh: rgba(174, 116, 67, 0.42); --accent-dark: #d69c66; --hl: rgba(244, 176, 110, 0.55);
+}
+:root[data-season='winter'] {
+  --accent: #1b4a82; --on-accent: #ffffff; --accent-ink: #1b4a82; --tint: #e3eaf4;
+  --accent-sh: rgba(27, 74, 130, 0.4); --accent-dark: #86aeeb; --hl: rgba(130, 175, 255, 0.5);
+}
+
+/* 밤 홈 화면 */
+:root[data-tone='dark'] {
+  --bg: #0d0d10;
+  --surface: #1c1c21;
+  --fg: #f4f3f1;
+  --muted: #9a978f;
+  --line: rgba(255, 255, 255, 0.09);
+  --line-strong: rgba(255, 255, 255, 0.2);
+  --tab-off: #7f7c76;
+  --tile-bg: rgba(255, 255, 255, 0.07);
+  --art-bg: #e8e5de;
+  --danger-ink: #ff9d8c;
+  color-scheme: dark;
+  --loc: rgba(255, 255, 255, 0.92);
+  --scrim: linear-gradient(to bottom, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.1) 40%, rgba(0, 0, 0, 0.3) 100%);
+  --glass-card: rgba(22, 22, 28, 0.62);
+  --glass-line: rgba(255, 255, 255, 0.12);
+  --accent: var(--accent-dark);
+  --accent-ink: var(--accent-dark);
+  --tint: rgba(255, 255, 255, 0.09);
+}
+:root[data-tone='dark'][data-season='winter'] { --on-accent: #0d1a30; }
+:root[data-tone='dark'][data-season='autumn'] { --on-accent: #2a1a0c; }
+:root[data-tone='dark'][data-season='summer'] { --on-accent: #06312b; }
