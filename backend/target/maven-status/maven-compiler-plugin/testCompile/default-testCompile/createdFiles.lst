@@ -1,0 +1,8 @@
+ai\otgyeol\AiFallbackTests.class
+ai\otgyeol\OtgyeolApplicationTests.class
+ai\otgyeol\DomainSyncTest.class
+ai\otgyeol\CleanDatabaseConfig.class
+ai\otgyeol\garment\LocationKindRulesTest.class
+ai\otgyeol\OtgyeolApplicationTests$Client.class
+ai\otgyeol\weather\WeatherRulesTest.class
+ai\otgyeol\OtgyeolApplicationTests$Res.class
