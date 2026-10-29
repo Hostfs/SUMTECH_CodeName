@@ -109,6 +109,8 @@ AI 기능 원칙: AI 결과는 항상 **미확정 상태로 보여 주고 사용
   - **배포 결정(2026-10-29)**: 처음 제안한 `/closet/[id]` 같은 동적 경로를 `?id=`로 바꾸고 `next.config.ts`에 `output: "export"`를 둬서 앱 전체를 정적 사이트로 만들었다. Windows에서 Vercel CLI로 배포하면 동적 경로의 서버 함수 바로가기(symlink)가 깨져 업로드가 실패하기 때문이다. 주소는 `lib/routes.ts`의 함수로만 만든다. `?id=`를 읽는 화면은 `useSearchParams` 때문에 `Suspense`로 감싼다.
   - 배포: `npx vercel@latest deploy --temporary --yes`(계정 없이 임시 주소, 약 1시간 뒤 만료). 계속 쓰려면 Vercel 계정으로 로그인해 `npx vercel@latest --prod`로 배포한다. Vercel은 취약점이 알려진 Next.js 버전을 거부하므로 Next.js 패치 버전을 최신으로 유지한다(현재 15.5.28, React 19.1.10).
   - Windows 개발자 모드가 켜져 있어야 Vercel CLI 로컬 빌드가 동작한다.
+  - 임시 배포는 같은 PC에서 다시 하면 같은 주소가 갱신되지만 만료 시각은 늘지 않는다.
+  - 배포 빌드가 `.next`를 덮어써서 켜 둔 개발 서버가 500을 낸다. 배포 뒤에는 `.next`를 지우고 개발 서버를 다시 켠다.
 
 ## 8. 데이터 모델 초안
 
