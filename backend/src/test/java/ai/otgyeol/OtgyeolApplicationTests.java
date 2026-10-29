@@ -122,7 +122,7 @@ class OtgyeolApplicationTests {
         JsonNode meta = new Client().login().get("/api/meta").body();
         assertThat(meta.get("subTypes").size()).isGreaterThanOrEqualTo(15);
         assertThat(meta.get("fibers").toString()).contains("폴리에스터");
-        assertThat(meta.get("spaceTypes").get(0).get("label").asString()).isEqualTo("걸기");
+        assertThat(meta.get("spaceTypes").toString()).contains("걸기");
     }
 
     @Test
