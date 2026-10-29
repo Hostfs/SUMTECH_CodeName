@@ -56,6 +56,17 @@ jobs:
       - name: 배포 commit 확인
         run: curl -sf http://localhost:3000/__health | grep -q "${RELEASE_ID}"
 
+      # 주최 측 실행처럼 docker-compose.yml의 시드 계정을 E2E_USER_EMAIL·E2E_USER_PASSWORD로 넘긴다(e2e/env.ts가 읽는다).
+      - name: compose에서 시드 계정 읽기
+        run: |
+          config="$(docker compose config --format json)"
+          email="$(echo "$config" | jq -r '.services.app.environment.SEED_USER_EMAIL // empty')"
+          password="$(echo "$config" | jq -r '.services.app.environment.SEED_USER_PASSWORD // empty')"
+          if [ -z "$email" ] || [ -z "$password" ]; then echo "docker-compose.yml에 시드 계정 값이 없음"; exit 1; fi
+          echo "E2E_USER_EMAIL=$email" >> "$GITHUB_ENV"
+          echo "E2E_USER_PASSWORD=$password" >> "$GITHUB_ENV"
+          echo "시드 계정: $email"
+
       # 화면 주소를 직접 열거나 새로고침해도(QR 라벨 링크 포함) 200이어야 한다. App.tsx의 Route와 server/src/app.ts의 SPA_ROUTES 목록이 어긋나면 실패.
       - name: 화면 주소 직접 열기
         run: |

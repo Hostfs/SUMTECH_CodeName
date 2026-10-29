@@ -1,12 +1,10 @@
 import { expect, test, type Page } from '@playwright/test'
-
-const SEED_EMAIL = process.env.SEED_USER_EMAIL ?? 'student@example.com'
-const SEED_PASSWORD = process.env.SEED_USER_PASSWORD ?? 'loopthon-2026'
+import { E2E_USER_EMAIL, E2E_USER_PASSWORD } from '../env'
 
 async function login(page: Page) {
   await page.goto('/login')
-  await page.getByLabel('이메일').fill(SEED_EMAIL)
-  await page.getByLabel('비밀번호').fill(SEED_PASSWORD)
+  await page.getByLabel('이메일').fill(E2E_USER_EMAIL)
+  await page.getByLabel('비밀번호').fill(E2E_USER_PASSWORD)
   await page.getByRole('button', { name: '로그인', exact: true }).click()
   await expect(page).toHaveURL(/\/home/)
 }
