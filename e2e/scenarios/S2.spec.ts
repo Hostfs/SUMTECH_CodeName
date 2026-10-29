@@ -63,4 +63,6 @@ test('S2 사용자가 택 사진 2장으로 새 옷을 AI 분석해 등록한다
   await expect(info.locator('.info-row', { hasText: '소재' }).locator('dd')).toContainText('%')
   const product = page.getByRole('region', { name: '제품 정보' })
   await expect(product.locator('[aria-label="제품 후보"]').or(product.getByText('검색 결과 없음'))).toBeVisible()
+  // 마지막 화면에 AI가 읽은 값이 보이게 둔다
+  await page.getByRole('region', { name: '택에서 읽은 정보' }).scrollIntoViewIfNeeded()
 })

@@ -4,7 +4,7 @@ import { api, errorMessage } from '../api'
 import { IconBox, IconChevron, IconMove, IconPinQuestion, IconWash } from '../components/Icons'
 import { Loading, Notice } from '../components/Ui'
 import WeatherCard from '../components/WeatherCard'
-import { useSession } from '../session'
+import { isGuest, useSession } from '../session'
 import type { Board, GarmentSummary, MapView } from '../types'
 import { isNight } from '../weatherPicks'
 
@@ -42,7 +42,7 @@ export default function Home() {
     return () => { delete root.dataset.tone }
   }, [night])
 
-  const name = (me?.email ?? '').split('@')[0]
+  const name = isGuest(me) ? '게스트' : (me?.email ?? '').split('@')[0]
   const late = board ? board.overdue.length + board.dueToday.length : 0
   const away = garments?.filter((g) => g.locationKind === 'BOX' || g.locationKind === 'OFFSITE').length ?? 0
   const actions: Action[] = [
@@ -67,6 +67,7 @@ export default function Home() {
       <div className="home-grid">
         <div className="home-main">
           <WeatherCard items={garments ?? []} />
+          {garments && (garments.length === 0 ? <StartGuide /> : <WhereNow garments={garments} />)}
         </div>
 
         <aside className="home-side">
@@ -103,5 +104,56 @@ export default function Home() {
         </aside>
       </div>
     </div>
+  )
+}
+
+const KINDS: { kind: GarmentSummary['locationKind']; label: string }[] = [
+  { kind: 'HOME', label: '집 안' },
+  { kind: 'BOX', label: '박스 속' },
+  { kind: 'OFFSITE', label: '집 밖' },
+  { kind: 'CARE', label: '세탁·수선 맡김' },
+  { kind: 'UNPLACED', label: '미배치' },
+]
+
+/** 지금 내 옷이 어디에 나뉘어 있는지. 박스·본가·세탁소에 있는 옷을 홈에서 바로 알 수 있게 한다. */
+function WhereNow({ garments }: { garments: GarmentSummary[] }) {
+  const rows = KINDS.map(({ kind, label }) => {
+    const list = garments.filter((g) => g.locationKind === kind)
+    return { kind, label, count: list.length, names: list.slice(0, 2).map((g) => g.name) }
+  }).filter((r) => r.count > 0)
+  return (
+    <section className="home-panel" aria-label="지금 내 옷은 어디에">
+      <div className="home-panel-head">
+        <h2>지금 내 옷은 어디에</h2>
+        <Link to="/closet?view=where">나눠 보기<IconChevron /></Link>
+      </div>
+      <div className="where-bar" aria-hidden>
+        {rows.map((r) => <span key={r.kind} className={`where-${r.kind}`} style={{ flexGrow: r.count }} />)}
+      </div>
+      <ul className="where-list">
+        {rows.map((r) => (
+          <li key={r.kind}>
+            <span className={`where-dot where-${r.kind}`} aria-hidden />
+            <b>{r.label}</b>
+            <span className="where-names">{r.names.join(', ')}{r.count > 2 ? ` 외 ${r.count - 2}벌` : ''}</span>
+            <em>{r.count}벌</em>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
+/** 빈 옷장: 처음 쓰는 순서. */
+function StartGuide() {
+  return (
+    <section className="home-panel" aria-label="이렇게 시작해요">
+      <div className="home-panel-head"><h2>이렇게 시작해요</h2></div>
+      <ol className="start-steps">
+        <li><b>옷 등록</b><span>택 사진을 올리면 브랜드·소재·세탁법을 읽어 채워요.</span></li>
+        <li><b><Link to="/map">옷장 지도</Link></b><span>옷장·서랍·박스·본가를 공간으로 만들어 둬요.</span></li>
+        <li><b><Link to="/move">옮기기</Link></b><span>박스·본가·세탁소로 옮길 때 여러 벌을 한 번에 기록해요.</span></li>
+      </ol>
+    </section>
   )
 }

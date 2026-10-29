@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { api } from '../api'
 import { formatDate } from '../format'
-import { useSession } from '../session'
+import { displayName, useSession } from '../session'
 import type { Board, GarmentSummary } from '../types'
 import { IconBell, IconLogout } from './Icons'
 
@@ -67,7 +67,7 @@ export default function TopBar() {
     }
   }, [panel])
 
-  const initial = (me?.email ?? '?').slice(0, 1).toUpperCase()
+  const initial = (displayName(me) || '?').slice(0, 1).toUpperCase()
 
   return (
     <div className="topbar" ref={box}>
@@ -79,7 +79,7 @@ export default function TopBar() {
       <button type="button" className="topbar-account" aria-expanded={panel === 'account'} aria-label="계정 메뉴"
         onClick={() => setPanel(panel === 'account' ? null : 'account')}>
         <span className="avatar" aria-hidden>{initial}</span>
-        <span className="topbar-email">{me?.email}</span>
+        <span className="topbar-email">{displayName(me)}</span>
       </button>
 
       {panel === 'notice' && (
@@ -103,7 +103,7 @@ export default function TopBar() {
       )}
       {panel === 'account' && (
         <div className="pop pop-account" role="dialog" aria-label="계정">
-          <div className="pop-me"><span className="avatar lg" aria-hidden>{initial}</span><span>{me?.email}</span></div>
+          <div className="pop-me"><span className="avatar lg" aria-hidden>{initial}</span><span>{displayName(me)}</span></div>
           <button type="button" className="pop-logout" onClick={logout}><IconLogout />로그아웃</button>
         </div>
       )}

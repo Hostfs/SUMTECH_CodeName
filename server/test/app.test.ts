@@ -397,3 +397,32 @@ test('seededClosetFlowsShareOneGarmentId', async () => {
   const mapView = await c.get('/api/spaces')
   assert.ok(!JSON.stringify(mapView.body).includes('"name":"네이비 옥스퍼드 셔츠"'))
 })
+
+test('guestModeCreatesSeparateSampleClosets', async () => {
+  const { config } = await import('../src/config.js')
+  const was = config.guestMode
+  try {
+    config.guestMode = false
+    assert.equal((await client().get('/api/auth/options')).body.guestMode, false)
+    assert.equal((await client().post('/api/auth/guest')).status, 404)
+
+    config.guestMode = true
+    assert.equal((await client().get('/api/auth/options')).body.guestMode, true)
+    const a = client()
+    const b = client()
+    const ra = await a.post('/api/auth/guest')
+    const rb = await b.post('/api/auth/guest')
+    assert.equal(ra.status, 201)
+    assert.notEqual(ra.body.id, rb.body.id)
+    assert.equal((await a.get('/api/auth/me')).body.id, ra.body.id)
+    // 체험자마다 예시 옷장을 따로 받고, 한 사람이 바꿔도 다른 사람 옷장은 그대로다
+    const mine = (await a.get('/api/garments')).body
+    assert.ok(mine.length > 11, '게스트는 시드보다 많은 데모 옷장을 받는다')
+    const kinds = new Set(mine.map((g: { locationKind: string }) => g.locationKind))
+    for (const k of ['HOME', 'BOX', 'OFFSITE', 'CARE', 'UNPLACED']) assert.ok(kinds.has(k), k)
+    assert.equal((await a.get('/api/outfits')).body.length, 2)
+    assert.equal((await b.get(`/api/garments/${mine[0].id}`)).status, 404)
+  } finally {
+    config.guestMode = was
+  }
+})

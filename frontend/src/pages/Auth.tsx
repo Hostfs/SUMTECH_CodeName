@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { api, errorMessage } from '../api'
 import { IconBox, IconCheck, IconEye, IconEyeOff, IconPin, IconWash } from '../components/Icons'
 import { Sky } from '../components/SkyScene'
+import GuestButton from '../components/GuestButton'
 import { Notice, Spinner } from '../components/Ui'
 import { useSession } from '../session'
 import { isNight } from '../weatherPicks'
@@ -53,7 +54,7 @@ function AuthForm({ mode }: { mode: Mode }) {
         <div>
           <p className="auth-hero-title">박스·본가·세탁소로 옮긴 옷,<br />열어 보지 않고 찾아요.</p>
           <ul className="auth-points">
-            <li><span className="auth-point-icon"><IconBox /></span>박스에 넣을 때 라벨 QR을 찍고 여러 벌을 한 번에 기록해요.</li>
+            <li><span className="auth-point-icon"><IconBox /></span>박스·본가·세탁소로 옮길 때 여러 벌을 골라 한 번에 기록해요.</li>
             <li><span className="auth-point-icon"><IconPin /></span>본가·박스에 둔 옷도 ‘여름 박스’처럼 위치로 바로 보여요.</li>
             <li><span className="auth-point-icon"><IconWash /></span>세탁소에 맡긴 옷은 회수 예정일까지 챙겨 드려요.</li>
           </ul>
@@ -101,6 +102,7 @@ function AuthForm({ mode }: { mode: Mode }) {
             <p className="auth-switch">
               {isSignup ? <>이미 계정이 있나요? <Link to="/login">로그인</Link></> : <>처음이세요? <Link to="/signup">회원가입</Link></>}
             </p>
+            <div className="auth-guest"><GuestButton /></div>
           </div>
         </form>
       </main>

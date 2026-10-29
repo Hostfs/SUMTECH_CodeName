@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import GuestButton from '../components/GuestButton'
 import GarmentArt from '../components/GarmentArt'
 import { IconPin } from '../components/Icons'
 import { useSession } from '../session'
@@ -45,11 +46,12 @@ export default function Landing() {
               <>
                 <Link className="btn" to="/signup">시작하기</Link>
                 <Link className="btn btn-outline" to="/login">로그인</Link>
+                <GuestButton className="btn btn-outline" />
               </>
             )}
           </div>
           <ol className="landing-steps">
-            <li><div><strong>옮길 때 묶어서 기록</strong><span>박스 라벨 QR이나 세탁소 영수증을 찍고 옷을 고르면, 여러 벌이 한 번에 ‘박스 A’·‘세탁소’로 옮겨져요.</span></div></li>
+            <li><div><strong>옮길 때 묶어서 기록</strong><span>옮길 곳을 고르고 옷을 여러 벌 고르면, 여러 벌이 한 번에 ‘박스 A’·‘세탁소’로 옮겨져요.</span></div></li>
             <li><div><strong>어디 있는지 한눈에</strong><span>내 옷장을 ‘집 밖/박스’로 보면 집 안, 박스 속, 본가, 세탁소에 있는 옷이 나뉘어 보여요.</span></div></li>
             <li><div><strong>세탁소 회수 챙기기</strong><span>맡긴 옷과 회수 예정일을 모아 두고, 기한이 지난 옷을 알려 줘요.</span></div></li>
             <li><div><strong>처음 등록은 택 사진으로</strong><span>AI가 택의 브랜드·소재·세탁법을 읽어 등록을 도와요. 읽지 못한 값은 직접 고쳐요.</span></div></li>

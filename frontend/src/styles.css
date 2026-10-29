@@ -1221,3 +1221,41 @@ a { color: inherit; }
 .home .wx-head > span { display: none; }
 .home .wx-head .wx-refresh { margin-left: auto; }
 :root[data-tone="dark"] .rail-brand img { content: url(/brand/logo-lockup-light.svg); }
+
+/* 게스트 체험(GUEST_MODE=on) */
+.auth-guest { margin-top: 12px; display: grid; gap: 8px; }
+.auth-guest:empty { display: none; }
+
+/* 홈 왼쪽: 지금 내 옷은 어디에(위치별 벌 수) / 빈 옷장의 시작 순서 */
+.home-panel {
+  padding: 18px; background: color-mix(in srgb, var(--surface) 90%, transparent); border: 1px solid var(--line);
+  border-radius: calc(var(--r-card-lg) + 4px); box-shadow: var(--shadow-1);
+  -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); color: var(--ink);
+}
+.home-panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.home-panel-head h2 { margin: 0; font-size: var(--t-h2); font-weight: 800; letter-spacing: -0.03em; }
+.home-panel-head a { display: inline-flex; align-items: center; gap: 2px; color: var(--deep); font-weight: 700; font-size: var(--t-small); text-decoration: none; }
+.home-panel-head a svg { width: 16px; height: 16px; }
+.where-bar { display: flex; gap: 3px; height: 10px; border-radius: 999px; overflow: hidden; margin-bottom: 14px; }
+.where-bar span { flex-basis: 0; min-width: 6px; }
+.where-HOME { background: var(--primary); }
+.where-BOX { background: color-mix(in srgb, var(--primary) 45%, var(--surface)); }
+.where-OFFSITE { background: #6f7c8f; }
+.where-CARE { background: var(--warn); }
+.where-UNPLACED { background: var(--line-strong); }
+.where-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.where-list li { display: grid; grid-template-columns: 10px auto minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 9px 2px; border-top: 1px solid var(--line); font-size: var(--t-body); }
+.where-list li:first-child { border-top: 0; }
+.where-dot { width: 10px; height: 10px; border-radius: 50%; }
+.where-list b { font-weight: 700; white-space: nowrap; }
+.where-names { color: var(--ink-2); font-size: var(--t-small); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.where-list em { font-style: normal; font-weight: 800; font-variant-numeric: tabular-nums; }
+.start-steps { margin: 0; padding: 0; list-style: none; counter-reset: step; display: grid; gap: 12px; }
+.start-steps li { counter-increment: step; display: grid; grid-template-columns: 28px minmax(0, 1fr); column-gap: 12px; row-gap: 2px; }
+.start-steps li::before {
+  content: counter(step); grid-row: span 2; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--soft); color: var(--deep); font-weight: 800; font-size: var(--t-small);
+}
+.start-steps b { font-weight: 800; }
+.start-steps b a { color: inherit; text-decoration: none; border-bottom: 1px solid var(--line-strong); }
+.start-steps span { color: var(--ink-2); font-size: var(--t-small); line-height: 1.5; }

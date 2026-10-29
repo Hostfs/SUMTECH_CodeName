@@ -1,14 +1,19 @@
+import { randomBytes } from 'node:crypto'
 import bcrypt from 'bcryptjs'
 import { Router } from 'express'
-import { one, run } from './db.js'
+import { config } from './config.js'
+import { one, run, tx } from './db.js'
 import { ApiError, Check, handle, isBlank } from './http.js'
-import { resetIfSeedUser } from './seed.js'
+import { populateGuestData, resetIfSeedUser } from './seed.js'
 import { endSession, sessionUser, startSession } from './session.js'
 
 /** 이메일·비밀번호 회원가입과 로그인. 역할은 '사용자' 하나다. */
 export const authRouter = Router()
 
 const EMAIL = /^[^\s@]+@[^\s@]+$/
+
+/** 게스트 체험 계정의 이메일 도메인(실제로 메일을 받지 않는 주소). */
+export const GUEST_DOMAIN = 'guest.otgyeol'
 
 const normalize = (email: string) => email.trim().toLowerCase()
 
@@ -66,3 +71,20 @@ authRouter.get('/me', handle(async (req) => {
   if (!user) throw ApiError.unauthorized()
   return { id: user.id, email: user.email }
 }))
+
+/** 로그인 화면이 보여 줄 선택지. 게스트 체험은 GUEST_MODE=on일 때만. */
+authRouter.get('/options', handle(async () => ({ guestMode: config.guestMode })))
+
+/** 게스트 체험: 다른 체험자와 섞이지 않게 누를 때마다 예시 옷장이 든 새 계정을 만들고 바로 로그인한다. */
+authRouter.post('/guest', handle(async (req, res) => {
+  if (!config.guestMode) throw ApiError.notFound('게스트 체험')
+  const email = `guest-${randomBytes(5).toString('hex')}@${GUEST_DOMAIN}`
+  const id = await tx(async () => {
+    const r = await run('INSERT INTO users (email, password_hash, created_at) VALUES (?, ?, ?)',
+      [email, await hashPassword(randomBytes(24).toString('base64url')), new Date()])
+    await populateGuestData(r.insertId)
+    return r.insertId
+  })
+  startSession(req, res, id)
+  return { id, email }
+}, 201))

@@ -38,6 +38,8 @@ export const config = {
   seedPassword: env.SEED_USER_PASSWORD ?? '',
   ai: aiConfig(),
   kmaKey: env.KMA_API_KEY ?? '',
+  /** 발표·QR 체험용. on이면 로그인 화면에 '게스트로 체험하기'가 생기고 누를 때마다 예시 옷장이 든 새 계정을 만든다. 기본은 꺼짐. */
+  guestMode: /^(on|true|1|yes)$/i.test((env.GUEST_MODE ?? env.GUESTMODE ?? env.guestmode ?? '').trim()),
   /** 화면 빌드 결과(index.html·assets). docker에서는 /app/public. */
   staticDir: resolve(env.STATIC_DIR ?? new URL('../public', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')),
 }

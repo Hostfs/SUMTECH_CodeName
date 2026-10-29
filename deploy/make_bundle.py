@@ -80,6 +80,10 @@ def main():
         if line.startswith('AI_MODEL=google/gemini-2.5-flash'):
             line = 'AI_MODEL='  # 키 종류에 맞는 기본 모델을 쓰게 비운다(Gemini 키에는 2.5가 더 열리지 않음)
         lines.append(line)
+    if not any(l.startswith('GUEST_MODE=') for l in lines):
+        # 예전 env에 없던 설정은 env.example의 설명과 기본값(off)을 붙여 둔다.
+        example = (DEPLOY / 'env.example').read_text(encoding='utf-8').replace('\r\n', '\n')
+        lines += ['', *example[example.index('# 발표·QR'):].rstrip('\n').split('\n')]
     (OUT / 'env').write_bytes('\n'.join(lines).encode('utf-8'))
 
     # 저장소 밖에서 꺼낸 사본으로 만들 때는 RELEASE_SHA로 commit을 넘긴다.
