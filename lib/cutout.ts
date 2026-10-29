@@ -306,7 +306,7 @@ async function compute(src: string): Promise<Cutout | null> {
         // 아래에서부터: 옷보다 훨씬 어두운 줄(모델이 신은 신발)이 이어지면 지운다. 신발은 따로 입히므로 바지에는 필요 없다.
         const lum = (r: number, g: number, b: number) => 0.299 * r + 0.587 * g + 0.114 * b;
         const medLum = lum(med[0], med[1], med[2]);
-        if (medLum > 45) {
+        if (medLum > 30) {
           const darkRow = (y: number) => {
             let n = 0;
             let sum = 0;
@@ -316,9 +316,9 @@ async function compute(src: string): Promise<Cutout | null> {
               n++;
               sum += lum(d[i], d[i + 1], d[i + 2]);
             }
-            return n === 0 ? null : sum / n < medLum * 0.72;
+            return n === 0 ? null : sum / n < medLum * 0.85;
           };
-          const maxDark = Math.round(h * 0.18);
+          const maxDark = Math.round(h * 0.22);
           // 줄 하나는 들쭉날쭉해서, 아래 5줄 평균으로 판단한다
           const vals: (boolean | null)[] = [];
           for (let y = h - 1; y >= Math.max(0, h - maxDark); y--) vals.push(darkRow(y));

@@ -99,7 +99,11 @@ export function Mannequin({
 
   const torso = `M ${100 - bsw * 0.4} 74 Q ${100 - bsw} 76 ${100 - bsw} 92 L ${100 - ww} 170 Q ${100 - ww - 2} 200 ${100 - hw} 236 Q 100 252 ${100 + hw} 236 Q ${100 + ww + 2} 200 ${100 + ww} 170 L ${100 + bsw} 92 Q ${100 + bsw} 76 ${100 + bsw * 0.4} 74 Z`;
 
-  const arm = (dir: -1 | 1) => `${100 + dir * (bsw - 2)},${clothed ? 96 : 88} ${100 + dir * (bsw + 8)},150 ${100 + dir * (bsw + 12)},210`;
+  // 옷을 입으면 손이 소매 끝으로 삐져나오지 않게 팔을 위쪽만 그린다(긴 소매는 이 아래를 덮는다)
+  const arm = (dir: -1 | 1) =>
+    clothed
+      ? `${100 + dir * (bsw - 2)},96 ${100 + dir * (bsw + 4)},140`
+      : `${100 + dir * (sw - 2)},88 ${100 + dir * (sw + 8)},150 ${100 + dir * (sw + 12)},210`;
   const leg = (dir: -1 | 1) => ({
     thigh: `${100 + dir * legX},236 ${100 + dir * (legX + 1)},335`,
     calf: `${100 + dir * (legX + 1)},335 ${100 + dir * (legX - 1)},420`,
