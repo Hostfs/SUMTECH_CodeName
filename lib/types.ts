@@ -58,7 +58,25 @@ export interface Garment {
   updatedAt: string;
 }
 
-export type OutfitSlot = "outer" | "top" | "bottom" | "shoes" | "etc";
+/** 코디 칸. 기타 옷은 이름으로 모자(hat)와 가방·소품(etc)으로 나눈다. */
+export type OutfitSlot = "outer" | "top" | "bottom" | "shoes" | "hat" | "etc";
+
+export const SLOT_LABEL: Record<OutfitSlot, string> = {
+  outer: "아우터",
+  top: "상의",
+  bottom: "하의",
+  shoes: "신발",
+  hat: "모자",
+  etc: "가방·기타",
+};
+
+const HAT = /모자|캡|비니|햇|버킷|베레|페도라|헬멧|hat|cap|beanie|beret/i;
+
+/** 옷이 들어갈 코디 칸. 기타 옷은 이름에 모자 낱말이 있으면 모자, 아니면 가방·기타. */
+export function slotOf(g: Pick<Garment, "category" | "name">): OutfitSlot {
+  if (g.category !== "etc") return g.category;
+  return HAT.test(g.name) ? "hat" : "etc";
+}
 
 export interface Outfit {
   id: string;

@@ -13,10 +13,10 @@ import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/Toast";
 import { placePath } from "@/lib/places";
-import { CATEGORY_LABEL, type Category, type OutfitSlot } from "@/lib/types";
+import { type OutfitSlot, SLOT_LABEL } from "@/lib/types";
 import { garmentHref } from "@/lib/routes";
 
-const ORDER: OutfitSlot[] = ["outer", "top", "bottom", "shoes", "etc"];
+const ORDER: OutfitSlot[] = ["hat", "outer", "top", "bottom", "shoes", "etc"];
 
 /** 코디 상세 (목업 없음). 옷을 누르면 의류 상세로 간다. 편집은 3순위. */
 function OutfitDetailPage() {
@@ -56,7 +56,7 @@ function OutfitDetailPage() {
       <div className="mx-4 mt-3 flex justify-center rounded-card-lg border border-line bg-card py-3">
         <Mannequin
           body={profile.body}
-          worn={Object.fromEntries(items.filter((i) => i.slot !== "etc").map((i) => [i.slot, i.g])) as Worn}
+          worn={Object.fromEntries(items.map((i) => [i.slot, i.g])) as Worn}
           height={300}
         />
       </div>
@@ -68,7 +68,7 @@ function OutfitDetailPage() {
             <li key={slot}>
               <Link href={garmentHref(g.id)} className="block rounded-card border border-line bg-card px-2 pt-2 pb-3">
                 <div className="relative flex h-32 items-center justify-center rounded-tile bg-tile">
-                  <em className="absolute top-2 left-2.5 text-xs text-sub not-italic">{CATEGORY_LABEL[slot as Category]}</em>
+                  <em className="absolute top-2 left-2.5 text-xs text-sub not-italic">{SLOT_LABEL[slot]}</em>
                   <GarmentPhoto src={g.photoUrl} alt={g.name} size={96} />
                 </div>
                 <div className="mx-1 mt-[9px] truncate text-[15px] font-semibold">{g.name}</div>

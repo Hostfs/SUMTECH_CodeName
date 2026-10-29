@@ -6,7 +6,7 @@ import { outfitHref } from "@/lib/routes";
 
 /** 구성 옷 순서대로 (아우터·상의·하의·신발·기타) */
 export function outfitGarments(o: Outfit, byId: Map<string, Garment>): Garment[] {
-  const order = ["outer", "top", "bottom", "shoes", "etc"] as const;
+  const order = ["hat", "outer", "top", "bottom", "shoes", "etc"] as const;
   return order.map((k) => (o.slots[k] ? byId.get(o.slots[k]!) : undefined)).filter((g): g is Garment => !!g);
 }
 

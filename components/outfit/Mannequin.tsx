@@ -5,7 +5,7 @@ import { bodyShape, DEFAULT_BODY } from "@/lib/body";
 import { useCutout, type Cutout } from "@/lib/cutout";
 import type { Body, Garment } from "@/lib/types";
 
-export type Worn = Partial<Record<"outer" | "top" | "bottom" | "shoes", Garment>>;
+export type Worn = Partial<Record<"outer" | "top" | "bottom" | "shoes" | "hat" | "etc", Garment>>;
 
 /**
  * 옷 그림을 몸의 정해진 자리에 맞춰 놓는다.
@@ -82,6 +82,8 @@ export function Mannequin({
   const top = useCutout(worn?.top?.photoUrl);
   const bottom = useCutout(worn?.bottom?.photoUrl);
   const shoes = useCutout(worn?.shoes?.photoUrl);
+  const hat = useCutout(worn?.hat?.photoUrl);
+  const etc = useCutout(worn?.etc?.photoUrl);
 
   // 부위별 치수 (viewBox 200×440, 가운데 x=100, 발 y=430)
   const sw = 50 * k(0.55); // 어깨 반폭
@@ -157,6 +159,9 @@ export function Mannequin({
         ))}
         <Fit cutout={top} cx={100} top={70} {...plan("top", top, 2 * armOuter + 4)} />
         <Fit cutout={outer} cx={100} top={64} {...plan("outer", outer, 2 * armOuter + 20)} />
+        {/* 가방·소품은 오른손 쪽에 늘어뜨리고, 모자는 머리 위에 씌운다 */}
+        <Fit cutout={etc} cx={100 + armOuter + 4} top={168} {...plan("etc", etc, 40)} />
+        <Fit cutout={hat} cx={100} bottom={38} {...plan("hat", hat, 50)} />
       </g>
     </svg>
   );

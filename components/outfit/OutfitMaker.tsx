@@ -10,11 +10,12 @@ import { CheckIcon, PlusIcon, SmallCloseIcon } from "@/components/icons";
 import { buttonClass } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { CATEGORY_LABEL, type Category, type Outfit, type OutfitSlot } from "@/lib/types";
+import { CATEGORY_LABEL, type Category, type Outfit, type OutfitSlot, SLOT_LABEL, slotOf } from "@/lib/types";
 
-/** 캔버스 칸 순서 (outfit_autumn.html: 아우터 · 하의 / 상의 · 신발) */
-export const CANVAS_SLOTS: OutfitSlot[] = ["outer", "bottom", "top", "shoes"];
-const PICK_CATEGORIES: Category[] = ["top", "bottom", "outer", "shoes"];
+/** 캔버스 칸 순서 (outfit_autumn.html: 아우터 · 하의 / 상의 · 신발, 그 아래에 모자 · 가방·기타) */
+export const CANVAS_SLOTS: OutfitSlot[] = ["outer", "bottom", "top", "shoes", "hat", "etc"];
+const PICK_CATEGORIES: Category[] = ["top", "bottom", "outer", "shoes", "etc"];
+const WORN_SLOTS = ["outer", "top", "bottom", "shoes", "hat", "etc"] as const;
 
 const inputCls =
   "h-[46px] w-full rounded-[14px] border border-line bg-card px-3.5 text-base outline-none placeholder:text-muted focus:border-primary";
@@ -44,7 +45,7 @@ export function OutfitMaker({
   const bodyDraft = useBodyDraft();
 
   const byId = useMemo(() => new Map(garments.map((g) => [g.id, g])), [garments]);
-  const pickable = garments.filter((g) => g.category !== "etc" && (cat === "all" || g.category === cat));
+  const pickable = garments.filter((g) => cat === "all" || g.category === cat);
   const chosen = new Set(Object.values(draft.slots));
 
   const setSlot = (slot: OutfitSlot, id: string | undefined) => {
@@ -55,7 +56,7 @@ export function OutfitMaker({
   };
 
   const worn: Worn = {};
-  for (const slot of ["outer", "top", "bottom", "shoes"] as const) {
+  for (const slot of WORN_SLOTS) {
     const g = draft.slots[slot] ? byId.get(draft.slots[slot]!) : undefined;
     if (g) worn[slot] = g;
   }
@@ -84,12 +85,12 @@ export function OutfitMaker({
           const g = draft.slots[slot] ? byId.get(draft.slots[slot]!) : undefined;
           return (
             <div key={slot} className="relative flex h-[116px] items-center justify-center rounded-[14px] bg-tile">
-              <em className="absolute top-2 left-2.5 text-xs text-sub not-italic">{CATEGORY_LABEL[slot as Category]}</em>
+              <em className="absolute top-2 left-2.5 text-xs text-sub not-italic">{SLOT_LABEL[slot]}</em>
               {g ? (
                 <>
                   <button
                     type="button"
-                    aria-label={`${CATEGORY_LABEL[slot as Category]}에서 빼기`}
+                    aria-label={`${SLOT_LABEL[slot]}에서 빼기`}
                     className="absolute top-[5px] right-1.5 flex size-[22px] items-center justify-center rounded-full border border-line bg-white text-sub"
                     onClick={() => setSlot(slot, undefined)}
                   >
@@ -130,7 +131,7 @@ export function OutfitMaker({
       <ul className="no-scrollbar flex gap-2 overflow-x-auto px-4 pt-2">
         {pickable.map((g) => {
           const on = chosen.has(g.id);
-          const slot = g.category as OutfitSlot;
+          const slot = slotOf(g);
           return (
             <li key={g.id} className="flex-none">
               <button

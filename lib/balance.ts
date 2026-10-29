@@ -1,6 +1,6 @@
 import type { Cutout } from "./cutout";
 
-export type WornSlot = "outer" | "top" | "bottom" | "shoes";
+export type WornSlot = "outer" | "top" | "bottom" | "shoes" | "hat" | "etc";
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
@@ -42,6 +42,15 @@ export function balance(slot: WornSlot, c: Cutout, tw0: number): { tw: number; t
       // 반바지·치마: 발목까지 늘리지 않고 원래 길이를 지킨다
       const th = clamp(th0, 70, 175);
       return { th, tw: clamp(th / r, tw0 * 0.95, tw0 * 1.25) };
+    }
+    case "hat": {
+      const th = clamp(th0, 16, 38);
+      return { th, tw: clamp(th / r, tw0 * 0.8, tw0 * 1.35) };
+    }
+    case "etc": {
+      // 손에 든 가방·소품: 몸보다 커 보이지 않게 크기를 제한한다
+      const th = clamp(th0, 28, 70);
+      return { th, tw: clamp(th / r, tw0 * 0.7, tw0 * 1.5) };
     }
     case "shoes": {
       const th = clamp(th0, 22, 62);
