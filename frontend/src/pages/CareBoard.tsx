@@ -86,7 +86,7 @@ export default function CareBoard() {
             <div className="row-thumb">{it.garment.imageUrl ? <img src={it.garment.imageUrl} alt="" /> : <GarmentArt subType={it.garment.subType} colorHex={it.garment.colorHex} title={it.garment.name} />}</div>
             <div className="row-main">
               <Link className="row-title" to={`/closet/${it.garment.id}`}>{it.garment.name}</Link>
-              <div className="row-sub">{it.care.careTypeLabel}, {it.care.place === 'SHOP' ? it.care.shopName ?? '업체' : '자택'}{it.care.description ? `, ${it.care.description}` : ''}</div>
+              <div className="row-sub">{it.care.completedAt ? it.care.careTypeLabel : `${it.care.careTypeLabel} 중`}, {it.care.place === 'SHOP' ? it.care.shopName ?? '업체' : '자택'}{it.care.description ? `, ${it.care.description}` : ''}</div>
               {it.care.completedAt ? (
                 <div className="row-sub">{formatDate(it.care.droppedOn)} 맡김, {formatDate(it.care.completedAt)} 회수 완료</div>
               ) : (

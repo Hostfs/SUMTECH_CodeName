@@ -23,7 +23,7 @@ export default function Landing() {
       <section className="landing-hero">
         <div>
           <h1>옷 택 한 장으로,<br />그 옷이 지금 어디 있는지까지</h1>
-          <p className="lead">택을 찍어 옷을 등록하고, 입을 조합을 고른 뒤, 어디서 꺼낼지까지 확인하는 내 옷 관리 서비스예요. 세탁소에 맡긴 옷과 돌려받을 날도 함께 챙겨요.</p>
+          <p className="lead">택을 찍어 옷을 등록하고, 옷장·서랍·박스 중 어디에 넣었는지 기록해 두는 내 옷 관리 서비스예요. 박스나 세탁소로 보낸 옷과 돌려받을 날도 함께 챙겨요.</p>
           <div className="landing-cta">
             {me ? (
               <Link className="btn" to="/closet">내 옷장 열기</Link>
@@ -36,8 +36,8 @@ export default function Landing() {
           </div>
           <ol className="landing-steps">
             <li><div><strong>택을 찍어 등록</strong><span>AI가 브랜드·소재·세탁법을 읽고, 제품을 찾아 줘요. 읽지 못한 값은 직접 고쳐요.</span></div></li>
-            <li><div><strong>입을 조합 고르기</strong><span>내 치수로 만든 3D 모형에 상하의를 입혀 보고, 지금 입을 수 있는 옷으로 추천받아요.</span></div></li>
             <li><div><strong>꺼낼 위치 확인</strong><span>옷장·서랍·박스를 등록하고 배치를 마치면, 검색할 때 위치가 바로 보여요.</span></div></li>
+            <li><div><strong>묶어서 옮기기</strong><span>계절 옷을 박스에 넣거나 세탁소에 맡길 때 여러 벌을 한 번에 기록해요.</span></div></li>
             <li><div><strong>세탁·수선 챙기기</strong><span>맡긴 옷과 회수 예정일을 기록하면 기한이 지난 옷을 알려 줘요.</span></div></li>
           </ol>
         </div>

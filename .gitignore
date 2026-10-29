@@ -24,3 +24,6 @@ playwright-report/
 Thumbs.db
 .vscode/
 .idea/
+
+# 프론트 빌드 결과를 백엔드에 복사한 것(Dockerfile이 빌드 때 만든다)
+backend/src/main/resources/static/
