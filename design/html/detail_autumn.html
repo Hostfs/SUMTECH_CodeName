@@ -1,0 +1,110 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><style>
+:root{
+  --bg:#F7F6F3; --card:#FFFFFF; --ink:#1D1D1F; --sub:#666666; --line:#E6E4E0;
+  --tile:#F9F8F5;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:390px;height:844px;overflow:hidden;background:var(--bg);
+  font-family:"Pretendard","Noto Sans CJK KR","Noto Sans KR","Noto Sans CJK JP",system-ui,sans-serif;
+  color:var(--ink);-webkit-font-smoothing:antialiased;letter-spacing:-0.01em}
+.screen{position:relative;width:390px;height:844px;background:var(--bg);overflow:hidden}
+.status{height:38px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 26px 4px;
+  font-size:14px;font-weight:600}
+.status .r{display:flex;gap:6px;align-items:center}
+.bat{width:24px;height:11px;border:1.4px solid var(--ink);border-radius:3.5px;position:relative;opacity:.85}
+.bat:after{content:"";position:absolute;left:1.5px;top:1.5px;bottom:1.5px;width:14px;background:var(--ink);border-radius:1.5px}
+.sig{display:flex;gap:2px;align-items:flex-end;height:11px}
+.sig i{display:block;width:3px;background:var(--ink);border-radius:1px}
+
+.titlebar{display:flex;align-items:center;justify-content:space-between;padding:6px 20px 0;height:48px}
+.titlebar h1{font-size:24px;font-weight:600;letter-spacing:-0.02em}
+.titlebar h1 small{font-size:14px;font-weight:400;color:var(--sub);margin-left:8px;letter-spacing:-0.01em}
+.textbtn{font-size:15px;font-weight:600;color:var(--deep);padding:8px 4px}
+
+.search{margin:8px 16px 0;height:44px;border-radius:999px;background:var(--card);border:1px solid var(--line);
+  display:flex;align-items:center;gap:10px;padding:0 16px;color:var(--sub);font-size:15px}
+.search svg{color:var(--sub)}
+.chips{display:flex;gap:8px;padding:12px 16px 0}
+.chip{height:36px;padding:0 13px;border-radius:999px;background:var(--card);border:1px solid var(--line);
+  display:flex;align-items:center;font-size:14px;color:var(--ink);white-space:nowrap}
+.chip.on{background:var(--primary);border-color:var(--primary);color:var(--on);font-weight:600}
+.filterrow{display:flex;justify-content:space-between;align-items:center;padding:10px 20px 0;height:38px}
+.fbtn{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--ink);font-weight:500}
+.sort{display:flex;align-items:center;gap:2px;font-size:14px;color:var(--sub)}
+
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:12px 16px 0}
+.cardi{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:8px 8px 12px;position:relative}
+.cardi.sel{border:2px solid var(--primary);padding:7px 7px 11px}
+.tile{height:128px;border-radius:12px;background:var(--tile);display:flex;align-items:center;justify-content:center}
+.cardi.sel .tile{background:var(--soft)}
+.tile svg{display:block}
+.nm{font-size:15px;font-weight:600;margin:9px 4px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lc{display:flex;align-items:center;gap:3px;font-size:12.5px;color:var(--sub);margin:3px 4px 0;white-space:nowrap}
+.lc svg{flex:none}
+.nobadge{display:inline-block;margin:3px 4px 0;font-size:12px;color:var(--sub);background:#EEEDEA;border-radius:999px;padding:2px 9px}
+.chk{position:absolute;left:14px;top:14px;width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.9);
+  border:1.5px solid #CFCCC5;display:flex;align-items:center;justify-content:center}
+.cardi.sel .chk{background:var(--primary);border-color:var(--primary);color:var(--on)}
+
+.actionbar{position:absolute;left:16px;right:16px;bottom:94px;height:60px;border-radius:18px;background:var(--card);
+  border:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 10px 0 16px}
+.actionbar .cnt{font-size:15px;font-weight:600}
+.actionbar .btns{display:flex;gap:6px;align-items:center}
+.btn{height:44px;padding:0 18px;border-radius:999px;display:flex;align-items:center;justify-content:center;
+  font-size:15px;font-weight:600;white-space:nowrap}
+.btn.p{background:var(--primary);color:var(--on)}
+.btn.o{background:var(--card);border:1px solid var(--line);color:var(--ink)}
+.btn.g{color:var(--sub);font-weight:500;padding:0 12px}
+
+.tabbar{position:absolute;left:0;right:0;bottom:0;height:84px;background:#FFFFFF;border-top:1px solid var(--line);
+  display:flex;align-items:flex-start;justify-content:space-around;padding:8px 6px 0}
+.tab{width:62px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11.5px;color:var(--sub);padding-top:4px}
+.tab.on{color:var(--deep);font-weight:600}
+.fab{width:52px;height:52px;border-radius:50%;background:var(--primary);color:var(--on);display:flex;align-items:center;justify-content:center;
+  margin-top:-2px;box-shadow:0 0 0 4px #fff}
+
+/* detail */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 12px;height:48px}
+.ib{width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--ink)}
+.topbar .t{font-size:17px;font-weight:600}
+.photo{margin:6px 16px 0;height:216px;border-radius:18px;background:var(--card);border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;position:relative}
+.photo .in{width:180px;height:180px;border-radius:14px;background:var(--tile);display:flex;align-items:center;justify-content:center;width:326px;height:196px}
+.dname{padding:14px 20px 0;display:flex;align-items:center;justify-content:space-between}
+.dname h2{font-size:22px;font-weight:600;letter-spacing:-0.02em}
+.tags{display:flex;gap:6px;padding:8px 20px 0}
+.tag{height:26px;padding:0 11px;border-radius:999px;background:var(--soft);color:var(--deep);font-size:13px;font-weight:600;display:flex;align-items:center}
+.locard{margin:12px 16px 0;border-radius:18px;background:var(--soft);padding:14px 16px;display:flex;align-items:center;gap:14px}
+.locard .ic{width:44px;height:44px;border-radius:50%;background:var(--primary);color:var(--on);display:flex;align-items:center;justify-content:center;flex:none}
+.locard .lb{font-size:13px;color:var(--sub)}
+.locard .v{font-size:20px;font-weight:700;margin-top:2px;letter-spacing:-0.02em}
+.info{margin:12px 16px 0;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:6px 16px;
+  display:grid;grid-template-columns:1fr 1fr;column-gap:12px}
+.info .c{display:flex;gap:10px;align-items:baseline;height:34px;border-bottom:1px solid var(--line);align-items:center;font-size:14.5px}
+.info .c:nth-last-child(-n+2){border-bottom:none}
+.info .k{color:var(--sub);font-size:13px;width:44px;flex:none;white-space:nowrap}
+.info .vv{white-space:nowrap}
+.info .vv.mu{color:#9A9892}
+.sec{padding:14px 20px 0;font-size:16px;font-weight:600}
+.care{margin:8px 16px 0;border-radius:18px;border:1px dashed #D5D2CB;background:rgba(255,255,255,.6);padding:12px 14px;
+  display:flex;align-items:center;gap:12px}
+.care .tx{font-size:13px;color:var(--sub);line-height:1.5;flex:1}
+.care .btn{height:38px;padding:0 14px;font-size:13.5px;color:var(--deep);border:1px solid var(--primary);background:var(--card)}
+.botbar{position:absolute;left:0;right:0;bottom:0;height:92px;background:#FFFFFF;border-top:1px solid var(--line);
+  display:flex;align-items:flex-start;gap:8px;padding:14px 16px 0}
+.botbar .btn{height:50px}
+.botbar .p{flex:1.5;font-size:16px}
+.botbar .o{flex:1}
+</style></head><body style="--primary:#A47148;--on:#FFFFFF;--soft:#F3E9E1;--deep:#7F5532;">
+    <div class="screen">
+      <div class="status"><span>9:41</span><span class="r"><span class="sig"><i style="height:4px"></i><i style="height:6px"></i><i style="height:8px"></i><i style="height:11px"></i></span><span class="bat"></span></span></div>
+      <div class="topbar"><span class="ib"><svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M15 5 L8 12 L15 19"/></svg></span><span class="t">옷 정보</span><span class="ib"><svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" stroke="none" xmlns="http://www.w3.org/2000/svg"><circle cx="5" cy="12" r="1.1"/><circle cx="12" cy="12" r="1.1"/><circle cx="19" cy="12" r="1.1"/></svg></span></div>
+      <div class="photo"><div class="in"><svg viewBox="0 0 100 100" width="176" height="176" xmlns="http://www.w3.org/2000/svg"><path d="M31 15 L41 11 Q50 19 59 11 L69 15 L90 62 L78 68 L70 44 L70 84 L30 84 L30 44 L22 68 L10 62 Z" fill="#B58A5E" stroke="#8D6C49" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/><path d="M41 11 Q50 19 59 11" fill="none" stroke="#8D6C49" stroke-width="2.2" stroke-linecap="round"/><rect x="30" y="78" width="40" height="6" fill="#8D6C49" opacity=".22"/><path d="M33 78 L33 84" stroke="#8D6C49" stroke-width=".8" opacity=".5"/><path d="M37 78 L37 84" stroke="#8D6C49" stroke-width=".8" opacity=".5"/><path d="M41 78 L41 84" stroke="#8D6C49" stroke-width=".8" opacity=".5"/><path d="M45 78 L45 84" stroke="#8D6C49" stroke-width=".8" opacity=".5"/><path d="M49 78 L49 84" stroke="#8D6C49" stroke-width=".8" opacity=".5"/><path d="M53 78 L53 84" stroke="#8D6C49" stroke-width=".8" opacity=".5"/><path d="M57 78 L57 84" stroke="#8D6C49" stroke-width=".8" opacity=".5"/><path d="M61 78 L61 84" stroke="#8D6C49" stroke-width=".8" opacity=".5"/><path d="M65 78 L65 84" stroke="#8D6C49" stroke-width=".8" opacity=".5"/><path d="M69 78 L69 84" stroke="#8D6C49" stroke-width=".8" opacity=".5"/></svg></div></div>
+      <div class="dname"><h2>브라운 니트</h2></div>
+      <div class="tags"><span class="tag">가을</span><span class="tag">겨울</span></div>
+      <div class="locard"><div class="ic"><svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 21s6-5.6 6-10.5A6 6 0 0 0 6 10.5C6 15.4 12 21 12 21z"/><circle cx="12" cy="10.5" r="2.2"/></svg></div><div><div class="lb">보관 위치</div><div class="v">수납 상자 1</div></div></div>
+      <div class="info"><div class="c"><span class="k">종류</span><span class="vv">상의</span></div><div class="c"><span class="k">색상</span><span class="vv">브라운</span></div><div class="c"><span class="k">브랜드</span><span class="vv mu">미입력</span></div><div class="c"><span class="k">사이즈</span><span class="vv">M</span></div><div class="c"><span class="k">소재</span><span class="vv mu">미입력</span></div><div class="c"><span class="k">메모</span><span class="vv">두께감 있는 니트</span></div></div>
+      <div class="sec">세탁·관리 정보</div>
+      <div class="care"><div class="tx">등록된 관리 정보가 없어요.<br>세탁 라벨을 촬영해 추가할 수 있어요.</div><span class="btn"><svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.2"/></svg>&nbsp;라벨 촬영</span></div>
+      <div class="botbar"><span class="btn p">위치 변경</span><span class="btn o">수정</span><span class="btn g">삭제</span></div>
+    </div></body></html>

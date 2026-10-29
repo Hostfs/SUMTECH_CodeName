@@ -1,0 +1,186 @@
+@import "tailwindcss";
+
+/* ── 디자인 토큰 (docs/design-system.md 1절) ── */
+:root {
+  --bg: #f7f6f3;
+  --card: #ffffff;
+  --ink: #1d1d1f;
+  --sub: #666666;
+  --line: #e6e4e0;
+  --tile: #f9f8f5;
+  --muted: #9a9892; /* '미입력', 플레이스홀더 */
+  --nobadge: #eeedea; /* '위치 미지정' 배지 */
+
+  /* 폰 프레임 안 상태바 높이. 실제 폰에서는 safe area로 바뀐다. */
+  --status-h: 38px;
+  --tabbar-h: 84px;
+}
+
+:root,
+[data-season="autumn"] {
+  --primary: #a47148;
+  --on: #ffffff;
+  --soft: #f3e9e1;
+  --deep: #7f5532;
+}
+[data-season="spring"] {
+  --primary: #f7b1b0;
+  --on: #1d1d1f;
+  --soft: #fdefef;
+  --deep: #8a4a49;
+}
+[data-season="summer"] {
+  --primary: #2ec4b6;
+  --on: #1d1d1f;
+  --soft: #e3f7f5;
+  --deep: #17766d;
+}
+[data-season="winter"] {
+  --primary: #134074;
+  --on: #ffffff;
+  --soft: #e4ebf4;
+  --deep: #134074;
+}
+
+/* Tailwind 클래스에서 토큰을 쓴다: bg-primary, text-deep, border-line … */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-card: var(--card);
+  --color-ink: var(--ink);
+  --color-sub: var(--sub);
+  --color-line: var(--line);
+  --color-tile: var(--tile);
+  --color-muted: var(--muted);
+  --color-nobadge: var(--nobadge);
+  --color-primary: var(--primary);
+  --color-on: var(--on);
+  --color-soft: var(--soft);
+  --color-deep: var(--deep);
+
+  --font-sans: "Pretendard Variable", "Pretendard", "Noto Sans KR", system-ui, sans-serif;
+
+  --radius-tile: 12px;
+  --radius-card: 16px;
+  --radius-card-lg: 18px;
+
+  --text-caption: 12.5px;
+  --text-tab: 11.5px;
+}
+
+/* ── 전역 ── */
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  height: 100%;
+}
+body {
+  font-family: var(--font-sans);
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+button {
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+/* ── 아이폰 미리보기 프레임 ──
+   넓은 화면: 회색 무대 가운데 390×844 화면을 프레임으로 감싼다.
+   실제 폰(480px 미만): 프레임 없이 전체 화면. */
+.phone-stage {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: #d9d9dc;
+}
+.phone-frame {
+  position: relative;
+  flex: none;
+  zoom: var(--phone-zoom, 1);
+  padding: 13px;
+  border-radius: 68px;
+  background: #0d0d0e;
+  box-shadow:
+    0 0 0 3px #6b5a50,
+    0 30px 60px rgba(0, 0, 0, 0.18);
+}
+.phone-screen {
+  position: relative;
+  width: 390px;
+  height: 844px;
+  border-radius: 55px;
+  overflow: hidden;
+  background: var(--bg);
+  isolation: isolate;
+}
+.phone-island {
+  position: absolute;
+  top: 11px;
+  left: 50%;
+  width: 122px;
+  height: 36px;
+  margin-left: -61px;
+  border-radius: 999px;
+  background: #000;
+  z-index: 60;
+  pointer-events: none;
+}
+.phone-home-indicator {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  width: 134px;
+  height: 5px;
+  margin-left: -67px;
+  border-radius: 999px;
+  background: #1d1d1f;
+  z-index: 60;
+  pointer-events: none;
+}
+
+@media (max-width: 479px) {
+  :root {
+    --status-h: env(safe-area-inset-top, 0px);
+    --tabbar-h: calc(64px + env(safe-area-inset-bottom, 0px));
+  }
+  .phone-stage {
+    display: block;
+    padding: 0;
+    background: var(--bg);
+  }
+  .phone-frame {
+    zoom: 1;
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .phone-screen {
+    width: 100vw;
+    height: 100dvh;
+    border-radius: 0;
+  }
+  .phone-island,
+  .phone-home-indicator,
+  .status-bar {
+    display: none;
+  }
+}
+
+/* 스크롤바는 화면 안에서 숨긴다 (목업과 같게) */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

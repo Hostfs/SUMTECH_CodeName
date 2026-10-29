@@ -1,0 +1,108 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><style>
+:root{
+  --bg:#F7F6F3; --card:#FFFFFF; --ink:#1D1D1F; --sub:#666666; --line:#E6E4E0;
+  --tile:#F9F8F5;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:390px;height:844px;overflow:hidden;background:var(--bg);
+  font-family:"Pretendard","Noto Sans CJK KR","Noto Sans KR","Noto Sans CJK JP",system-ui,sans-serif;
+  color:var(--ink);-webkit-font-smoothing:antialiased;letter-spacing:-0.01em}
+.screen{position:relative;width:390px;height:844px;background:var(--bg);overflow:hidden}
+.status{height:38px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 26px 4px;
+  font-size:14px;font-weight:600}
+.status .r{display:flex;gap:6px;align-items:center}
+.bat{width:24px;height:11px;border:1.4px solid var(--ink);border-radius:3.5px;position:relative;opacity:.85}
+.bat:after{content:"";position:absolute;left:1.5px;top:1.5px;bottom:1.5px;width:14px;background:var(--ink);border-radius:1.5px}
+.sig{display:flex;gap:2px;align-items:flex-end;height:11px}
+.sig i{display:block;width:3px;background:var(--ink);border-radius:1px}
+
+.titlebar{display:flex;align-items:center;justify-content:space-between;padding:6px 20px 0;height:48px}
+.titlebar h1{font-size:24px;font-weight:600;letter-spacing:-0.02em}
+.titlebar h1 small{font-size:14px;font-weight:400;color:var(--sub);margin-left:8px;letter-spacing:-0.01em}
+.textbtn{font-size:15px;font-weight:600;color:var(--deep);padding:8px 4px}
+
+.search{margin:8px 16px 0;height:44px;border-radius:999px;background:var(--card);border:1px solid var(--line);
+  display:flex;align-items:center;gap:10px;padding:0 16px;color:var(--sub);font-size:15px}
+.search svg{color:var(--sub)}
+.chips{display:flex;gap:8px;padding:12px 16px 0}
+.chip{height:36px;padding:0 13px;border-radius:999px;background:var(--card);border:1px solid var(--line);
+  display:flex;align-items:center;font-size:14px;color:var(--ink);white-space:nowrap}
+.chip.on{background:var(--primary);border-color:var(--primary);color:var(--on);font-weight:600}
+.filterrow{display:flex;justify-content:space-between;align-items:center;padding:10px 20px 0;height:38px}
+.fbtn{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--ink);font-weight:500}
+.sort{display:flex;align-items:center;gap:2px;font-size:14px;color:var(--sub)}
+
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:12px 16px 0}
+.cardi{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:8px 8px 12px;position:relative}
+.cardi.sel{border:2px solid var(--primary);padding:7px 7px 11px}
+.tile{height:128px;border-radius:12px;background:var(--tile);display:flex;align-items:center;justify-content:center}
+.cardi.sel .tile{background:var(--soft)}
+.tile svg{display:block}
+.nm{font-size:15px;font-weight:600;margin:9px 4px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lc{display:flex;align-items:center;gap:3px;font-size:12.5px;color:var(--sub);margin:3px 4px 0;white-space:nowrap}
+.lc svg{flex:none}
+.nobadge{display:inline-block;margin:3px 4px 0;font-size:12px;color:var(--sub);background:#EEEDEA;border-radius:999px;padding:2px 9px}
+.chk{position:absolute;left:14px;top:14px;width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.9);
+  border:1.5px solid #CFCCC5;display:flex;align-items:center;justify-content:center}
+.cardi.sel .chk{background:var(--primary);border-color:var(--primary);color:var(--on)}
+
+.actionbar{position:absolute;left:16px;right:16px;bottom:94px;height:60px;border-radius:18px;background:var(--card);
+  border:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 10px 0 16px}
+.actionbar .cnt{font-size:15px;font-weight:600}
+.actionbar .btns{display:flex;gap:6px;align-items:center}
+.btn{height:44px;padding:0 18px;border-radius:999px;display:flex;align-items:center;justify-content:center;
+  font-size:15px;font-weight:600;white-space:nowrap}
+.btn.p{background:var(--primary);color:var(--on)}
+.btn.o{background:var(--card);border:1px solid var(--line);color:var(--ink)}
+.btn.g{color:var(--sub);font-weight:500;padding:0 12px}
+
+.tabbar{position:absolute;left:0;right:0;bottom:0;height:84px;background:#FFFFFF;border-top:1px solid var(--line);
+  display:flex;align-items:flex-start;justify-content:space-around;padding:8px 6px 0}
+.tab{width:62px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11.5px;color:var(--sub);padding-top:4px}
+.tab.on{color:var(--deep);font-weight:600}
+.fab{width:52px;height:52px;border-radius:50%;background:var(--primary);color:var(--on);display:flex;align-items:center;justify-content:center;
+  margin-top:-2px;box-shadow:0 0 0 4px #fff}
+
+/* detail */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 12px;height:48px}
+.ib{width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--ink)}
+.topbar .t{font-size:17px;font-weight:600}
+.photo{margin:6px 16px 0;height:216px;border-radius:18px;background:var(--card);border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;position:relative}
+.photo .in{width:180px;height:180px;border-radius:14px;background:var(--tile);display:flex;align-items:center;justify-content:center;width:326px;height:196px}
+.dname{padding:14px 20px 0;display:flex;align-items:center;justify-content:space-between}
+.dname h2{font-size:22px;font-weight:600;letter-spacing:-0.02em}
+.tags{display:flex;gap:6px;padding:8px 20px 0}
+.tag{height:26px;padding:0 11px;border-radius:999px;background:var(--soft);color:var(--deep);font-size:13px;font-weight:600;display:flex;align-items:center}
+.locard{margin:12px 16px 0;border-radius:18px;background:var(--soft);padding:14px 16px;display:flex;align-items:center;gap:14px}
+.locard .ic{width:44px;height:44px;border-radius:50%;background:var(--primary);color:var(--on);display:flex;align-items:center;justify-content:center;flex:none}
+.locard .lb{font-size:13px;color:var(--sub)}
+.locard .v{font-size:20px;font-weight:700;margin-top:2px;letter-spacing:-0.02em}
+.info{margin:12px 16px 0;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:6px 16px;
+  display:grid;grid-template-columns:1fr 1fr;column-gap:12px}
+.info .c{display:flex;gap:10px;align-items:baseline;height:34px;border-bottom:1px solid var(--line);align-items:center;font-size:14.5px}
+.info .c:nth-last-child(-n+2){border-bottom:none}
+.info .k{color:var(--sub);font-size:13px;width:44px;flex:none;white-space:nowrap}
+.info .vv{white-space:nowrap}
+.info .vv.mu{color:#9A9892}
+.sec{padding:14px 20px 0;font-size:16px;font-weight:600}
+.care{margin:8px 16px 0;border-radius:18px;border:1px dashed #D5D2CB;background:rgba(255,255,255,.6);padding:12px 14px;
+  display:flex;align-items:center;gap:12px}
+.care .tx{font-size:13px;color:var(--sub);line-height:1.5;flex:1}
+.care .btn{height:38px;padding:0 14px;font-size:13.5px;color:var(--deep);border:1px solid var(--primary);background:var(--card)}
+.botbar{position:absolute;left:0;right:0;bottom:0;height:92px;background:#FFFFFF;border-top:1px solid var(--line);
+  display:flex;align-items:flex-start;gap:8px;padding:14px 16px 0}
+.botbar .btn{height:50px}
+.botbar .p{flex:1.5;font-size:16px}
+.botbar .o{flex:1}
+</style></head><body style="--primary:#2EC4B6;--on:#1D1D1F;--soft:#E3F7F5;--deep:#17766D;">
+    <div class="screen">
+      <div class="status"><span>9:41</span><span class="r"><span class="sig"><i style="height:4px"></i><i style="height:6px"></i><i style="height:8px"></i><i style="height:11px"></i></span><span class="bat"></span></span></div>
+      <div class="titlebar"><h1>내 옷장<small>총 42벌</small></h1><span class="textbtn">완료</span></div>
+      <div class="search"><svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="11" cy="11" r="6.5"/><path d="M16 16 L20.5 20.5"/></svg><span>이름·색상·위치로 검색</span></div>
+      <div class="chips"><div class="chip on">전체</div><div class="chip">상의</div><div class="chip">하의</div><div class="chip">아우터</div><div class="chip">신발</div><div class="chip">기타</div></div>
+      <div class="filterrow"><div class="fbtn"><svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>필터</div><div class="sort">최근 등록순<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 9 L12 15 L18 9"/></svg></div></div>
+      <div class="grid"><div class="cardi sel"><div class="tile"><svg viewBox="0 0 100 100" width="104" height="104" xmlns="http://www.w3.org/2000/svg"><path d="M31 17 L41 13 Q50 22 59 13 L69 17 L90 33 L81 46 L70 40 L70 87 Q50 90 30 87 L30 40 L19 46 L10 33 Z" fill="#F4F3EF" stroke="#7A7A78" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/><path d="M41 13 Q50 24 59 13" fill="none" stroke="#7A7A78" stroke-width="1.8" stroke-linecap="round"/><path d="M31 17 L30 40 M69 17 L70 40" fill="none" stroke="#7A7A78" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" opacity=".55"/></svg></div><div class="chk"><svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 12.5 L10.5 17 L18 8"/></svg></div><div class="nm">화이트 티셔츠</div><div class="lc"><svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 21s6-5.6 6-10.5A6 6 0 0 0 6 10.5C6 15.4 12 21 12 21z"/><circle cx="12" cy="10.5" r="2.2"/></svg><span>옷장 A · 서랍 1</span></div></div><div class="cardi"><div class="tile"><svg viewBox="0 0 100 100" width="104" height="104" xmlns="http://www.w3.org/2000/svg"><path d="M31 15 L41 11 L50 21 L59 11 L69 15 L88 68 L77 72 L70 44 L70 91 L30 91 L30 44 L23 72 L12 68 Z" fill="#BFDDD6" stroke="#606E6B" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/><path d="M41 11 L50 22 L43 27 L35 16 Z" fill="#D1E7E1" stroke="#606E6B" stroke-width="1" stroke-linejoin="round"/><path d="M59 11 L50 22 L57 27 L65 16 Z" fill="#D1E7E1" stroke="#606E6B" stroke-width="1" stroke-linejoin="round"/><path d="M50 22 L50 91" fill="none" stroke="#606E6B" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/><circle cx="50" cy="36" r="1.3" fill="#606E6B"/><circle cx="50" cy="50" r="1.3" fill="#606E6B"/><circle cx="50" cy="64" r="1.3" fill="#606E6B"/><circle cx="50" cy="78" r="1.3" fill="#606E6B"/></svg></div><div class="chk"></div><div class="nm">민트 린넨 셔츠</div><div class="lc"><svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 21s6-5.6 6-10.5A6 6 0 0 0 6 10.5C6 15.4 12 21 12 21z"/><circle cx="12" cy="10.5" r="2.2"/></svg><span>옷장 A · 행거</span></div></div><div class="cardi sel"><div class="tile"><svg viewBox="0 0 100 100" width="104" height="104" xmlns="http://www.w3.org/2000/svg"><path d="M30 20 L70 20 L77 68 L54 68 L50 44 L46 68 L23 68 Z" fill="#D9C7A4" stroke="#A99B80" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/><path d="M30 27 L70 27 M50 27 L50 44" fill="none" stroke="#A99B80" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" opacity=".7"/></svg></div><div class="chk"><svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 12.5 L10.5 17 L18 8"/></svg></div><div class="nm">베이지 반바지</div><div class="lc"><svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 21s6-5.6 6-10.5A6 6 0 0 0 6 10.5C6 15.4 12 21 12 21z"/><circle cx="12" cy="10.5" r="2.2"/></svg><span>옷장 A · 서랍 2</span></div></div><div class="cardi"><div class="tile"><svg viewBox="0 0 100 100" width="104" height="104" xmlns="http://www.w3.org/2000/svg"><path d="M36 14 L64 14 L84 90 Q50 95 16 90 Z" fill="#3B4C6E" stroke="#2E3B56" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/><path d="M36 14 L64 14 L64 21 L36 21 Z" fill="#2E3B56" opacity=".25"/><path d="M38 21 L24 91" fill="none" stroke="#2E3B56" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" opacity=".45"/><path d="M44 21 L37 91" fill="none" stroke="#2E3B56" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" opacity=".45"/><path d="M50 21 L50 91" fill="none" stroke="#2E3B56" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" opacity=".45"/><path d="M56 21 L63 91" fill="none" stroke="#2E3B56" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" opacity=".45"/><path d="M62 21 L76 91" fill="none" stroke="#2E3B56" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" opacity=".45"/></svg></div><div class="chk"></div><div class="nm">네이비 스커트</div><div class="lc"><svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 21s6-5.6 6-10.5A6 6 0 0 0 6 10.5C6 15.4 12 21 12 21z"/><circle cx="12" cy="10.5" r="2.2"/></svg><span>옷장 B · 행거</span></div></div><div class="cardi"><div class="tile"><svg viewBox="0 0 100 100" width="104" height="104" xmlns="http://www.w3.org/2000/svg"><path d="M8 66 Q8 56 18 54 L34 52 Q40 44 52 46 Q56 56 66 58 Q86 60 92 68 L92 76 L8 76 Z" fill="#F1F0EC" stroke="#787876" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/><path d="M8 74 L92 74 L92 80 Q50 84 8 80 Z" fill="#F6F4EE" stroke="#787876" stroke-width="1.2" stroke-linejoin="round"/><path d="M43 49 L47 56 M49 50 L53 57 M55 52 L59 58" fill="none" stroke="#787876" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/><path d="M70 60 Q81 62 90 68" fill="none" stroke="#787876" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" opacity=".6"/></svg></div><div class="chk"></div><div class="nm">화이트 스니커즈</div><div class="lc"><svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 21s6-5.6 6-10.5A6 6 0 0 0 6 10.5C6 15.4 12 21 12 21z"/><circle cx="12" cy="10.5" r="2.2"/></svg><span>신발장 · 2단</span></div></div><div class="cardi"><div class="tile"><svg viewBox="0 0 100 100" width="104" height="104" xmlns="http://www.w3.org/2000/svg"><path d="M31 17 L41 13 Q50 22 59 13 L69 17 L90 33 L81 46 L70 40 L70 87 Q50 90 30 87 L30 40 L19 46 L10 33 Z" fill="#A9AF8C" stroke="#84886D" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/><path d="M41 13 Q50 24 59 13" fill="none" stroke="#84886D" stroke-width="1.8" stroke-linecap="round"/><path d="M31 17 L30 40 M69 17 L70 40" fill="none" stroke="#84886D" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" opacity=".55"/></svg></div><div class="chk"></div><div class="nm">카키 티셔츠</div><span class="nobadge">위치 미지정</span></div></div>
+      <div class="actionbar"><span class="cnt">2개 선택됨</span><span class="btns"><span class="btn g">선택 해제</span><span class="btn p">위치 변경</span></span></div>
+      <div class="tabbar"><div class="tab on"><svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 9V7.8a2.3 2.3 0 1 0-2.3-2.3"/><path d="M12 9 L20.6 15.2 a1 1 0 0 1-.6 1.8 H4 a1 1 0 0 1-.6-1.8 Z"/></svg><span>내 옷장</span></div><div class="tab"><svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 9h16v10H4z"/><path d="M3 5.5h18V9H3z"/><path d="M10 13h4"/></svg><span>보관함</span></div><div class="fab"><svg viewBox="0 0 24 24" width="26" height="26" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 5v14M5 12h14"/></svg></div><div class="tab"><svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8.5 4 L4 7 L6 10.5 L8 9.5 V20 H16 V9.5 L18 10.5 L20 7 L15.5 4 Q12 7 8.5 4Z"/></svg><span>코디</span></div><div class="tab"><svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8"/></svg><span>설정</span></div></div>
+    </div></body></html>
