@@ -65,6 +65,7 @@ public class AiGateway {
     /** 요청을 보내고 첫 응답의 본문 문자열을 돌려준다. */
     public String complete(ObjectNode request, Duration timeout) {
         if (!configured()) {
+            log.warn("AI Gateway 호출 안 함: AI 키(AI_GATEWAY_API_KEY)가 비어 있음");
             throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "AI 키가 설정되지 않아 AI 기능을 쓸 수 없어요. 직접 입력으로 계속할 수 있어요.");
         }
         HttpRequest req = HttpRequest.newBuilder(URI.create(baseUrl + "/chat/completions"))
@@ -77,8 +78,10 @@ public class AiGateway {
         try {
             res = http.send(req, HttpResponse.BodyHandlers.ofString());
         } catch (HttpTimeoutException e) {
+            log.warn("AI Gateway 시간 초과({}초, 모델 {})", timeout.toSeconds(), model);
             throw new ApiException(HttpStatus.GATEWAY_TIMEOUT, "AI 응답이 늦어요. 잠시 뒤 다시 시도하거나 직접 입력해 주세요.");
         } catch (IOException e) {
+            log.warn("AI Gateway 연결 실패: {}", e.toString());
             throw new ApiException(HttpStatus.BAD_GATEWAY, "AI 서비스에 연결하지 못했어요. 잠시 뒤 다시 시도해 주세요.");
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -90,6 +93,7 @@ public class AiGateway {
             throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "AI 키가 유효하지 않거나 모델 사용이 거절됐어요. 운영진에게 키 상태를 확인해 주세요.");
         }
         if (code == 402 || code == 429) {
+            log.warn("AI Gateway 한도 초과: {}", code);
             throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "AI 사용 한도에 도달했어요. 직접 입력으로 계속할 수 있어요.");
         }
         if (code >= 400) {
@@ -99,6 +103,7 @@ public class AiGateway {
         JsonNode body = JSON.readTree(res.body());
         JsonNode content = body.path("choices").path(0).path("message").path("content");
         if (content.isMissingNode() || content.isNull()) {
+            log.warn("AI Gateway 빈 응답: {}", abbreviate(res.body()));
             throw new ApiException(HttpStatus.BAD_GATEWAY, "AI가 빈 응답을 보냈어요. 다시 시도해 주세요.");
         }
         return content.asString();
@@ -109,6 +114,7 @@ public class AiGateway {
         int start = text.indexOf('{');
         int end = text.lastIndexOf('}');
         if (start < 0 || end <= start) {
+            log.warn("AI 응답에 JSON 객체가 없음: {}", abbreviate(text));
             throw new ApiException(HttpStatus.BAD_GATEWAY, "AI 응답 형식이 올바르지 않아요. 다시 시도해 주세요.");
         }
         try {

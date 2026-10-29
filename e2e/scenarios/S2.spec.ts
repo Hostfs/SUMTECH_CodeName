@@ -34,7 +34,13 @@ test('S2 사용자가 택 사진 2장으로 새 옷을 AI 분석해 등록한다
 
   // '택 분석하기'를 누른다(실제 AI 응답을 기다린다)
   await page.getByRole('button', { name: '택 분석하기' }).click()
-  await expect(page.getByText('택을 읽었어요')).toBeVisible({ timeout: 90_000 })
+  // 성공 안내나 실패 안내 중 먼저 나오는 것을 기다리고, 실패면 화면에 보인 이유를 그대로 실패 메시지에 남긴다.
+  const done = page.getByText('택을 읽었어요')
+  const failed = page.getByText('사진을 다시 찍거나')
+  await expect(done.or(failed)).toBeVisible({ timeout: 90_000 })
+  const reason = (await failed.allInnerTexts()).join(' ')
+  expect(reason, `택 분석이 실패했어요: ${reason}`).toBe('')
+  await expect(done).toBeVisible()
 
   // 분석 결과의 '옷 이름'에 '등록 테스트 셔츠'를 입력한다
   await page.getByLabel(/^옷 이름/).fill('등록 테스트 셔츠')
