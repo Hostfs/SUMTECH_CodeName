@@ -18,6 +18,7 @@ const ALPHA_MIN = 24;
 const SEED_TOL = 55; // 가장자리 픽셀이 모서리 색과 이 정도까지 비슷하면 배경 씨앗
 const STEP_TOL = 22; // 이웃 픽셀과 이 정도까지 비슷해야 배경이 이어진다
 const FAR_TOL = 85; // 씨앗 색에서 이보다 멀어지면 멈춘다 (서서히 변하는 옷 가장자리가 새는 것 방지)
+const HOLE_TOL = 42; // 막힌 배경: 지워진 배경 팔레트와 이 정도까지 비슷하면 배경
 
 const cache = new Map<string, Promise<Cutout | null>>();
 const ready = new Map<string, Cutout | null>();
@@ -126,6 +127,92 @@ async function compute(src: string): Promise<Cutout | null> {
       ctx.putImageData(image, 0, 0);
     }
 
+    // 사진: 바지 다리 사이처럼 가장자리와 이어지지 않아 번지지 못한 '막힌 배경'을 지운다.
+    // 이미 지워진 배경의 대표 색(팔레트)을 모아서, 그 색과 거의 같은 픽셀이 넓게 뭉쳐 있으면 배경으로 본다.
+    if (!isSvg) {
+      const buckets = new Map<number, { n: number; r: number; g: number; b: number }>();
+      for (let p = 0; p < w * h; p += 3) {
+        if (d[p * 4 + 3] !== 0) continue;
+        const key = ((d[p * 4] >> 4) << 8) | ((d[p * 4 + 1] >> 4) << 4) | (d[p * 4 + 2] >> 4);
+        const e = buckets.get(key) ?? { n: 0, r: 0, g: 0, b: 0 };
+        e.n++;
+        e.r += d[p * 4];
+        e.g += d[p * 4 + 1];
+        e.b += d[p * 4 + 2];
+        buckets.set(key, e);
+      }
+      const palette = [...buckets.values()]
+        .sort((a, b) => b.n - a.n)
+        .slice(0, 8)
+        .filter((e) => e.n >= 20)
+        .map((e) => [e.r / e.n, e.g / e.n, e.b / e.n]);
+      if (palette.length > 0) {
+        const bgLike = new Uint8Array(w * h);
+        for (let p = 0; p < w * h; p++) {
+          const i = p * 4;
+          if (d[i + 3] < ALPHA_MIN) continue;
+          if (palette.some((c) => dist(d, i, c) < HOLE_TOL)) bgLike[p] = 1;
+        }
+        const seen = new Uint8Array(w * h);
+        const stack = new Int32Array(w * h);
+        const members = new Int32Array(w * h);
+        const minArea = Math.max(120, Math.round(w * h * 0.003));
+        for (let start = 0; start < w * h; start++) {
+          if (!bgLike[start] || seen[start]) continue;
+          let sp = 0;
+          let n = 0;
+          stack[sp++] = start;
+          seen[start] = 1;
+          while (sp > 0) {
+            const p = stack[--sp];
+            members[n++] = p;
+            const px = p % w;
+            const py = (p - px) / w;
+            if (px > 0 && bgLike[p - 1] && !seen[p - 1]) (seen[p - 1] = 1), (stack[sp++] = p - 1);
+            if (px < w - 1 && bgLike[p + 1] && !seen[p + 1]) (seen[p + 1] = 1), (stack[sp++] = p + 1);
+            if (py > 0 && bgLike[p - w] && !seen[p - w]) (seen[p - w] = 1), (stack[sp++] = p - w);
+            if (py < h - 1 && bgLike[p + w] && !seen[p + w]) (seen[p + w] = 1), (stack[sp++] = p + w);
+          }
+          if (n >= minArea) for (let k = 0; k < n; k++) d[members[k] * 4 + 3] = 0;
+        }
+      }
+      ctx.putImageData(image, 0, 0);
+    }
+
+    // 사진: 얇은 선(이미지 가장자리에 남은 1~2픽셀 테두리, 화면 캡처의 가는 선)을 지운다.
+    // 옷 모양을 2번 깎았다가 2번 되살리는 방식(열기)이라, 5픽셀보다 얇은 조각만 사라진다.
+    if (!isSvg) {
+      const mask = new Uint8Array(w * h);
+      for (let p = 0; p < w * h; p++) mask[p] = d[p * 4 + 3] >= ALPHA_MIN ? 1 : 0;
+      const step = (m: Uint8Array, grow: boolean) => {
+        const o = new Uint8Array(w * h);
+        for (let y = 0; y < h; y++) {
+          for (let x = 0; x < w; x++) {
+            let all = true;
+            let any = false;
+            for (let dy = -1; dy <= 1; dy++) {
+              for (let dx = -1; dx <= 1; dx++) {
+                const nx = x + dx;
+                const ny = y + dy;
+                // 깎을 때는 화면 밖을 '있음'으로 쳐서 가장자리에 걸친 옷이 깎이지 않게 한다
+                const v = nx < 0 || ny < 0 || nx >= w || ny >= h ? (grow ? 0 : 1) : m[ny * w + nx];
+                if (v) any = true;
+                else all = false;
+              }
+            }
+            o[y * w + x] = grow ? (any ? 1 : 0) : all ? 1 : 0;
+          }
+        }
+        return o;
+      };
+      let opened = step(step(mask, false), false);
+      opened = step(step(opened, true), true);
+      for (let p = 0; p < w * h; p++) {
+        if (mask[p] && !opened[p]) d[p * 4 + 3] = 0;
+      }
+      ctx.putImageData(image, 0, 0);
+    }
+
     // 사진: 가장 큰 덩어리(옷)만 남기고 떨어져 있는 작은 조각(쇼핑몰 화면의 화살표·'AI' 버튼, 먼지 등)은 지운다.
     // 옷의 일부(두 짝의 신발, 소매 등)는 큰 덩어리의 10% 이상이면 남긴다.
     if (!isSvg) {
@@ -165,6 +252,67 @@ async function compute(src: string): Promise<Cutout | null> {
         if (label[p] && sizes[label[p]] < largest * 0.1) d[p * 4 + 3] = 0;
       }
       ctx.putImageData(image, 0, 0);
+    }
+
+    // 모델이 입은 사진: 옷 위·아래에 이어 붙은 맨살 줄(허리·발목)을 잘라 낸다.
+    // 옷 색이 살색과 비슷하면(베이지·카멜) 구분할 수 없으므로, 옷의 대표 색과 확실히 다른 살색 줄만 자른다.
+    if (!isSvg) {
+      const isSkin = (r: number, g: number, b: number) =>
+        r > 95 && g > 40 && b > 20 && Math.max(r, g, b) - Math.min(r, g, b) > 15 && Math.abs(r - g) > 15 && r > g && r > b;
+      // 옷의 대표 색: 남은 픽셀 색의 중앙값
+      const samples: number[][] = [[], [], []];
+      for (let p = 0; p < w * h; p += 7) {
+        if (d[p * 4 + 3] < ALPHA_MIN) continue;
+        for (let c = 0; c < 3; c++) samples[c].push(d[p * 4 + c]);
+      }
+      if (samples[0].length > 50) {
+        const med = samples.map((a) => a.sort((x, y) => x - y)[Math.floor(a.length / 2)]);
+        const row = (y: number) => {
+          let n = 0;
+          let skin = 0;
+          let r = 0;
+          let g = 0;
+          let b = 0;
+          for (let x = 0; x < w; x++) {
+            const i = (y * w + x) * 4;
+            if (d[i + 3] < ALPHA_MIN) continue;
+            n++;
+            r += d[i];
+            g += d[i + 1];
+            b += d[i + 2];
+            if (isSkin(d[i], d[i + 1], d[i + 2])) skin++;
+          }
+          return { n, skinFrac: n ? skin / n : 0, avg: n ? [r / n, g / n, b / n] : med };
+        };
+        const isSkinRow = (y: number) => {
+          const s = row(y);
+          if (s.n === 0) return null; // 빈 줄
+          const far = Math.hypot(s.avg[0] - med[0], s.avg[1] - med[1], s.avg[2] - med[2]) > 45;
+          return s.skinFrac >= 0.4 && far;
+        };
+        const clearRow = (y: number) => {
+          for (let x = 0; x < w; x++) d[(y * w + x) * 4 + 3] = 0;
+        };
+        const limit = Math.round(h * 0.4); // 최대 이만큼만 잘라 낸다
+        // 위에서부터: 빈 줄은 건너뛰고, 살색 줄이 이어지는 동안 지운다
+        let cut = 0;
+        for (let y = 0; y < h && cut < limit; y++) {
+          const s = isSkinRow(y);
+          if (s === null) continue;
+          if (!s) break;
+          clearRow(y);
+          cut++;
+        }
+        cut = 0;
+        for (let y = h - 1; y >= 0 && cut < limit; y--) {
+          const s = isSkinRow(y);
+          if (s === null) continue;
+          if (!s) break;
+          clearRow(y);
+          cut++;
+        }
+        ctx.putImageData(image, 0, 0);
+      }
     }
 
     // 옷 윤곽 상자: 투명하지 않은 픽셀이 2개 이상 있는 가장 바깥 줄·칸

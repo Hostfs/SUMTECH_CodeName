@@ -11,7 +11,7 @@ import { childPlaces, rootPlaces } from "@/lib/places";
 import type { GarmentInput } from "@/lib/repo";
 import { SEASON_LABEL, SEASONS } from "@/lib/theme";
 import { CATEGORIES, CATEGORY_LABEL, COLOR_SWATCHES, type Garment } from "@/lib/types";
-import { GarmentPhoto } from "./GarmentPhoto";
+import { CutoutThumb } from "./CutoutThumb";
 
 type PhotoState = "empty" | "ready" | "error";
 
@@ -106,7 +106,7 @@ export function GarmentForm({
           }
         >
           {photo === "ready" ? (
-            <GarmentPhoto src={v.photoUrl} alt="올린 사진" size={84} />
+            <CutoutThumb src={v.photoUrl} size={84} />
           ) : (
             <CameraIcon size={28} />
           )}

@@ -1,5 +1,6 @@
 "use client";
 
+import { balance, type WornSlot } from "@/lib/balance";
 import { bodyShape, DEFAULT_BODY } from "@/lib/body";
 import { useCutout, type Cutout } from "@/lib/cutout";
 import type { Body, Garment } from "@/lib/types";
@@ -9,8 +10,7 @@ export type Worn = Partial<Record<"outer" | "top" | "bottom" | "shoes", Garment>
 /**
  * 옷 그림을 몸의 정해진 자리에 맞춰 놓는다.
  * 그림에서 배경을 뺀 '옷 윤곽'을 기준으로 맞추므로, 사진의 여백이나 구도가 달라도 어긋나지 않는다.
- * - tw: 윤곽의 가로 폭을 이 값에 맞춘다
- * - th: 있으면 윤곽의 세로도 이 값에 정확히 맞추고(바지처럼 길이가 정해진 옷), 없으면 가로세로 비율을 지킨다
+ * - tw / th: 윤곽의 가로·세로를 이 값에 맞춘다. 값은 lib/balance.ts가 옷 종류별로 균형 있게 정한다
  * - top / bottom: 윤곽의 위쪽 또는 아래쪽을 이 y에 맞춘다
  */
 function Fit({
@@ -25,17 +25,17 @@ function Fit({
   cutout: Cutout | null;
   cx: number;
   tw: number;
-  th?: number;
+  th: number;
   top?: number;
   bottom?: number;
   flip?: boolean;
 }) {
   if (!cutout) return null;
-  const { box, aspect, href } = cutout;
+  const { box, href } = cutout;
   const bw = box.x1 - box.x0;
   const bh = box.y1 - box.y0;
   const W = tw / bw;
-  const H = th ? th / bh : W / aspect;
+  const H = th / bh;
   const x = cx - (box.x0 + bw / 2) * W;
   const y = bottom !== undefined ? bottom - box.y1 * H : (top ?? 0) - box.y0 * H;
   return (
@@ -49,6 +49,11 @@ function Fit({
       transform={flip ? `translate(${2 * cx} 0) scale(-1 1)` : undefined}
     />
   );
+}
+
+/** 옷이 없으면 아무것도 그리지 않는 자리(0)를 돌려주고, 있으면 균형 보정한 크기를 돌려준다 */
+function plan(slot: WornSlot, c: Cutout | null, tw0: number) {
+  return c ? balance(slot, c, tw0) : { tw: 0, th: 0 };
 }
 
 const SKIN = "#E9E6E0";
@@ -136,12 +141,12 @@ export function Mannequin({
         </g>
 
         {/* 옷: 하의 → 신발 → 상의 → 아우터 순으로 겹친다 */}
-        <Fit cutout={bottom} cx={100} tw={2 * hw + 8} top={172} th={246} />
+        <Fit cutout={bottom} cx={100} top={172} {...plan("bottom", bottom, 2 * hw + 8)} />
         {[-1, 1].map((d) => (
-          <Fit key={d} cutout={shoes} cx={100 + d * (legX - 2)} tw={44} bottom={433} flip={d === -1} />
+          <Fit key={d} cutout={shoes} cx={100 + d * (legX - 2)} bottom={433} flip={d === -1} {...plan("shoes", shoes, 44)} />
         ))}
-        <Fit cutout={top} cx={100} tw={2 * armOuter + 4} top={70} />
-        <Fit cutout={outer} cx={100} tw={2 * armOuter + 20} top={64} />
+        <Fit cutout={top} cx={100} top={70} {...plan("top", top, 2 * armOuter + 4)} />
+        <Fit cutout={outer} cx={100} top={64} {...plan("outer", outer, 2 * armOuter + 20)} />
       </g>
     </svg>
   );
