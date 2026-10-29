@@ -107,7 +107,7 @@
 | 제품 후보 검색(R02) | Gateway 검색 도구(`perplexitySearch` 또는 `exaSearch`)로 '브랜드 + 품번' 검색 → `browserbaseFetch`로 후보 페이지 수집 → 모델이 상품명·이미지·색상 구조화 | 후보 최대 3개, 같은 품번 캐시, 시간 제한 20초 |
 | 분류 제안·코디 추천(R04·R06) | 저가 텍스트 모델에 의류 ID와 속성 목록을 보내 JSON으로 응답받음 | 출력 길이 제한, 재시도 1회 |
 
-정확한 모델 식별자는 구현할 때 Gateway 공식 모델 목록에서 확인한다. 키가 없거나 예산이 다 떨어지면 AI 기능만 실패 안내를 보여 주고, 직접 입력 경로로 계속 쓸 수 있다. 예시 데이터를 실시간 AI 결과처럼 보여 주지 않는다.
+모델은 Gateway 모델 목록(`https://ai-gateway.vercel.sh/v1/models`)에서 확인한 `google/gemini-2.5-flash`를 기본으로 쓰고 `AI_MODEL`로 바꿀 수 있다. 제품 검색이 연 후보 주소는 공인 http(s) 주소만 열고(내부망·루프백 차단), 리다이렉트도 같은 검사를 거쳐 3번까지만 따라간다. 키가 없거나 예산이 다 떨어지면 AI 기능만 실패 안내를 보여 주고, 직접 입력 경로로 계속 쓸 수 있다. 예시 데이터를 실시간 AI 결과처럼 보여 주지 않는다.
 
 ### 10. 기술 구성
 
@@ -136,6 +136,9 @@
 | `GET /api/care`, `POST /api/garments/{id}/care`, `PATCH /api/care/{id}`, `POST /api/care/{id}/complete` | R08 관리함·맡기기·예정일 변경·회수 완료 |
 | `GET/PUT/DELETE /api/body`, `GET/POST/DELETE /api/outfits` | R05 신체 치수·코디 저장 |
 | `GET /api/meta` | 선택지와 한국어 표시 이름(DB 도메인 테이블을 그대로 읽음) |
+| `POST /api/labels/analyze` | R01 택 사진 1~4장 저장 → 비전 모델로 판독, 항목별 판독값과 '확인 필요' 저장. 실패해도 판독 기록이 남고 직접 입력으로 계속 |
+| `POST /api/products/search` | R02 웹 검색(Gateway `vercel:perplexity_search`) → 후보 페이지를 서버가 직접 열어 실제로 열리는 페이지만 후보로 저장, 이름·이미지는 페이지의 og 정보 우선 |
+| `POST /api/recommendations` | R06 지금 입을 수 있는 옷 목록만 모델에 보내고, 목록에 없는 ID·역할이 맞지 않는 조합은 버림 |
 | `GET /__health` | 배포 상태(`releaseId`) |
 
 ### 11. 데이터 모델
@@ -202,7 +205,16 @@ cd backend
 # 통합 테스트: 실제 MariaDB가 필요하다. 기본값은 127.0.0.1:3399/otgyeol_test(root, 비밀번호 없음)이고
 # TEST_DATABASE_URL·TEST_DATABASE_USERNAME·TEST_DATABASE_PASSWORD로 바꿀 수 있다. 테스트 시작 때 스키마를 지우고 다시 만든다.
 ./mvnw test
-./mvnw spring-boot:run           # 로컬 MariaDB(기본 localhost:3307/otgyeol) 사용
+./mvnw spring-boot:run           # MariaDB(기본 127.0.0.1:3306/otgyeol) 사용. 다른 포트면 DATABASE_URL로 지정
+```
+
+화면 개발(백엔드가 3000에서 실행 중일 때, `/api`는 Vite가 3000으로 넘긴다):
+
+```bash
+cd frontend
+npm install
+npm run dev        # http://localhost:5173
+npm run build      # 타입 검사 + 빌드(docker 이미지에서는 Spring 정적 파일로 들어간다)
 ```
 
 로컬 MariaDB에는 utf8mb4 데이터베이스와 계정을 먼저 만든다.
@@ -221,6 +233,7 @@ E2E 테스트는 `e2e/` 폴더에서 `npm install`, `npx playwright install chro
 | ---- | ---- | --------- |
 | `DATABASE_URL` | MariaDB JDBC 주소(`jdbc:mariadb://호스트:포트/otgyeol`) | `docker-compose.yml`, 배포 환경변수 |
 | `DATABASE_USERNAME`, `DATABASE_PASSWORD` | DB 계정 | `docker-compose.yml`(로컬 전용 값), 배포 환경변수 |
-| `AI_GATEWAY_API_KEY` | 택 분석·제품 검색·분류·추천 AI 호출 | 로컬 환경변수, 배포 환경변수, GitHub Secrets |
+| `AI_GATEWAY_API_KEY` | 택 분석·제품 검색·추천 AI 호출 | 로컬 환경변수, 배포 환경변수, GitHub Secrets |
+| `AI_MODEL` | AI Gateway 모델 식별자(기본 `google/gemini-2.5-flash`) | 선택, 배포 환경변수 |
 | `RELEASE_ID` | `/__health`가 응답하는 배포 commit | 빌드 인자·환경변수로 주입 |
 | `SEED_USER_EMAIL`, `SEED_USER_PASSWORD` | docker 시드 계정(로컬 전용, 배포에서는 비움) | `docker-compose.yml` |

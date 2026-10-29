@@ -23,7 +23,9 @@ import ai.otgyeol.care.CareEventRepository;
 import ai.otgyeol.common.ApiException;
 import ai.otgyeol.garment.Domains.GarmentField;
 import ai.otgyeol.garment.Domains.MaterialPart;
+import ai.otgyeol.garment.GarmentDtos.CandidateView;
 import ai.otgyeol.garment.GarmentDtos.CareView;
+import ai.otgyeol.garment.GarmentDtos.SearchView;
 import ai.otgyeol.garment.GarmentDtos.ExtractionView;
 import ai.otgyeol.garment.GarmentDtos.FieldValueView;
 import ai.otgyeol.garment.GarmentDtos.GarmentDetail;
@@ -143,7 +145,15 @@ public class GarmentService {
                 .map(id -> new ImageView(id, kinds.get(id).name(), ImageController.url(id), sources.get(id)))
                 .toList();
 
-        ExtractionView extraction = extractions.findLatestForGarment(g.id).map(GarmentService::extractionView).orElse(null);
+        LabelExtraction latest = extractions.findLatestForGarment(g.id).orElse(null);
+        ExtractionView extraction = latest == null ? null : extractionView(latest);
+        Long confirmedCandidate = garmentProducts.findById(g.id).map(gp -> gp.candidateId).orElse(null);
+        SearchView search = latest == null ? null : searches.findLatestForExtraction(latest.id).map(s -> new SearchView(s.id,
+                s.status.name(), s.searchedAt, candidates.findBySearchIdOrderByIdAsc(s.id).stream()
+                        .map(c -> new CandidateView(c.id, c.name, c.brand, c.colorName, c.imageUrl, c.sourceUrl, c.matchReason,
+                                c.id.equals(confirmedCandidate)))
+                        .toList()))
+                .orElse(null);
         ProductView product = garmentProducts.findById(g.id).flatMap(gp -> candidates.findById(gp.candidateId).map(c ->
                 new ProductView(c.id, c.name, c.brand, c.colorName, c.imageUrl, c.sourceUrl, c.matchReason,
                         searches.findById(c.searchId).map(s -> s.searchedAt).orElse(null), gp.confirmedAt)))
@@ -164,7 +174,7 @@ public class GarmentService {
                         .map(m -> new MeasurementView(m.part().name(), m.part().label, m.kind().name(), m.kind().label,
                                 m.valueCm(), m.source(), m.confirmed()))
                         .toList(),
-                imageViews, extraction, product, care,
+                imageViews, extraction, search, product, care,
                 awaitingConfirm ? placement.spaceId : null,
                 awaitingConfirm ? ctx.paths().get(placement.spaceId) : null);
     }

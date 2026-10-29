@@ -86,6 +86,14 @@ public final class GarmentDtos {
             List<Long> imageIds) {
     }
 
+    public record CandidateView(long id, String name, String brand, String colorName, String imageUrl, String sourceUrl,
+            String matchReason, boolean confirmed) {
+    }
+
+    /** 이 옷의 택 판독으로 한 마지막 제품 검색. 후보가 0개면 '검색 결과 없음'. */
+    public record SearchView(long id, String status, Instant searchedAt, List<CandidateView> candidates) {
+    }
+
     public record ProductView(long candidateId, String name, String brand, String colorName, String imageUrl,
             String sourceUrl, String matchReason, Instant searchedAt, Instant confirmedAt) {
     }
@@ -103,7 +111,7 @@ public final class GarmentDtos {
     public record GarmentDetail(GarmentSummary summary, String productCode, String sizeLabel, String origin,
             String homeStatus, boolean usableWhenPending, List<String> aiFields, Instant placedAt,
             List<MaterialView> materials, List<String> careLines, List<MeasurementView> measurements,
-            List<ImageView> images, ExtractionView extraction, ProductView product, List<CareView> careHistory,
+            List<ImageView> images, ExtractionView extraction, SearchView search, ProductView product, List<CareView> careHistory,
             Long suggestedSpaceId, String suggestedLocationPath) {
     }
 }
