@@ -205,7 +205,7 @@ cd backend
 # 통합 테스트: 실제 MariaDB가 필요하다. 기본값은 127.0.0.1:3399/otgyeol_test(root, 비밀번호 없음)이고
 # TEST_DATABASE_URL·TEST_DATABASE_USERNAME·TEST_DATABASE_PASSWORD로 바꿀 수 있다. 테스트 시작 때 스키마를 지우고 다시 만든다.
 ./mvnw test
-./mvnw spring-boot:run           # 로컬 MariaDB(기본 localhost:3307/otgyeol) 사용
+./mvnw spring-boot:run           # MariaDB(기본 127.0.0.1:3306/otgyeol) 사용. 다른 포트면 DATABASE_URL로 지정
 ```
 
 화면 개발(백엔드가 3000에서 실행 중일 때, `/api`는 Vite가 3000으로 넘긴다):
