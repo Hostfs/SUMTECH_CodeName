@@ -92,6 +92,14 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
+			<!-- 앱(Dockerfile TZ=Asia/Seoul)과 같은 시간대로 테스트한다. UTC면 한국 00~09시에 회수 시각 날짜가 맡긴 날보다 하루 앞선다. -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<argLine>-Duser.timezone=Asia/Seoul</argLine>
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
 
