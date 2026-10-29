@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 import { useData } from "@/components/DataProvider";
 import { GarmentCard } from "@/components/garment/GarmentCard";
 import { PlacePickerSheet } from "@/components/garment/PlacePickerSheet";
@@ -18,8 +18,8 @@ import { useToast } from "@/components/ui/Toast";
 import { childPlaces, countLabel, garmentsInPlace, movedMessage } from "@/lib/places";
 
 /** 장소 상세 (목업 없음): 그 장소의 옷 그리드, 이름 수정, 옷 이동, 삭제 */
-export default function PlaceDetailPage() {
-  const { id } = useParams<{ id: string }>();
+function PlaceDetailPage() {
+  const id = useSearchParams().get("id") ?? "";
   const router = useRouter();
   const toast = useToast();
   const { ready, garments, places, placeIndex, moveGarments, removePlace } = useData();
@@ -213,5 +213,14 @@ export default function PlaceDetailPage() {
         onClose={() => setConfirmOpen(false)}
       />
     </Screen>
+  );
+}
+
+// useSearchParams를 쓰는 화면은 정적 빌드를 위해 Suspense로 감싼다
+export default function Page() {
+  return (
+    <Suspense>
+      <PlaceDetailPage />
+    </Suspense>
   );
 }

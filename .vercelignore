@@ -1,0 +1,7 @@
+# 배포에 필요 없는 기획·디자인 원본 (앱은 이 파일들을 쓰지 않는다)
+closet-handoff.zip
+/*.png
+design/
+docs/
+PROMPT.md
+.claude/

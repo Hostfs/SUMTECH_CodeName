@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 import { useData } from "@/components/DataProvider";
 import { GarmentPhoto } from "@/components/garment/GarmentPhoto";
 import { PlacePickerSheet } from "@/components/garment/PlacePickerSheet";
@@ -15,9 +15,10 @@ import { useToast } from "@/components/ui/Toast";
 import { movedMessage, placePath, UNASSIGNED_LABEL } from "@/lib/places";
 import { SEASON_LABEL, SEASONS } from "@/lib/theme";
 import { CATEGORY_LABEL } from "@/lib/types";
+import { garmentEditHref } from "@/lib/routes";
 
-export default function GarmentDetailPage() {
-  const { id } = useParams<{ id: string }>();
+function GarmentDetailPage() {
+  const id = useSearchParams().get("id") ?? "";
   const router = useRouter();
   const toast = useToast();
   const { ready, garments, placeIndex, updateGarment, removeGarment } = useData();
@@ -75,7 +76,7 @@ export default function GarmentDetailPage() {
           <Button size="lg" className="flex-[1.5]" onClick={() => setMoveOpen(true)}>
             위치 변경
           </Button>
-          <Link href={`/closet/${g.id}/edit`} className={buttonClass("outline", "lg") + " flex-1"}>
+          <Link href={garmentEditHref(g.id)} className={buttonClass("outline", "lg") + " flex-1"}>
             수정
           </Link>
           <Button variant="ghost" size="lg" onClick={() => setConfirmOpen(true)}>
@@ -103,7 +104,7 @@ export default function GarmentDetailPage() {
                 <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
                 <ul role="menu" className="absolute top-11 right-0 z-20 w-32 overflow-hidden rounded-[14px] border border-line bg-card">
                   <li>
-                    <Link role="menuitem" href={`/closet/${g.id}/edit`} className="flex h-11 items-center px-4 text-sm">
+                    <Link role="menuitem" href={garmentEditHref(g.id)} className="flex h-11 items-center px-4 text-sm">
                       수정
                     </Link>
                   </li>
@@ -215,5 +216,14 @@ export default function GarmentDetailPage() {
         onClose={() => setConfirmOpen(false)}
       />
     </Screen>
+  );
+}
+
+// useSearchParams를 쓰는 화면은 정적 빌드를 위해 Suspense로 감싼다
+export default function Page() {
+  return (
+    <Suspense>
+      <GarmentDetailPage />
+    </Suspense>
   );
 }

@@ -9,3 +9,5 @@ next-env.d.ts
 # handoff 원본(내용은 design/, docs/에 풀려 있음)
 /closet-handoff.zip
 /*.png
+
+.vercel

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { GarmentPhoto } from "@/components/garment/GarmentPhoto";
 import { ChevronRightIcon } from "@/components/icons";
 import type { Garment, Outfit } from "@/lib/types";
+import { outfitHref } from "@/lib/routes";
 
 /** 구성 옷 순서대로 (아우터·상의·하의·신발·기타) */
 export function outfitGarments(o: Outfit, byId: Map<string, Garment>): Garment[] {
@@ -13,7 +14,7 @@ export function outfitGarments(o: Outfit, byId: Map<string, Garment>): Garment[]
 export function OutfitCard({ outfit, byId }: { outfit: Outfit; byId: Map<string, Garment> }) {
   const items = outfitGarments(outfit, byId);
   return (
-    <Link href={`/outfits/${outfit.id}`} className="block rounded-card-lg border border-line bg-card px-4 py-3.5">
+    <Link href={outfitHref(outfit.id)} className="block rounded-card-lg border border-line bg-card px-4 py-3.5">
       <div className="flex items-center justify-between">
         <span className="min-w-0">
           <b className="block truncate text-base font-semibold tracking-[-0.02em]">{outfit.name}</b>

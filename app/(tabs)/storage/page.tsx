@@ -10,6 +10,7 @@ import { PlaceThumbs } from "@/components/storage/PlaceThumbs";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { childSummary, countLabel, garmentsInPlace, rootPlaces } from "@/lib/places";
+import { placeHref } from "@/lib/routes";
 
 export default function StoragePage() {
   const { garments, places } = useData();
@@ -51,7 +52,7 @@ export default function StoragePage() {
           return (
             <li key={p.id}>
               <Link
-                href={`/storage/${p.id}`}
+                href={placeHref(p.id)}
                 className="flex h-[76px] items-center gap-3 rounded-card border border-line bg-card pr-3.5 pl-3"
               >
                 <PlaceThumbs garments={inside} />

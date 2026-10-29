@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useMemo, useState } from "react";
 import { useData } from "@/components/DataProvider";
 import { GarmentPhoto } from "@/components/garment/GarmentPhoto";
 import { PinIcon } from "@/components/icons";
@@ -13,12 +13,13 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/Toast";
 import { placePath } from "@/lib/places";
 import { CATEGORY_LABEL, type Category, type OutfitSlot } from "@/lib/types";
+import { garmentHref } from "@/lib/routes";
 
 const ORDER: OutfitSlot[] = ["outer", "top", "bottom", "shoes", "etc"];
 
 /** 코디 상세 (목업 없음). 옷을 누르면 의류 상세로 간다. 편집은 3순위. */
-export default function OutfitDetailPage() {
-  const { id } = useParams<{ id: string }>();
+function OutfitDetailPage() {
+  const id = useSearchParams().get("id") ?? "";
   const router = useRouter();
   const toast = useToast();
   const { ready, outfits, garments, placeIndex, removeOutfit } = useData();
@@ -56,7 +57,7 @@ export default function OutfitDetailPage() {
           const loc = placePath(placeIndex, g.placeId);
           return (
             <li key={slot}>
-              <Link href={`/closet/${g.id}`} className="block rounded-card border border-line bg-card px-2 pt-2 pb-3">
+              <Link href={garmentHref(g.id)} className="block rounded-card border border-line bg-card px-2 pt-2 pb-3">
                 <div className="relative flex h-32 items-center justify-center rounded-tile bg-tile">
                   <em className="absolute top-2 left-2.5 text-xs text-sub not-italic">{CATEGORY_LABEL[slot as Category]}</em>
                   <GarmentPhoto src={g.photoUrl} alt={g.name} size={96} />
@@ -91,5 +92,14 @@ export default function OutfitDetailPage() {
         onClose={() => setConfirmOpen(false)}
       />
     </Screen>
+  );
+}
+
+// useSearchParams를 쓰는 화면은 정적 빌드를 위해 Suspense로 감싼다
+export default function Page() {
+  return (
+    <Suspense>
+      <OutfitDetailPage />
+    </Suspense>
   );
 }

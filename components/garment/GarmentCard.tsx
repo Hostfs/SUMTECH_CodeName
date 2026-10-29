@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CheckIcon, PinIcon } from "@/components/icons";
+import { garmentHref } from "@/lib/routes";
 import type { Garment } from "@/lib/types";
 import { GarmentPhoto } from "./GarmentPhoto";
 
@@ -63,7 +64,7 @@ export function GarmentCard({
       {body}
     </button>
   ) : (
-    <Link id={`card-${garment.id}`} href={`/closet/${garment.id}`} className={cls}>
+    <Link id={`card-${garment.id}`} href={garmentHref(garment.id)} className={cls}>
       {body}
     </Link>
   );

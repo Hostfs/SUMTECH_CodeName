@@ -29,7 +29,7 @@
 
 ## 3. 기술 스택 (기본안, 팀 확정 전)
 
-- Next.js 15 (App Router) + TypeScript + Tailwind CSS v4
+- Next.js 15.5 (App Router, 정적 export) + TypeScript + Tailwind CSS v4
   - Tailwind v4는 설정 파일 대신 `app/globals.css`의 `@theme inline`에서 CSS 변수를 클래스로 연결한다(`bg-primary`, `text-deep`, `rounded-card` …).
   - 전역 요소 스타일은 반드시 `@layer base` 안에 둔다. 레이어 밖에 두면 Tailwind 유틸리티(예: `text-on`)를 덮어쓴다.
   - 공통 UI: `components/ui/`(Button·Chip·Sheet·Toast), 아이콘 `components/icons.tsx`(목업 SVG 경로). 바텀시트와 토스트는 아이폰 화면 안에 그려진다.
@@ -105,7 +105,10 @@ AI 기능 원칙: AI 결과는 항상 **미확정 상태로 보여 주고 사용
   - 내 옷장·상세 목업(`closet-detail_*.png`, `closet_*.html`)의 하단 탭은 예전 구성(코디·설정)이다. 구현은 위 5칸을 따른다.
 - **아이폰 미리보기 (2026-10-29 결정)**: 1차 구현에서는 너비 480px 이상인 화면에서 회색 배경 가운데에 390×844 아이폰 프레임(상태바 `9:41`, 다이내믹 아일랜드, 홈 인디케이터)을 띄우고 앱을 그 안에서 보여 준다. 창이 작으면 프레임 전체를 비율대로 줄인다. 480px 미만(실제 폰)에서는 프레임 없이 전체 화면이다. 관련 코드는 `components/layout/PhoneFrame.tsx`, `lib/phone.ts`, `globals.css`.
 - 데스크톱: 같은 메뉴를 밝은 상단 바로 보여 준다(아직 목업 없음). 데스크톱 전용 레이아웃은 3순위로 미루고, 그전까지는 위 아이폰 프레임으로 보여 준다.
-- 라우트 제안: `/` 홈, `/closet` 내 옷장, `/closet/[id]` 의류 상세, `/closet/new`·`/closet/[id]/edit` 등록·수정, `/storage` 보관함, `/storage/[id]` 장소 상세, `/outfits` 코디(만들기/저장한 코디), `/my` 마이, `/my/theme` 화면 테마.
+- 라우트: `/` 홈, `/closet` 내 옷장, `/closet/view?id=` 의류 상세, `/closet/new`·`/closet/edit?id=` 등록·수정, `/storage` 보관함, `/storage/view?id=` 장소 상세, `/outfits` 코디(만들기/저장한 코디), `/outfits/view?id=` 코디 상세, `/my` 마이, `/my/theme` 화면 테마.
+  - **배포 결정(2026-10-29)**: 처음 제안한 `/closet/[id]` 같은 동적 경로를 `?id=`로 바꾸고 `next.config.ts`에 `output: "export"`를 둬서 앱 전체를 정적 사이트로 만들었다. Windows에서 Vercel CLI로 배포하면 동적 경로의 서버 함수 바로가기(symlink)가 깨져 업로드가 실패하기 때문이다. 주소는 `lib/routes.ts`의 함수로만 만든다. `?id=`를 읽는 화면은 `useSearchParams` 때문에 `Suspense`로 감싼다.
+  - 배포: `npx vercel@latest deploy --temporary --yes`(계정 없이 임시 주소, 약 1시간 뒤 만료). 계속 쓰려면 Vercel 계정으로 로그인해 `npx vercel@latest --prod`로 배포한다. Vercel은 취약점이 알려진 Next.js 버전을 거부하므로 Next.js 패치 버전을 최신으로 유지한다(현재 15.5.28, React 19.1.10).
+  - Windows 개발자 모드가 켜져 있어야 Vercel CLI 로컬 빌드가 동작한다.
 
 ## 8. 데이터 모델 초안
 
