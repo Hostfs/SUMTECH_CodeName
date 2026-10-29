@@ -89,7 +89,8 @@ function dateLabel() {
   return new Intl.DateTimeFormat('ko-KR', { month: 'long', day: 'numeric', weekday: 'long', timeZone: 'Asia/Seoul' }).format(new Date())
 }
 
-/** 내 옷장 맨 위: 현재 위치 날씨와 지금 꺼낼 수 있는 옷(R12). 배경은 날씨·밤낮에 따라 바뀐다. */
+/** 홈 위쪽: 현재 위치 날씨와 지금 꺼낼 수 있는 옷(R12). 배경은 날씨·밤낮에 따라 바뀐다.
+ *  날씨를 받기 전에는 구름 낀 하늘(밤이면 밤하늘)을 깔아 둔다. */
 export default function WeatherCard({ items }: { items: GarmentSummary[] }) {
   const [weather, setWeather] = useState<Weather | null>(null)
   const [state, setState] = useState<'idle' | 'loading' | 'error'>('idle')
@@ -122,14 +123,15 @@ export default function WeatherCard({ items }: { items: GarmentSummary[] }) {
 
   // 받은 날씨를 화면 전체에 알린다: <html data-wx="rain-night"> → 하늘 배경과 그 위 제목·버튼 색이 날씨·밤낮에 맞춰 바뀐다.
   useEffect(() => {
-    if (!weather) return
     const root = document.documentElement
-    root.dataset.wx = `${sceneOf(weather)}${night ? '-night' : ''}`
+    root.dataset.wx = `${weather ? sceneOf(weather) : 'cloudy'}${night ? '-night' : ''}`
     return () => { delete root.dataset.wx }
   }, [weather, night])
 
   if (!weather || !result) {
     return (
+      <>
+      <Sky scene="cloudy" night={night} />
       <section className="wx-card wx-empty" aria-label="오늘 날씨">
         <span className="wx-tip-icon"><WxIcon name={night ? 'moon' : 'sun'} size={20} /></span>
         <div className="wx-empty-text">
@@ -140,6 +142,7 @@ export default function WeatherCard({ items }: { items: GarmentSummary[] }) {
           {state === 'loading' && <Spinner />}{state === 'error' ? '다시 시도' : '현재 위치 날씨 보기'}
         </button>
       </section>
+      </>
     )
   }
 

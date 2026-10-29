@@ -8,18 +8,25 @@ async function login(page: Page) {
   await page.getByLabel('이메일').fill(SEED_EMAIL)
   await page.getByLabel('비밀번호').fill(SEED_PASSWORD)
   await page.getByRole('button', { name: '로그인', exact: true }).click()
-  await expect(page).toHaveURL(/\/closet/)
+  await expect(page).toHaveURL(/\/home/)
 }
 
 function menu(page: Page, name: string) {
   return page.locator('nav[aria-label="주 메뉴"]:visible').getByRole('link', { name: new RegExp(`^${name}`) })
 }
 
+function storageTab(page: Page, name: string) {
+  return page.getByRole('navigation', { name: '보관함 보기' }).getByRole('link', { name: new RegExp(`^${name}`) })
+}
+
 test('S8 사용자가 기한이 지난 세탁물을 회수하고 보관 위치를 다시 확인한다', async ({ page }) => {
   await login(page)
 
-  // 메뉴에서 '관리함'을 누른다
-  await menu(page, '관리함').click()
+  // 메뉴에서 '보관함'을 누른다
+  await menu(page, '보관함').click()
+
+  // '관리함' 탭을 누른다
+  await storageTab(page, '관리함').click()
 
   // '기한 지남' 목록에서 '베이지 니트'의 '회수 완료'를 누른다
   // 관리함은 기한 지난 기록이 있으면 '기한 지남' 목록을 먼저 연다

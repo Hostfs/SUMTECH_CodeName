@@ -1,17 +1,20 @@
-import { useState, type FormEvent } from 'react'
+import { useMemo, useState, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { api, errorMessage } from '../api'
 import { IconBox, IconCheck, IconEye, IconEyeOff, IconPin, IconWash } from '../components/Icons'
+import { Sky } from '../components/SkyScene'
 import { Notice, Spinner } from '../components/Ui'
 import { useSession } from '../session'
+import { isNight } from '../weatherPicks'
 
 type Mode = 'login' | 'signup'
 
 const MIN_PASSWORD = 8
 
 /**
- * 로그인·회원가입. PC는 왼쪽에 서비스 소개, 오른쪽에 입력 칸을 둔다.
- * 휴대폰은 입력 칸만 크게 두고 버튼을 화면 아래(엄지 닿는 곳)에 붙인다.
+ * 로그인·회원가입. 디자인 초안의 하늘과 로고로 꾸민다(초안에는 로그인 화면이 없어 같은 말투로 새로 그렸다).
+ * 휴대폰: 화면 가득 하늘, 위에 로고, 아래에서 올라온 흰 시트에 큰 입력 칸과 화면 아래(엄지 닿는 곳) 버튼.
+ * PC: 왼쪽 하늘 위 서비스 소개, 오른쪽 입력.
  */
 function AuthForm({ mode }: { mode: Mode }) {
   const { setMe } = useSession()
@@ -24,6 +27,7 @@ function AuthForm({ mode }: { mode: Mode }) {
   const [busy, setBusy] = useState(false)
   const isSignup = mode === 'signup'
   const longEnough = password.length >= MIN_PASSWORD
+  const night = useMemo(() => isNight(), [])
 
   async function submit(e: FormEvent) {
     e.preventDefault()
@@ -33,7 +37,7 @@ function AuthForm({ mode }: { mode: Mode }) {
       const me = await api.post<{ id: number; email: string }>(isSignup ? '/api/auth/signup' : '/api/auth/login', { email, password })
       setMe(me)
       const from = (location.state as { from?: string } | null)?.from
-      navigate(from && from !== '/login' ? from : '/closet', { replace: true })
+      navigate(from && from !== '/login' && from !== '/signup' ? from : '/home', { replace: true })
     } catch (err) {
       setError(errorMessage(err))
     } finally {
@@ -42,9 +46,10 @@ function AuthForm({ mode }: { mode: Mode }) {
   }
 
   return (
-    <div className="auth">
+    <div className={`auth${night ? ' night' : ''}`}>
+      <div className="auth-sky" aria-hidden><Sky scene={night ? 'clear-night' : 'clear-day'} /></div>
       <aside className="auth-hero">
-        <Link to="/" className="landing-brand"><img src="/favicon.svg" alt="" />옷결</Link>
+        <Link to="/" className="auth-logo"><img src="/brand/logo-lockup-light.svg" alt="옷결" /></Link>
         <div>
           <p className="auth-hero-title">박스·본가·세탁소로 옮긴 옷,<br />열어 보지 않고 찾아요.</p>
           <ul className="auth-points">
@@ -57,8 +62,11 @@ function AuthForm({ mode }: { mode: Mode }) {
       </aside>
 
       <main className="auth-main">
+        <div className="auth-top">
+          <Link to="/" className="auth-logo"><img src="/brand/logo-lockup-light.svg" alt="옷결" /></Link>
+          <p>박스·본가·세탁소에 둔 옷까지<br />어디 있는지 한 번에</p>
+        </div>
         <form className="auth-card" onSubmit={submit} noValidate>
-          <Link to="/" className="landing-brand auth-brand-mobile"><img src="/favicon.svg" alt="" />옷결</Link>
           <h1>{isSignup ? '내 옷장을 만들어요' : '다시 오셨네요'}</h1>
           <p className="sub">{isSignup ? '이메일과 비밀번호만 있으면 바로 시작해요.' : '이메일로 로그인하고 내 옷장으로 돌아가요.'}</p>
 

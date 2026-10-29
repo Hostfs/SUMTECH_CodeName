@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import StorageTabs from '../components/StorageTabs'
 import { Link, useSearchParams } from 'react-router-dom'
 import { api, errorMessage } from '../api'
 import GarmentArt from '../components/GarmentArt'
@@ -137,11 +138,11 @@ export default function Move() {
     }
   }
 
-  if (!map || !garments || !recent) return error ? <Notice>{error}</Notice> : <Loading />
+  if (!map || !garments || !recent) return <><StorageTabs />{error ? <Notice>{error}</Notice> : <Loading />}</>
 
   return (
     <>
-      <div className="page-head"><h1 className="page-title">옮기기</h1></div>
+      <StorageTabs />
       <p className="page-lead">박스에 넣거나 본가·세탁소로 보낼 때, 옷을 한 벌씩이 아니라 묶음으로 한 번에 기록해요. 보낼 곳과 날짜는 미리 채워 두었어요.</p>
 
       {done && (

@@ -8,7 +8,7 @@ import { apiRouter } from './routes.js'
 import { requireLogin } from './session.js'
 
 /** React 화면 주소. 여기 없는 주소는 404 화면을 준다(없는 주소가 200 빈 화면이 되지 않게). 화면 주소를 추가하면 이 목록에도 추가한다. */
-export const SPA_ROUTES = [/^\/login$/, /^\/signup$/, /^\/closet$/, /^\/closet\/\d+$/, /^\/register$/, /^\/map$/, /^\/care$/, /^\/move$/]
+export const SPA_ROUTES = [/^\/login$/, /^\/signup$/, /^\/home$/, /^\/closet$/, /^\/closet\/\d+$/, /^\/register$/, /^\/map$/, /^\/care$/, /^\/move$/, /^\/outfit$/]
 
 export function createApp() {
   const app = express()

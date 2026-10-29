@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type CSSProperties, type FormEvent } from 'react'
+import StorageTabs from '../components/StorageTabs'
 import { Link } from 'react-router-dom'
 import { api, errorMessage } from '../api'
 import GarmentArt from '../components/GarmentArt'
@@ -53,7 +54,7 @@ export default function SpaceMap() {
   const dismiss = (p: Proposal) => act(`dismiss-${p.id}`, () => api.del<Proposal[]>(`/api/placements/${p.id}`), setProposals)
   const change = (p: Proposal, spaceId: number) => act(`change-${p.id}`, () => api.put<Proposal[]>(`/api/placements/${p.id}`, { spaceId }), setProposals)
 
-  if (!map) return error ? <Notice>{error}</Notice> : <Loading />
+  if (!map) return <><StorageTabs />{error ? <Notice>{error}</Notice> : <Loading />}</>
   const leaves = map.spaces.filter((s) => !map.spaces.some((o) => o.parentId === s.id))
   const roots = map.spaces.filter((s) => s.parentId === null)
   // 제자리 비율: 공간에 넣어 둔 옷 / (넣어 둔 옷 + 미배치 옷). 세탁·수선 중인 옷은 세지 않는다.
@@ -64,11 +65,11 @@ export default function SpaceMap() {
 
   return (
     <>
-      <div className="page-head">
-        <h1 className="page-title">옷장 지도</h1>
+      <StorageTabs />
+      <div className="storage-sub">
+        <p className="page-lead">옷장·서랍·박스를 등록하고 옷을 넣어 두면, 내 옷장에서 검색할 때 꺼낼 위치가 보여요.</p>
         <button type="button" className="btn btn-sm" onClick={() => setAdding(true)}><IconPlus />공간 추가</button>
       </div>
-      <p className="page-lead">옷장·서랍·박스를 등록하고 옷을 넣어 두면, 내 옷장에서 검색할 때 꺼낼 위치가 보여요.</p>
       {error && <div style={{ marginBottom: 16 }}><Notice>{error}</Notice></div>}
 
       <div className="map-top">

@@ -8,18 +8,25 @@ async function login(page: Page) {
   await page.getByLabel('이메일').fill(SEED_EMAIL)
   await page.getByLabel('비밀번호').fill(SEED_PASSWORD)
   await page.getByRole('button', { name: '로그인', exact: true }).click()
-  await expect(page).toHaveURL(/\/closet/)
+  await expect(page).toHaveURL(/\/home/)
 }
 
 function menu(page: Page, name: string) {
   return page.locator('nav[aria-label="주 메뉴"]:visible').getByRole('link', { name: new RegExp(`^${name}`) })
 }
 
+function storageTab(page: Page, name: string) {
+  return page.getByRole('navigation', { name: '보관함 보기' }).getByRole('link', { name: new RegExp(`^${name}`) })
+}
+
 test('S6 사용자가 새 수납 공간을 만들고 배치 추천을 확정해 옷 위치를 찾는다', async ({ page }) => {
   await login(page)
 
-  // 메뉴에서 '옷장 지도'를 누른다
-  await menu(page, '옷장 지도').click()
+  // 메뉴에서 '보관함'을 누른다
+  await menu(page, '보관함').click()
+
+  // '옷장 지도' 탭을 누른다
+  await storageTab(page, '옷장 지도').click()
 
   // '공간 추가'를 누른다
   await page.getByRole('button', { name: '공간 추가' }).click()

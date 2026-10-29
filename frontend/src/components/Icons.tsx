@@ -78,3 +78,14 @@ export const IconBasket = (p: P) => (
 export const IconTakeOut = (p: P) => (
   <svg {...base} {...p}><path d="M4 11h16v8.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19.5V11ZM2.5 11h19M12 3v10M8.5 6.5 12 3l3.5 3.5" /></svg>
 )
+// 홈: 지붕과 문
+export const IconHome = (p: P) => (
+  <svg {...base} {...p}><path d="M4 10.5 12 4l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5H15v-5.5h-6v5.5H5.5A1.5 1.5 0 0 1 4 19v-8.5Z" /></svg>
+)
+export const IconChevron = (p: P) => (
+  <svg {...base} strokeWidth={2} {...p}><path d="m9 5 7 7-7 7" /></svg>
+)
+// 거르기: 깔때기 대신 세 줄 슬라이더
+export const IconFilter = (p: P) => (
+  <svg {...base} {...p}><path d="M4 7h10M18 7h2M4 17h2M10 17h10" /><circle cx="16" cy="7" r="2" /><circle cx="8" cy="17" r="2" /></svg>
+)

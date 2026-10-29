@@ -8,7 +8,7 @@ async function login(page: Page) {
   await page.getByLabel('이메일').fill(SEED_EMAIL)
   await page.getByLabel('비밀번호').fill(SEED_PASSWORD)
   await page.getByRole('button', { name: '로그인', exact: true }).click()
-  await expect(page).toHaveURL(/\/closet/)
+  await expect(page).toHaveURL(/\/home/)
 }
 
 function menu(page: Page, name: string) {

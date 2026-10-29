@@ -8,18 +8,25 @@ async function login(page: Page) {
   await page.getByLabel('이메일').fill(SEED_EMAIL)
   await page.getByLabel('비밀번호').fill(SEED_PASSWORD)
   await page.getByRole('button', { name: '로그인', exact: true }).click()
-  await expect(page).toHaveURL(/\/closet/)
+  await expect(page).toHaveURL(/\/home/)
 }
 
 function menu(page: Page, name: string) {
   return page.locator('nav[aria-label="주 메뉴"]:visible').getByRole('link', { name: new RegExp(`^${name}`) })
 }
 
+function storageTab(page: Page, name: string) {
+  return page.getByRole('navigation', { name: '보관함 보기' }).getByRole('link', { name: new RegExp(`^${name}`) })
+}
+
 test("S4 사용자가 '처음 보는 옷'까지 더해 여름 옷을 '여름 박스'에 묶음 보관한 뒤 한 벌을 다시 집 안 옷장으로 꺼낸다", async ({ page }) => {
   await login(page)
 
-  // 메뉴에서 '옮기기'를 누른다
-  await menu(page, '옮기기').click()
+  // 메뉴에서 '보관함'을 누른다
+  await menu(page, '보관함').click()
+
+  // '옮기기' 탭을 누른다
+  await storageTab(page, '옮기기').click()
 
   // '박스·집 밖'을 누른다
   await page.getByRole('tab', { name: '박스·집 밖' }).click()

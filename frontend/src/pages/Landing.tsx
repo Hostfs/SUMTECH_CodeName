@@ -30,8 +30,8 @@ export default function Landing() {
   return (
     <div className="landing">
       <header className="landing-nav">
-        <Link to="/" className="landing-brand"><img src="/favicon.svg" alt="" />옷결</Link>
-        {me ? <Link className="btn btn-sm btn-outline" to="/closet">내 옷장</Link> : <Link className="btn btn-sm btn-outline" to="/login">로그인</Link>}
+        <Link to="/" className="landing-brand"><img src="/brand/logo-lockup.svg" alt="옷결" /></Link>
+        {me ? <Link className="btn btn-sm btn-outline" to="/home">내 옷장</Link> : <Link className="btn btn-sm btn-outline" to="/login">로그인</Link>}
       </header>
 
       <section className="landing-hero">
@@ -40,7 +40,7 @@ export default function Landing() {
           <p className="lead">계절이 바뀌어 박스에 넣거나 본가·세탁소로 보낸 옷은 어디 뒀는지 잊기 쉬워요. 옷결은 옮길 때 여러 벌을 한 번에 기록해 두고, 필요할 때 위치와 상태를 바로 찾게 해 줘요.</p>
           <div className="landing-cta">
             {me ? (
-              <Link className="btn" to="/closet">내 옷장 열기</Link>
+              <Link className="btn" to="/home">내 옷장 열기</Link>
             ) : (
               <>
                 <Link className="btn" to="/signup">시작하기</Link>

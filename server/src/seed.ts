@@ -27,6 +27,7 @@ export async function resetIfSeedUser(userId: number, email: string): Promise<vo
   const seed = config.seedEmail
   if (seed.trim() === '' || email == null || email.toLowerCase() !== seed.trim().toLowerCase()) return
   await tx(async () => {
+    await run('DELETE FROM outfit_looks WHERE user_id = ?', [userId])
     await run('DELETE FROM move_batches WHERE user_id = ?', [userId])
     await run('DELETE FROM product_searches WHERE user_id = ?', [userId])
     await run('DELETE FROM label_extractions WHERE user_id = ?', [userId])

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { lazy, Suspense, type ReactNode } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import AppShell from './components/AppShell'
 import { Loading } from './components/Ui'
@@ -6,6 +6,7 @@ import SessionProvider from './SessionProvider'
 import { useSession } from './session'
 import Landing from './pages/Landing'
 import { Login, Signup } from './pages/Auth'
+import Home from './pages/Home'
 import Closet from './pages/Closet'
 import GarmentDetailPage from './pages/GarmentDetail'
 import Register from './pages/Register'
@@ -13,6 +14,9 @@ import SpaceMap from './pages/SpaceMap'
 import CareBoard from './pages/CareBoard'
 import Move from './pages/Move'
 import NotFound from './pages/NotFound'
+
+// 코디 화면(3D·2D 스튜디오)은 무거워서 열 때 나눠 불러온다.
+const Outfit = lazy(() => import('./pages/Outfit'))
 
 function RequireLogin({ children }: { children: ReactNode }) {
   const { me } = useSession()
@@ -31,12 +35,14 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route element={<RequireLogin><AppShell /></RequireLogin>}>
+            <Route path="/home" element={<Home />} />
             <Route path="/closet" element={<Closet />} />
             <Route path="/closet/:id" element={<GarmentDetailPage />} />
             <Route path="/register" element={<Register />} />
             <Route path="/map" element={<SpaceMap />} />
             <Route path="/care" element={<CareBoard />} />
             <Route path="/move" element={<Move />} />
+            <Route path="/outfit" element={<Suspense fallback={<Loading />}><Outfit /></Suspense>} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

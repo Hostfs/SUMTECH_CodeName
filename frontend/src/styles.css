@@ -1037,3 +1037,187 @@ a { color: inherit; }
 :root[data-wx^="clear"]:not([data-wx$="-night"]) .page-head .page-title { color: #fff; text-shadow: 0 1px 8px rgb(30 60 100 / .25); }
 :root[data-wx^="clear"]:not([data-wx$="-night"]) .page-head .page-title small { color: rgb(255 255 255 / .85); }
 :root[data-wx^="clear"]:not([data-wx$="-night"]) .page-head .btn-ghost { color: #fff; }
+
+/* ======================================================================
+   정보 구조 개편(디자인 초안): 홈 · 내 옷장 · 옷 등록 · 코디 · 보관함
+   ====================================================================== */
+
+/* 밤의 홈: 초안처럼 화면 전체를 어두운 톤으로(홈을 떠나면 원래대로). 옷 그림 바탕은 밝게 두어 검은 옷이 묻히지 않게 한다. */
+:root[data-tone="dark"] {
+  --bg: #0d0d10;
+  --surface: #1c1c21;
+  --tile: #e8e5de;
+  --line: rgb(255 255 255 / .09);
+  --line-strong: rgb(255 255 255 / .2);
+  --ink: #f4f3f1;
+  --ink-2: #b3b0a9;
+  --ink-3: #8a877f;
+  --nobadge: #26262c;
+  --soft: rgb(255 255 255 / .09);
+  --accent-soft-2: rgb(255 255 255 / .06);
+  --deep: color-mix(in srgb, var(--primary) 62%, #fff);
+  --danger-soft: rgb(255 120 110 / .14);
+  --warn-soft: rgb(255 200 120 / .12);
+  color-scheme: dark;
+}
+:root[data-tone="dark"] .notice.error { color: #ff9d8c; }
+
+/* 로고 묶음(아이콘+글자) */
+.rail-brand img { width: 104px; height: auto; }
+@media (min-width: 960px) { .rail-brand { padding: 2px 10px 22px; } }
+.landing-brand img { width: 92px; height: auto; }
+
+/* ---------- 보관함 위쪽 탭(옷장 지도 · 관리함 · 옮기기) ---------- */
+.storage-seg {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 4px; margin: -4px 0 18px;
+  border-radius: var(--r-pill); background: var(--nobadge); max-width: 480px;
+}
+.storage-seg-link {
+  min-height: 42px; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 0 8px;
+  border-radius: var(--r-pill); text-decoration: none; color: var(--ink-2); font-weight: 700; font-size: .9375rem; white-space: nowrap;
+  transition: background .15s, color .15s, box-shadow .15s;
+}
+.storage-seg-link:hover { color: var(--ink); }
+.storage-seg-link[aria-current="page"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgb(29 29 31 / .08), 0 2px 8px rgb(29 29 31 / .06); }
+.storage-seg-dot {
+  min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--danger); color: #fff;
+  font-size: 11px; font-weight: 700; display: inline-grid; place-items: center;
+}
+.storage-sub { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.storage-sub .page-lead { margin: 0 0 18px; }
+.storage-sub .btn { flex: none; }
+@media (max-width: 520px) { .storage-sub { flex-direction: column; gap: 0; } .storage-sub .btn { margin: -6px 0 16px; } }
+
+/* ---------- 홈 ---------- */
+.home-head { position: relative; margin: 4px 0 22px; color: var(--ink); }
+.home-date { margin: 0; font-size: var(--t-small); font-weight: 500; color: var(--ink-2); }
+.home-hello { margin: 8px 0 0; font-size: 1.375rem; font-weight: 500; letter-spacing: -0.03em; line-height: 1.3; }
+.home-name { margin: 0; font-size: 1.9375rem; font-weight: 800; letter-spacing: -0.04em; line-height: 1.2; overflow-wrap: anywhere; }
+.home-name span { font-weight: 600; opacity: .7; margin-left: 2px; }
+/* 홈은 늘 하늘 위에 있다: 인사는 흰 글자 */
+:root[data-wx] .home-head, :root[data-wx] .home-date { color: #fff; text-shadow: 0 1px 12px rgb(0 0 0 / .22); }
+:root[data-wx] .home-date { opacity: .9; }
+
+.home-grid { display: grid; gap: 8px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 960px) {
+  .home-grid { grid-template-columns: minmax(0, 1.35fr) minmax(300px, 1fr); gap: 32px; align-items: start; }
+  .home-side { padding-top: 6px; }
+}
+
+/* 날씨: 홈에서는 카드 없이 하늘 위에 바로 글자를 얹는다(초안 홈) */
+.home .wx-card.wx-hero { background: none; box-shadow: none; padding: 0; border-radius: 0; overflow: visible; margin-bottom: 26px; text-shadow: 0 1px 14px rgb(0 0 0 / .22); }
+.home .wx-card.wx-hero::before { content: none; }
+.home .wx-hero .wx-now { margin-top: 6px; }
+.home .wx-hero .wx-temp { font-size: 6.25rem; font-weight: 200; letter-spacing: -0.06em; line-height: 1; }
+.home .wx-hero .wx-cond b { font-size: 1.25rem; }
+.home .wx-hero .wx-hours { border-top-color: rgb(255 255 255 / .35); }
+.home .wx-hero .wx-tip { margin-top: 22px; padding: 0; background: none; backdrop-filter: none; align-items: flex-start; }
+.home .wx-hero .wx-tip-icon { display: none; }
+.home .wx-hero .wx-tip p { font-size: 1.1875rem; line-height: 1.5; font-weight: 500; letter-spacing: -0.03em; }
+.home .wx-hero .wx-tip small { font-size: .75rem; font-weight: 700; color: rgb(255 255 255 / .9); margin-bottom: 6px; }
+.home .wx-hero .wx-src { color: rgb(255 255 255 / .7); }
+@media (max-width: 380px) { .home .wx-hero .wx-temp { font-size: 5.25rem; } .home .wx-hero .wx-tip p { font-size: 1.0625rem; } }
+
+/* 날씨를 아직 안 불렀을 때: 하늘 위 반투명 카드 */
+.home .wx-card.wx-empty {
+  background: color-mix(in srgb, var(--surface) 84%, transparent); border-color: rgb(255 255 255 / .5);
+  -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); margin-bottom: 22px; padding: 18px;
+}
+:root[data-tone="dark"] .home .wx-card.wx-empty { border-color: rgb(255 255 255 / .12); }
+
+/* 옷장에서 바로 꺼내기: 유리 카드 */
+.home .wx-picks { margin-bottom: 26px; }
+.home .wx-pick { background: color-mix(in srgb, var(--surface) 88%, transparent); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); border-radius: 18px; }
+@media (min-width: 960px) { .home .wx-picks ul { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* 오른쪽(휴대폰은 아래): 옷 수, 빈 옷장 안내, 보관함 바로 가기 */
+.home-side { display: grid; gap: 14px; align-content: start; }
+.home .empty { background: var(--surface); border-style: solid; border-color: var(--line); box-shadow: var(--shadow-1); }
+.home-closet {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 18px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: calc(var(--r-card-lg) + 4px); box-shadow: var(--shadow-1);
+  text-decoration: none; color: var(--ink);
+}
+.home-closet small { display: block; font-size: var(--t-small); color: var(--ink-2); font-weight: 600; }
+.home-closet b { font-size: 1.625rem; font-weight: 800; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
+.home-closet-go { display: inline-flex; align-items: center; gap: 2px; color: var(--deep); font-weight: 700; font-size: var(--t-small); }
+.home-closet-go svg { width: 16px; height: 16px; }
+.home-actions .section-title { margin: 8px 2px 10px; }
+.home-actions ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.home-action {
+  position: relative; height: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 14px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card-lg); box-shadow: var(--shadow-1);
+  text-decoration: none; color: var(--ink); transition: border-color .15s, transform .15s var(--ease-out);
+}
+.home-action:hover { border-color: var(--line-strong); }
+.home-action:active { transform: scale(.98); }
+.home-action-ico { width: 40px; height: 40px; border-radius: 13px; display: grid; place-items: center; background: var(--soft); color: var(--deep); }
+.home-action-ico svg { width: 22px; height: 22px; }
+.home-action-text { min-width: 0; }
+.home-action-text b { display: block; font-size: 1rem; font-weight: 800; letter-spacing: -0.02em; }
+.home-action-text small { display: block; margin-top: 2px; font-size: .78125rem; color: var(--ink-2); line-height: 1.4; }
+.home-action-count {
+  position: absolute; top: 14px; right: 14px; min-width: 24px; height: 24px; padding: 0 7px; border-radius: 12px;
+  background: var(--primary); color: var(--on); font-size: .75rem; font-weight: 800; display: grid; place-items: center;
+}
+.home-action.danger .home-action-count { background: var(--danger); color: #fff; }
+.home-action.danger .home-action-text small { color: var(--danger); font-weight: 600; }
+:root[data-tone="dark"] .home-action.danger .home-action-text small { color: #ff9d8c; }
+@media (prefers-reduced-motion: reduce) { .home-action:active { transform: none; } }
+
+/* ---------- 내 옷장(초안 머리: 큰 제목 + '선택' 글자 버튼) ---------- */
+.closet .page-head { align-items: baseline; }
+.closet .page-title { font-size: 1.6875rem; font-weight: 800; letter-spacing: -0.04em; }
+.closet .page-title small { font-size: .9375rem; font-weight: 600; color: var(--ink-3); }
+.link-btn { background: none; border: 0; padding: 6px 4px; color: var(--deep); font: inherit; font-size: 1rem; font-weight: 700; cursor: pointer; }
+.link-btn[aria-pressed="true"] { color: var(--ink); }
+.closet .chips { margin-top: 12px; }
+.closet .toolbar { margin: 14px 2px; }
+.inline-select svg { width: 18px; height: 18px; color: var(--ink); }
+
+/* ---------- 로그인·회원가입: 화면 가득 하늘 + 아래에서 올라온 입력 시트 ---------- */
+.auth { position: relative; min-height: 100dvh; display: block; background: #1b2a4e; isolation: isolate; }
+.auth-sky { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+.auth-sky .sky { position: absolute; left: -16px; top: -16px; width: calc(100% + 32px); height: calc(100% + 32px); display: block; filter: blur(1.6px) saturate(1.05); }
+.auth-sky::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to bottom, rgb(0 0 0 / .05), rgb(20 20 30 / .22)); }
+.auth-logo { display: inline-block; }
+.auth-logo img { width: 128px; height: auto; filter: drop-shadow(0 2px 10px rgb(0 0 0 / .18)); }
+.auth-main { position: relative; min-height: 100dvh; display: flex; flex-direction: column; justify-content: flex-end; }
+.auth-top { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 18px; padding: calc(28px + env(safe-area-inset-top)) 28px 28px; color: #fff; }
+.auth-top p { margin: 0; font-size: 1.375rem; font-weight: 700; line-height: 1.45; letter-spacing: -0.03em; text-shadow: 0 1px 14px rgb(0 0 0 / .25); }
+.auth-card {
+  width: 100%; min-height: 0; display: flex; flex-direction: column;
+  background: var(--surface); border-radius: 32px 32px 0 0; box-shadow: 0 -12px 40px rgb(10 14 30 / .22);
+  padding: 30px 22px calc(18px + env(safe-area-inset-bottom)); animation: rise-in .35s var(--ease-out) backwards;
+}
+.auth-card h1 { font-size: 1.625rem; margin: 0 0 6px; font-weight: 800; letter-spacing: -0.04em; }
+.auth-card p.sub { margin: 0 0 24px; }
+.auth .input { min-height: 58px; border-radius: 18px; background: var(--bg); border-color: transparent; font-size: 1.0625rem; padding: 0 20px; }
+.auth .input:focus { background: var(--surface); border-color: var(--primary); }
+.auth-actions { position: static; margin-top: 26px; padding-top: 0; background: none; }
+.auth-actions .btn { min-height: 58px; border-radius: 18px; font-size: 1.0625rem; font-weight: 700; box-shadow: 0 8px 18px color-mix(in srgb, var(--primary) 32%, transparent); }
+.auth-hero { display: none; }
+@media (prefers-reduced-motion: reduce) { .auth-card { animation: none; } }
+
+@media (min-width: 900px) {
+  .auth { display: grid; grid-template-columns: minmax(440px, 1.1fr) 1fr; background: var(--bg); }
+  .auth-sky { right: auto; width: max(440px, calc(100% * 1.1 / 2.1)); }
+  .auth-hero { display: flex; background: none; color: #fff; z-index: 1; }
+  .auth-hero-title { text-shadow: 0 1px 16px rgb(0 0 0 / .25); }
+  .auth-points li { background: rgb(255 255 255 / .16); border-color: rgb(255 255 255 / .3); color: #fff; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+  .auth-point-icon { background: rgb(255 255 255 / .92); color: #23324a; }
+  .auth-hero-foot { color: rgb(255 255 255 / .8); }
+  .auth-logo img { width: 140px; }
+  .auth-top { display: none; }
+  .auth-main { justify-content: center; align-items: center; padding: 40px 24px; }
+  .auth-card { width: min(100%, 420px); background: none; box-shadow: none; border-radius: 0; padding: 0; animation: none; }
+  .auth .input { background: var(--surface); border-color: var(--line-strong); }
+}
+
+/* 없는 주소 화면: 하늘 없이 가운데 안내 */
+.auth.auth-plain { background: var(--bg); }
+.auth-plain .auth-card { min-height: 100dvh; justify-content: center; align-items: flex-start; gap: 4px; background: none; box-shadow: none; border-radius: 0; margin: 0 auto; max-width: 440px; }
+/* 홈 인사에 날짜가 있으니 날씨 머리의 날짜는 숨긴다. 밤 톤의 왼쪽 메뉴 로고는 밝은 글자판으로 */
+.home .wx-head > span { display: none; }
+.home .wx-head .wx-refresh { margin-left: auto; }
+:root[data-tone="dark"] .rail-brand img { content: url(/brand/logo-lockup-light.svg); }

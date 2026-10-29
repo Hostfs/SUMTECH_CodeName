@@ -82,8 +82,9 @@ def main():
         lines.append(line)
     (OUT / 'env').write_bytes('\n'.join(lines).encode('utf-8'))
 
-    sha = git('rev-parse', 'HEAD')
-    dirty = bool(git('status', '--porcelain'))
+    # 저장소 밖에서 꺼낸 사본으로 만들 때는 RELEASE_SHA로 commit을 넘긴다.
+    sha = os.environ.get('RELEASE_SHA') or git('rev-parse', 'HEAD')
+    dirty = not os.environ.get('RELEASE_SHA') and bool(git('status', '--porcelain'))
     release = sha + ('-local' if dirty else '')
     (OUT / 'RELEASE_ID').write_text(release, encoding='utf-8')
 

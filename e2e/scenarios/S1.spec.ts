@@ -16,7 +16,8 @@ test('S1 처음 온 사람이 서비스 소개를 보고 회원가입해 빈 옷
   // '가입하기'를 누른다
   await page.getByRole('button', { name: '가입하기' }).click()
 
-  // 가입한 이메일로 로그인된 상태, 0벌 안내와 '옷 등록' 버튼
+  // 가입한 이메일로 로그인된 상태로 홈이 열리고, 0벌 안내와 '옷 등록' 버튼
+  await expect(page).toHaveURL(/\/home$/)
   await expect(page.getByText(email).filter({ visible: true })).toBeVisible()
   await expect(page.getByText('등록된 옷이 0벌이에요')).toBeVisible()
   await expect(page.locator('.empty').getByRole('link', { name: '옷 등록' })).toBeVisible()

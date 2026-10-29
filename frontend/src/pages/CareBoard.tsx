@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import StorageTabs from '../components/StorageTabs'
 import { Link } from 'react-router-dom'
 import { api, errorMessage } from '../api'
 import GarmentArt from '../components/GarmentArt'
@@ -50,12 +51,12 @@ export default function CareBoard() {
     }
   }
 
-  if (!board || !tab) return error ? <Notice>{error}</Notice> : <Loading />
+  if (!board || !tab) return <><StorageTabs />{error ? <Notice>{error}</Notice> : <Loading />}</>
   const items = board[tab]
 
   return (
     <>
-      <div className="page-head"><h1 className="page-title">관리함</h1></div>
+      <StorageTabs />
       <p className="page-lead">세탁소·수선집에 맡긴 옷과 돌려받을 날을 모아 봐요. 옮기기에서 세탁소로 묶어 보낸 옷도 여기에 모여요.</p>
       {error && <div style={{ marginBottom: 16 }}><Notice>{error}</Notice></div>}
       {returned.map((it) => (
