@@ -6,6 +6,7 @@ import { FilterSheet } from "@/components/closet/FilterSheet";
 import { useData } from "@/components/DataProvider";
 import { GarmentCard } from "@/components/garment/GarmentCard";
 import { PlacePickerSheet } from "@/components/garment/PlacePickerSheet";
+import { SelectionBar } from "@/components/garment/SelectionBar";
 import { ChevronDownIcon, CloseIcon, FilterIcon, SearchIcon } from "@/components/icons";
 import { Screen } from "@/components/layout/Screen";
 import { Button, buttonClass } from "@/components/ui/Button";
@@ -19,7 +20,7 @@ import {
   type ClosetQuery,
   type SortKey,
 } from "@/lib/closet-query";
-import { placePath, UNASSIGNED_LABEL, withRo } from "@/lib/places";
+import { movedMessage, placePath } from "@/lib/places";
 import { CATEGORIES, CATEGORY_LABEL } from "@/lib/types";
 import { useSessionState } from "@/lib/useSessionState";
 
@@ -40,9 +41,11 @@ export default function ClosetPage() {
     const params = new URLSearchParams(window.location.search);
     const q = params.get("q");
     if (q !== null) setQuery({ ...EMPTY_QUERY, q });
+    // 보관함의 '위치 미지정 · 정하기'에서 넘어온 경우
+    if (params.get("place") === "none") setQuery({ ...EMPTY_QUERY, places: ["none"] });
     const created = params.get("new");
     // 새로고침해도 다시 적용되지 않게 주소에서 지운다
-    if (q !== null || created) window.history.replaceState(window.history.state, "", "/closet");
+    if (q !== null || created || params.has("place")) window.history.replaceState(window.history.state, "", "/closet");
     if (created) {
       // 새 카드가 보이도록 검색·필터를 풀고(정렬은 유지) 그 카드로 스크롤한다
       setQuery((cur) => ({ ...EMPTY_QUERY, sort: cur.sort }));
@@ -76,8 +79,7 @@ export default function ClosetPage() {
     await moveGarments(selected, placeId);
     setMoveOpen(false);
     endSelecting();
-    const name = placeId ? placePath(placeIndex, placeId, " › ")! : UNASSIGNED_LABEL;
-    toast(`${n}개의 옷을 '${name}'${withRo(name)} 옮겼어요`);
+    toast(movedMessage(placeIndex, placeId, n));
   };
 
   // 여러 벌이 모두 같은 위치면 그 위치를 미리 골라 둔다
@@ -202,17 +204,7 @@ export default function ClosetPage() {
       )}
 
       {selecting && (
-        <div className="absolute inset-x-4 bottom-[calc(var(--tabbar-h)+10px)] z-30 flex h-[60px] items-center justify-between rounded-card-lg border border-line bg-card pr-2.5 pl-4">
-          <span className="text-[15px] font-semibold">{selected.length}개 선택됨</span>
-          <span className="flex items-center gap-1.5">
-            <Button variant="ghost" disabled={selected.length === 0} onClick={() => setSelected([])}>
-              선택 해제
-            </Button>
-            <Button disabled={selected.length === 0} onClick={() => setMoveOpen(true)}>
-              위치 변경
-            </Button>
-          </span>
-        </div>
+        <SelectionBar count={selected.length} onClear={() => setSelected([])} onMove={() => setMoveOpen(true)} />
       )}
 
       <FilterSheet

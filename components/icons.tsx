@@ -180,3 +180,38 @@ export const MoonIcon = (p: IconProps) => (
     <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
   </Icon>
 );
+
+export const SmallCloseIcon = (p: IconProps) => (
+  <Icon size={13} stroke={2} {...p}>
+    <path d="M7 7 L17 17 M17 7 L7 17" />
+  </Icon>
+);
+
+export const GearIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <circle cx="12" cy="12" r="3" />
+    <path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8" />
+  </Icon>
+);
+
+export const PaletteIcon = (p: IconProps) => (
+  <Icon size={22} {...p}>
+    <path d="M12 4a8 8 0 1 0 0 16c1.2 0 1.6-.8 1.2-1.6-.5-1 .1-2 1.3-2H17a3 3 0 0 0 3-3C20 8 16.4 4 12 4z" />
+    <circle cx="8.5" cy="11" r="1" />
+    <circle cx="12" cy="8" r="1" />
+    <circle cx="15.5" cy="10" r="1" />
+  </Icon>
+);
+
+export const HelpIcon = (p: IconProps) => (
+  <Icon size={22} {...p}>
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="M9.8 9.6a2.3 2.3 0 0 1 4.4.8c0 1.5-2.2 1.8-2.2 3.2M12 16.6v.1" />
+  </Icon>
+);
+
+export const LogoutIcon = (p: IconProps) => (
+  <Icon size={22} {...p}>
+    <path d="M10 5H5v14h5M14 8l4 4-4 4M18 12H9" />
+  </Icon>
+);

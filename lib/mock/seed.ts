@@ -16,7 +16,7 @@ export const SEED_PLACES: Place[] = [
   { id: "p-wb-h", name: "행거", parentId: "p-wb" },
   { id: "p-box1", name: "수납 상자 1", memo: "니트·이불류" },
   { id: "p-box2", name: "수납 상자 2", memo: "계절 지난 옷" },
-  { id: "p-shoe", name: "신발장" },
+  { id: "p-shoe", name: "신발장", memo: "신발" },
   { id: "p-shoe-1", name: "1단", parentId: "p-shoe" },
   { id: "p-shoe-2", name: "2단", parentId: "p-shoe" },
 ];

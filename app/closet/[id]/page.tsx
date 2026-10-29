@@ -12,7 +12,7 @@ import { TopBar } from "@/components/layout/TopBar";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/Toast";
-import { placePath, UNASSIGNED_LABEL, withRo } from "@/lib/places";
+import { movedMessage, placePath, UNASSIGNED_LABEL } from "@/lib/places";
 import { SEASON_LABEL, SEASONS } from "@/lib/theme";
 import { CATEGORY_LABEL } from "@/lib/types";
 
@@ -49,8 +49,7 @@ export default function GarmentDetailPage() {
   const move = async (placeId: string | null) => {
     await updateGarment(g.id, { placeId });
     setMoveOpen(false);
-    const name = placeId ? placePath(placeIndex, placeId, " › ")! : UNASSIGNED_LABEL;
-    toast(`'${name}'${withRo(name)} 옮겼어요`);
+    toast(movedMessage(placeIndex, placeId));
   };
 
   const remove = async () => {

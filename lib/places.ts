@@ -1,4 +1,4 @@
-import type { Place } from "./types";
+import type { Garment, Place } from "./types";
 
 export const UNASSIGNED_LABEL = "위치 미지정";
 
@@ -46,4 +46,35 @@ export function withRo(word: string): string {
     needEu = jong !== 0 && jong !== 8; // 8 = ㄹ
   } else needEu = /[MNmn]/.test(last); // 엠·엔만 받침이 있다 (엘은 ㄹ)
   return needEu ? "으로" : "로";
+}
+
+/** 위치를 옮긴 뒤 토스트. 여러 벌: "n개의 옷을 '옷장 A › 서랍 2'로 옮겼어요", 한 벌: "'…'로 옮겼어요" */
+export function movedMessage(index: PlaceIndex, placeId: string | null, count?: number): string {
+  const name = placeId ? placePath(index, placeId, " › ") ?? UNASSIGNED_LABEL : UNASSIGNED_LABEL;
+  const head = count === undefined ? "" : `${count}개의 옷을 `;
+  return `${head}'${name}'${withRo(name)} 옮겼어요`;
+}
+
+/** 장소(하위 칸 포함)에 들어 있는 옷 */
+export function garmentsInPlace(garments: Garment[], places: Place[], placeId: string): Garment[] {
+  const ids = new Set([placeId, ...childPlaces(places, placeId).map((p) => p.id)]);
+  return garments.filter((g) => g.placeId && ids.has(g.placeId));
+}
+
+/** 옷 개수 단위: 모두 신발이면 '켤레' */
+export function countLabel(list: Garment[]): string {
+  const unit = list.length > 0 && list.every((g) => g.category === "shoes") ? "켤레" : "벌";
+  return `${list.length}${unit}`;
+}
+
+/** 하위 칸 요약: '행거 2 · 서랍 3' (이름에 행거·서랍이 들어가면 묶고, 나머지는 '칸') */
+export function childSummary(places: Place[], parentId: string): string | null {
+  const kids = childPlaces(places, parentId);
+  if (kids.length === 0) return null;
+  const groups = new Map<string, number>();
+  for (const k of kids) {
+    const key = k.name.includes("행거") ? "행거" : k.name.includes("서랍") ? "서랍" : "칸";
+    groups.set(key, (groups.get(key) ?? 0) + 1);
+  }
+  return [...groups].map(([k, n]) => `${k} ${n}`).join(" · ");
 }
