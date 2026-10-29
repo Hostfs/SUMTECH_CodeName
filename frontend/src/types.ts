@@ -153,9 +153,6 @@ export type Proposal = {
 export type BoardItem = { care: CareView; garment: GarmentSummary; overdue: boolean; dueToday: boolean }
 export type Board = { today: string; dueToday: BoardItem[]; overdue: BoardItem[]; inProgress: BoardItem[]; history: BoardItem[] }
 
-export type Body = { heightCm: number | null; shoulderCm: number | null; chestCm: number | null; waistCm: number | null; hipCm: number | null; inseamCm: number | null }
-export type Outfit = { id: number; name: string; top: GarmentSummary | null; bottom: GarmentSummary | null }
-export type Recommendation = { top: GarmentSummary; bottom: GarmentSummary; reason: string }
 
 /** 현재 위치 날씨(R12). 기상청 초단기실황·단기예보를 서버가 합친 값. 받지 못한 값은 null. */
 export type Weather = {

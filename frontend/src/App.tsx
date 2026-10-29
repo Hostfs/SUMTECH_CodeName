@@ -1,4 +1,4 @@
-import { lazy, Suspense, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import AppShell from './components/AppShell'
 import { Loading } from './components/Ui'
@@ -13,9 +13,6 @@ import SpaceMap from './pages/SpaceMap'
 import CareBoard from './pages/CareBoard'
 import Move from './pages/Move'
 import NotFound from './pages/NotFound'
-
-// 3D 화면은 용량이 커서 열 때 불러온다.
-const Studio = lazy(() => import('./pages/Studio'))
 
 function RequireLogin({ children }: { children: ReactNode }) {
   const { me } = useSession()
@@ -37,7 +34,6 @@ export default function App() {
             <Route path="/closet" element={<Closet />} />
             <Route path="/closet/:id" element={<GarmentDetailPage />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/studio" element={<Suspense fallback={<Loading />}><Studio /></Suspense>} />
             <Route path="/map" element={<SpaceMap />} />
             <Route path="/care" element={<CareBoard />} />
             <Route path="/move" element={<Move />} />

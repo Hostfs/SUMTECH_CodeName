@@ -4,13 +4,13 @@
 
 > 옮길 때 묶어서 기록하고, 필요할 때 '박스 A / 본가 / 세탁소'로 바로 찾는다.
 
-2026-10-29 수정안(`docs/problem.yaml`)에서 3D 코디(R05)와 AI 코디 추천(R06)은 범위에서 빠지고, 옮기는 단위 묶음 기록(R11)이 핵심 해법이 되었다. 아래 설계는 이 기준이다. 코디 스튜디오 화면(`/studio`)은 메뉴에서 뺐고 주소만 남아 있다.
+2026-10-29 수정안(`docs/problem.yaml`)에서 3D 코디(R05)와 AI 코디 추천(R06)은 범위에서 빠지고, 옮기는 단위 묶음 기록(R11)이 핵심 해법이 되었다. 아래 설계는 이 기준이다. 코디 스튜디오 화면(`/studio`)·추천 API·3D 라이브러리는 코드에서 지웠다(자세한 내용은 3절 R05·R06).
 
 ## 문서
 
 | 문서 | 내용 |
 | --- | --- |
-| [`docs/problem.yaml`](docs/problem.yaml) | 문제정의 캔버스, 5 Whys, 해법 경로, 통찰, 기능 명세(R00~R11, R05·R06 제외) |
+| [`docs/problem.yaml`](docs/problem.yaml) | 문제정의 캔버스, 공개 자료 근거(SRC1~SRC6), 5 Whys, 해법 경로, 통찰, 기능 명세(R00~R12, R05·R06 제외) |
 | [`docs/scenarios.yaml`](docs/scenarios.yaml) | 사용자 핵심 흐름 S1~S8과 주 사용 플랫폼 |
 | [`docs/db/schema.sql`](docs/db/schema.sql) | DB 스키마(5NF, MariaDB). 앱의 Flyway 마이그레이션과 같은 파일 |
 | [`docs/db/ERD.md`](docs/db/ERD.md) | ER 다이어그램, 정규화 단계별 근거, 교차 검증 결과(`ERD.html`은 브라우저용) |
@@ -35,6 +35,7 @@
 | 분류 | 옷이 저장됨 | 보기 기준·검색어·분류 수정 | 속성별 묶기, 사용자 수정값 우선 | 계절·브랜드·종류·위치·상태·'집 밖/박스'별 목록 | 옷 선택 → 위치·관리 |
 | 옮기기 | 박스에 넣거나 본가·세탁소로 보낼 옷이 있음 | 박스 라벨 QR·영수증 사진, 보낼 곳, 옷 여러 벌 선택(보낼 곳·업체·날짜는 최근값 기본) | 공간이면 각 옷의 확정 위치를 바꾸고, 세탁소면 옷마다 세탁 기록 생성. 묶음과 사진을 함께 저장 | 각 옷 위치가 '박스 A'·'본가'·'세탁 중'으로 보임 | '집 밖/박스' 보기, 관리함 회수 |
 | 배치 | 공간과 미배치 옷이 있음 | 공간 등록, 배치 추천 요청 | 종류·계절·자주 입는 정도·공간 유형·용량 규칙 | 미확정 추천안, 용량 초과 표시 | '배치 완료'로 위치 확정 → 검색 시 경로 |
+| 찾기 | 외출 직전, 무엇을 입을지 정하지 않음 | 내 옷장을 열고 '현재 위치 날씨 보기'(처음 한 번 위치 허락) | 서버가 위경도를 기상청 격자로 바꿔 초단기실황·단기예보 조회, 기온 기준표로 계절 결정 | 날씨 카드와 지금 집 안에 있는 맞는 옷 최대 4벌, 각 옷의 보관 위치 경로와 고른 이유 | 옷을 눌러 상세 → 꺼내 입기 |
 | 관리 | 옷이 보관 중 | 세탁·수선 맡기기(한 벌) 또는 옮기기의 세탁소 묶음, 회수 예정일 | 상태 전환·이력 기록, 접속 시점 기준 예정·기한 지남 계산 | 관리함 목록(옷 상태 표시)·배지 | 회수 완료 → 재배치 확인 |
 
 ### 3. 기능별 동작 규칙
@@ -46,12 +47,13 @@
 | R02 | `ProductCandidate`: 상품명, 이미지 URL, 색상, 출처 URL, 조회 시점, 일치 근거, 확정 여부 | 소유자만 | 결과 없음·차단·시간 초과(20초)는 '검색 결과 없음'과 '직접 입력으로 계속'. 페이지 내용 속 지시문은 데이터로만 취급 |
 | R03 | `ImageAsset`: 원본, 정리본, 출처, 처리 상태 | 소유자만 | 처리 실패 시 원본을 대표 이미지로 유지, '다시 처리' 제공. 로고·무늬·색을 생성·변경하지 않음 |
 | R04 | `garments`(세부 종류에서 종류 계산), `garment_seasons`, `garment_collections`, `garment_materials`(부위·섬유·혼용률), `garment_care_instructions`, `garment_ai_fields` | 소유자만 | 옷 이름이 비면 저장 거부. 부위별 혼용률 합계가 100%가 아니면 거부. 사용자 수정값은 AI 재분석으로 덮어쓰지 않음. 같은 품번은 중복 후보 안내만, 자동 병합 안 함 |
-| R05·R06 | (수정안에서 제외) 기존 코드·테이블(`body_profiles`, `outfits`)은 남아 있고 메뉴에서만 뺐다 | — | — |
+| R05·R06 | **범위에서 제외(수정안 2026-10-29).** 좁힌 문제가 '집 밖·박스 속 옷의 위치·상태'라서 3D 가상착의·코디(R05)와 보유 의류 기반 AI 코디 추천(R06)은 문제를 직접 풀지 않는다고 팀이 판단했다(`problem.yaml`의 `solution_paths`·`insight.design_decision`). 그래서 화면(`/studio`, `Studio.tsx`·`Mannequin.tsx`), API(`/api/studio/*`, `/api/recommendations`), 3D 라이브러리(three·@react-three)를 코드에서 지웠다. 테이블 `body_profiles`·`outfits`·`outfit_garments`는 이미 적용된 V1 마이그레이션을 바꾸지 않으려고 남겨 두되 읽거나 쓰는 코드는 없다(시드 초기화만 비운다). R-id는 추적을 위해 비워 둔다 | — | 지운 주소(`/studio`)는 404 화면 |
 | R07 | `storage_spaces`(유형: 걸기·접기·장기보관·박스·집 밖), `storage_space_parents`(계층), `placement_proposals`(미확정 추천), `garment_placements`(확정 위치) | 소유자만 | 이름이 비거나 용량이 1 미만이면 거부. 용량 초과는 초과 수량 표시. 추천만으로 현재 위치 변경 안 함, 추천은 집 밖을 고르지 않음. 바로 넣기는 가장 안쪽 공간만, 세탁·수선 중인 옷은 거부. 안쪽 공간이나 옷이 있는 공간은 삭제 거부 |
 | R08 | `care_events`(종류, 자택/업체, 업체명, 내용, 맡긴 날, 예정일, 회수 시각) | 소유자만 | 예정일이 맡긴 날보다 앞서면 거부. 진행 중 기록은 한 벌에 하나. 세탁 중·수선 중·회수 후 위치 미확인은 저장하지 않고 이 기록에서 계산해 모든 화면이 같은 값을 읽음 |
 | R09 | 위 모든 기록이 같은 `garments.id`를 참조 | 서버에서 소유권 검사 + DB 트리거로 같은 주인 강제 | 다른 계정 자료 접근은 404 |
-| R10 | — | — | 없는 주소는 404 화면. 외부 호출은 시간 제한과 재시도 1회, 실패 시 입력 유지 |
+| R10 | 저장 정보 없음. 공개 주소와 `/__health`(`releaseId`=배포 commit) | 첫 화면·로그인·회원가입·`/__health`만 로그인 없이, 나머지 `/api/**`는 로그인 필요 | **접속**: 공개 HTTPS 주소 하나에서 화면과 API를 함께 제공(Spring 3000 포트, 앞단 nginx). 휴대폰(390×844)과 PC(1440×900) 두 화면에서 S1~S8 E2E를 돌려 확인. **잘못된 입력**: 서버 검증(Bean Validation)이 실패하면 400과 `{"error": 이유}`를 돌려주고 화면은 그 이유를 안내 문구로 보여 주며 입력값을 지우지 않는다. 같은 주인 규칙·중복은 409, 10MB 넘는 사진은 413과 안내. **외부 장애**: 택 분석 50초, 제품 검색 25초(페이지당 6초), 기상청 8초 시간 제한. 실패하면 사진·입력을 유지한 채 '다시 시도'와 '직접 입력으로 계속'을 주고, 제품 검색은 검색 도구가 실패하면 일반 호출로 1회 다시 시도한다. 날씨를 못 받으면 날씨 카드만 안내 문구로 바뀐다. **없는 주소**: 화면 주소가 아니면 '페이지를 찾을 수 없어요' 404 화면과 '첫 화면으로 가기'. 화면 주소를 직접 열거나 새로고침해도 200인지 CI(`scenarios.yml`)가 매번 확인 |
 | R11 | `move_batches`(묶음), `move_batch_spaces`·`move_batch_space_garments`(공간으로 옮긴 옷·날짜), `move_batch_care_events`(세탁소에 맡긴 기록), `move_batch_images`(라벨·영수증 사진 최대 4장) | 소유자만(같은 주인 트리거) | 옷을 고르지 않거나 미래 날짜면 거부. 박스·집 밖이 아닌 새 장소는 거부. 이미 세탁·수선 중인 옷은 409. 회수 예정일이 맡긴 날보다 앞서면 거부 |
+| R12 | 저장하지 않음(같은 기상청 격자는 서버 메모리에 10분 캐시). 위치 허락 여부만 이 기기 브라우저에 기억 | 로그인한 사용자. 위치는 서버에 저장하지 않음 | 국내가 아닌 위치는 400 '기상청 예보는 국내 위치만 볼 수 있어요'. 위치 거부·키 없음·기상청 장애는 날씨 카드만 안내 문구와 '다시 시도'로 바뀌고 옷장은 그대로. 키는 서버 환경변수 `KMA_API_KEY`에만 둔다 |
 
 **의류 상태 값**: 보관 중, 착용·보관 전, 세탁 대기, 세탁 중, 수선 중, 회수 완료·위치 미확인. 앞의 셋은 사용자가 정해 저장하고, 뒤의 셋은 세탁·수선 기록과 위치 확정 시각에서 계산한다(`docs/db/ERD.md` 5절).
 
@@ -61,13 +63,18 @@
 
 `docs/problem.yaml`의 `features[].done`이 기준이다. 요약하면:
 
+- **R00** 회원가입 후 바로 빈 옷장이 보이고, 로그아웃 후 다시 로그인해도 등록한 옷이 남는다. 다른 계정의 옷 주소는 404다.
 - **R01** 택 사진 2장을 한 의류에 묶어 분석하고, 고친 값과 택 사진이 옷 상세에 남는다.
 - **R02** 후보를 선택하면 상품명·출처·조회 시점이 남고, 실패해도 '직접 입력으로 계속'으로 등록을 마친다.
+- **R03** 대표 이미지 정리에 실패해도 원본이 대표 이미지로 남고 '다시 처리'할 수 있다.
 - **R04** 계절·브랜드·종류 보기로 바꿀 수 있고, 수정값이 새로고침 후에도 유지된다.
 - **R07** 추천은 미확정으로 남고, '배치 완료' 후에야 위치 검색 결과가 바뀐다.
 - **R08** 예정일 변경, 기한 지남 표시, 회수 완료, 재배치 확인이 작동한다.
 - **R09** 상태 변경이 옷장·상세·지도·관리함에 같은 값으로 보인다.
+- **R10** 휴대폰·PC 두 화면에서 등록·옷장·옷장 지도·옮기기·관리함이 깨지지 않고, 필수 값이 비면 저장되지 않고 이유가 보이며, 없는 주소는 404 화면이다.
 - **R11** 박스 라벨을 찍고 여러 벌을 묶어 '박스 A로 보냄'을 저장하면 각 옷 위치가 '박스 A'로, 내 옷장 '집 밖/박스' 보기에 보인다. 세탁소 묶음은 '세탁 중'과 관리함 회수 예정일로 보인다.
+- **R12** 위치를 허락하면 현재 기온과 오늘 최저·최고가 보이고, 그 기온에 맞는 집 안 옷이 위치 경로와 함께 보인다. 위치를 거부하거나 기상청 응답이 없어도 다른 기능은 그대로다.
+- **R05·R06** 범위에서 제외. 완료 조건 없음(코드에서도 지움).
 
 ### 5. 로그인과 역할
 
@@ -92,7 +99,7 @@
 
 | 화면 | 메뉴 이름 | 하는 일 |
 | --- | --- | --- |
-| 내 옷장 | `내 옷장` | 보기 기준 변경, 검색, 옷 카드(대표 이미지·이름·상태·위치) |
+| 내 옷장 | `내 옷장` | 맨 위 오늘 날씨와 '옷장에서 바로 꺼내기'(R12), 보기 기준 변경, 검색, 옷 카드(대표 이미지·이름·상태·위치) |
 | 옷 등록 | `옷 등록` | 택 사진 추가 → 택 분석하기 → 값 확인·수정 → 제품 찾기 → 저장하기 |
 | 옷 상세 | (카드 선택) | 정보 수정, 택·이미지, 세탁법, 위치, 세탁·수선 맡기기, 관리 이력 |
 | 옷장 지도 | `옷장 지도` | 공간 추가, 공간별 옷·용량, 미배치 옷 골라 바로 넣기, 배치 추천 받기, 박스 QR 라벨 인쇄 |
@@ -109,6 +116,8 @@
 | --- | --- | --- |
 | 택 구조화(R01) | 비전 지원 모델에 택 사진을 보내 정해진 JSON 스키마로 추출 | 이미지 긴 변 1600px로 축소, 같은 사진(SHA-256)은 서버 메모리 캐시(6시간)로 AI를 다시 부르지 않음, 시간 제한 50초 |
 | 제품 후보 검색(R02) | Gateway 검색 도구(`vercel:perplexity_search`)로 '브랜드 + 품번' 검색(도구 실패 시 일반 호출 1회) → 서버가 후보 페이지를 동시에 열어 실제로 열리는 페이지만 남김 | 후보 최대 3개, 같은 브랜드·품번·이름은 캐시(6시간), 호출당 25초·페이지당 6초 |
+
+| 현재 위치 날씨(R12) | 기상청 단기예보 조회서비스(공공데이터포털): 초단기실황 `getUltraSrtNcst`(지금 기온·강수), 단기예보 `getVilageFcst`(오늘 최저·최고·강수확률·하늘). 서버가 위경도를 기상청 격자(nx, ny)로 바꿔 부름 | 같은 격자·같은 시각은 10분 캐시, 연결 5초·응답 8초 제한. AI 예산을 쓰지 않음 |
 
 모델은 Gateway 모델 목록(`https://ai-gateway.vercel.sh/v1/models`)에서 확인한 `google/gemini-2.5-flash`를 기본으로 쓰고 `AI_MODEL`로 바꿀 수 있다. 제품 검색이 연 후보 주소는 공인 http(s) 주소만 열고(내부망·루프백 차단), 리다이렉트도 같은 검사를 거쳐 3번까지만 따라간다. 키가 없거나 예산이 다 떨어지면 AI 기능만 실패 안내를 보여 주고, 직접 입력 경로로 계속 쓸 수 있다. 예시 데이터를 실시간 AI 결과처럼 보여 주지 않는다.
 
@@ -142,14 +151,15 @@
 | `GET /api/meta` | 선택지와 한국어 표시 이름(DB 도메인 테이블을 그대로 읽음) |
 | `POST /api/labels/analyze` | R01 택 사진 1~4장 저장 → 비전 모델로 판독, 항목별 판독값과 '확인 필요' 저장. 실패해도 판독 기록이 남고 직접 입력으로 계속 |
 | `POST /api/products/search` | R02 웹 검색(Gateway `vercel:perplexity_search`) → 후보 페이지를 서버가 직접 열어 실제로 열리는 페이지만 후보로 저장, 이름·이미지는 페이지의 og 정보 우선 |
+| `GET /api/weather?lat=&lon=` | R12 현재 위치 날씨와 기온에 맞는 계절(기상청). 키가 없으면 503, 기상청 장애면 502 |
 | `GET /__health` | 배포 상태(`releaseId`) |
 
 ### 11. 데이터 모델
 
 5NF까지 정규화한 51개 테이블(핵심 34 + 도메인 17, V2 마이그레이션의 옮기는 묶음 5개 포함)이다. 전체 다이어그램과 단계별 근거는 [`docs/db/ERD.md`](docs/db/ERD.md)에 있다.
 
-- 개체: `users`, `garments`, `storage_spaces`, `collections`, `images`, `label_extractions`, `product_searches`, `product_candidates`, `care_events`, `placement_proposals`, `move_batches`, `outfits`, `body_profiles`
-- 연결: 확정 위치 `garment_placements`, 공간 계층 `storage_space_parents`, 이미지 `garment_images`·`garment_cover_images`·`image_processings`, 택 판독 `label_extraction_images`·`label_extraction_values`·`garment_label_extractions`, 제품 `label_extraction_searches`·`garment_products`, 옮기는 묶음 `move_batch_spaces`·`move_batch_space_garments`·`move_batch_care_events`·`move_batch_images`, 코디 `outfit_garments`(제외 기능)
+- 개체: `users`, `garments`, `storage_spaces`, `collections`, `images`, `label_extractions`, `product_searches`, `product_candidates`, `care_events`, `placement_proposals`, `move_batches`, `outfits`·`body_profiles`(제외 기능, 코드에서 쓰지 않는 빈 테이블)
+- 연결: 확정 위치 `garment_placements`, 공간 계층 `storage_space_parents`, 이미지 `garment_images`·`garment_cover_images`·`image_processings`, 택 판독 `label_extraction_images`·`label_extraction_values`·`garment_label_extractions`, 제품 `label_extraction_searches`·`garment_products`, 옮기는 묶음 `move_batch_spaces`·`move_batch_space_garments`·`move_batch_care_events`·`move_batch_images`, 코디 `outfit_garments`(제외 기능, 빈 테이블)
 - 다치 속성: `garment_seasons`, `garment_collections`, `garment_ai_fields`, `garment_materials`, `garment_care_instructions`, `garment_measurements`
 - 무결성: 코드 값은 도메인 테이블 FK, 값 범위는 CHECK, 같은 주인 규칙은 트리거 30개, 진행 중 세탁·수선 1건은 생성 열 + UNIQUE
 
@@ -186,7 +196,7 @@
 - 세탁소 영수증 글자 자동 읽기(사진은 묶음에 남기고 업체·날짜는 직접 입력·최근값 기본)
 - 무제한 브랜드 검색 보장, 세탁소 시스템 연동
 - 실물 자동 추적, 브라우저가 닫힌 동안의 푸시·문자·이메일 알림
-- 날씨·쇼핑 추천
+- 쇼핑 추천(날씨는 R12로 범위에 넣었다)
 
 ### 15. 아직 확인하지 못한 가정
 
@@ -262,3 +272,8 @@ docker run --rm --network otg-test -v "$PWD/backend:/src" -w /src maven:3.9-ecli
 | `AI_MODEL` | AI Gateway 모델 식별자(기본 `google/gemini-2.5-flash`) | 선택, 배포 환경변수 |
 | `RELEASE_ID` | `/__health`가 응답하는 배포 commit | 빌드 인자·환경변수로 주입 |
 | `SEED_USER_EMAIL`, `SEED_USER_PASSWORD` | docker 시드 계정(로컬 전용, 배포에서는 비움) | `docker-compose.yml` |
+| `KMA_API_KEY` | 현재 위치 날씨(R12) 기상청 인증키(인코딩·디코딩 키 모두 가능). 비우면 날씨 카드만 안내 문구 | 배포 서버 `.env`, GitHub Secrets |
+| `PORT` | 앱 포트(기본 3000) | 선택, 배포 서버 `.env` |
+| `JAVA_OPTS` | JVM 메모리(배포 묶음 `start.sh`가 읽음, 기본 `-Xmx768m`) | 선택, 배포 서버 `.env` |
+
+배포 서버용 예시는 [`.env.example`](.env.example)에 있다(키 값은 비워 둠).

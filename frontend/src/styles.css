@@ -509,14 +509,6 @@ a { color: inherit; }
 /* ---------- 코디 스튜디오 ---------- */
 
 /* 가로로 긴 선택 줄이 칸을 넓히지 않도록 한 칸도 minmax(0, 1fr)로 둔다. */
-.studio { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
-@media (min-width: 960px) { .studio { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 28px; align-items: start; } .studio-stage-wrap { position: sticky; top: 36px; } }
-.stage { position: relative; aspect-ratio: 4 / 5; max-height: 72dvh; width: 100%; border-radius: 24px; background: linear-gradient(180deg, #fbfaf8, #ece8e1); border: 1px solid var(--line); overflow: hidden; }
-.stage canvas { touch-action: none; }
-.stage-labels { position: absolute; left: 12px; right: 12px; top: 12px; display: flex; flex-wrap: wrap; gap: 6px; pointer-events: none; }
-.stage-labels span { background: rgb(255 255 255 / .9); border-radius: var(--r-pill); padding: 4px 10px; font-size: .75rem; font-weight: 700; }
-.stage-note { font-size: var(--t-small); color: var(--ink-2); margin: 8px 2px 0; }
-.stage-fallback { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: var(--ink-2); }
 .pick-row { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; }
 .pick { flex: none; width: 104px; border: 1.5px solid var(--line); background: var(--surface); border-radius: 16px; padding: 6px 6px 8px; cursor: pointer; text-align: left; }
 .pick[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft-2); }

@@ -2,7 +2,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useSession } from '../session'
 import { IconBox, IconHanger, IconMap, IconMove, IconPlus } from './Icons'
 
-// 수정안(2026-10-29)에서 3D 코디·추천(R05·R06)을 범위에서 빼고 옮기기(R11)를 넣었다. /studio 주소는 남아 있다.
+// 수정안(2026-10-29)에서 3D 코디·추천(R05·R06)을 범위에서 빼고 옮기기(R11)를 넣었다.
 const LINKS = [
   { to: '/closet', label: '내 옷장', icon: <IconHanger /> },
   { to: '/map', label: '옷장 지도', icon: <IconMap /> },

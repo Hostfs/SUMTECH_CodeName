@@ -450,19 +450,5 @@ class OtgyeolApplicationTests {
         // 옷장 지도에서도 세탁 중인 셔츠는 행거에 없는 것으로 보인다(같은 상태를 모든 화면이 공유)
         JsonNode map = c.get("/api/spaces").body();
         assertThat(map.toString()).doesNotContain("\"name\":\"네이비 옥스퍼드 셔츠\"");
-
-        // 코디 저장: 상의·하의 종류를 확인하고 같은 의류 ID로 다시 열린다
-        long jacketId = find(list, "그레이 울 재킷").get("id").asLong();
-        long slacksId = find(list, "블랙 슬랙스").get("id").asLong();
-        assertThat(c.post("/api/outfits", "{\"name\":\"뒤집힌 코디\",\"topId\":" + slacksId + ",\"bottomId\":" + jacketId + "}")
-                .status()).isEqualTo(400);
-        JsonNode outfits = c.post("/api/outfits", "{\"name\":\"출근 코디\",\"topId\":" + jacketId + ",\"bottomId\":" + slacksId + "}")
-                .body();
-        assertThat(outfits.get(0).get("top").get("id").asLong()).isEqualTo(jacketId);
-        assertThat(outfits.get(0).get("bottom").get("id").asLong()).isEqualTo(slacksId);
-        assertThat(outfits.get(0).get("top").get("template").asString()).isEqualTo("JACKET");
-
-        assertThat(c.send("PUT", "/api/body", "{\"heightCm\":185}").body().get("heightCm").asDouble()).isEqualTo(185.0);
-        assertThat(c.send("PUT", "/api/body", "{\"heightCm\":20}").status()).isEqualTo(400);
     }
 }

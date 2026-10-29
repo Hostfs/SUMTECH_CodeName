@@ -87,10 +87,6 @@ class AiFallbackTests {
         assertThat(detail.get("images").get(0).get("kind").asString()).isEqualTo("LABEL");
         assertThat(detail.get("search").get("status").asString()).isEqualTo("FAILED");
 
-        HttpResponse<String> rec = send(req("/api/recommendations").header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString("{\"season\":\"AUTUMN\",\"occasion\":\"출근\"}")));
-        assertThat(rec.statusCode()).isEqualTo(503);
-        assertThat(json.readTree(rec.body()).get("error").asString()).contains("AI 키");
     }
 
     @Test
