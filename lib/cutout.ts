@@ -10,6 +10,8 @@ export interface Cutout {
   aspect: number;
   /** 옷 윤곽 상자 (이미지 전체를 0~1로 본 좌표) */
   box: { x0: number; y0: number; x1: number; y1: number };
+  /** 옆모습 신발처럼 가로로 긴 옷에서 앞코가 있는 쪽 */
+  toe?: "left" | "right";
 }
 
 const MAX = 480; // 처리용으로 줄이는 최대 크기(px)
@@ -456,7 +458,22 @@ async function compute(src: string): Promise<Cutout | null> {
     const y1 = last(rows);
     if (x0 < 0 || y0 < 0 || x1 <= x0 || y1 <= y0) return null;
 
+    // 가로로 긴 옷(옆모습 신발): 앞코는 뒤꿈치보다 낮으므로, 양 끝 20% 구간에서 더 낮은(픽셀이 적은) 쪽이 앞코다
+    let toe: "left" | "right" | undefined;
+    if (!isSvg && (x1 - x0) / (y1 - y0) >= 1.5) {
+      const span = x1 - x0 + 1;
+      const band = Math.max(2, Math.round(span * 0.2));
+      let l = 0;
+      let r = 0;
+      for (let i = 0; i < band; i++) {
+        l += cols[x0 + i];
+        r += cols[x1 - i];
+      }
+      toe = r < l ? "right" : "left";
+    }
+
     return {
+      toe,
       href: isSvg ? src : canvas.toDataURL("image/png"),
       aspect: img.naturalWidth / img.naturalHeight,
       box: { x0: x0 / w, y0: y0 / h, x1: (x1 + 1) / w, y1: (y1 + 1) / h },

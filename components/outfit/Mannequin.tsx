@@ -51,6 +51,42 @@ function Fit({
   );
 }
 
+/**
+ * 옆모습 신발을 정면에서 본 것처럼 다시 구성한다.
+ * 옆모습의 앞코 쪽(앞 60%)만 잘라 가로로 좁히고, 바깥쪽으로 살짝 벌려 놓는다. 뒤꿈치·옆면은 정면에서 안 보이므로 쓰지 않는다.
+ * (사진을 새로 그리는 것은 아니라 근사치다.)
+ */
+function FrontShoe({ cutout, cx, bottom, d, tw0 }: { cutout: Cutout; cx: number; bottom: number; d: -1 | 1; tw0: number }) {
+  const { box, aspect, href, toe } = cutout;
+  const bw = box.x1 - box.x0;
+  const keep = 0.6;
+  const cropped: Cutout = {
+    ...cutout,
+    box: toe === "left" ? { ...box, x1: box.x0 + bw * keep } : { ...box, x0: box.x1 - bw * keep },
+  };
+  const sp = balance("shoes", cropped, tw0);
+  const tw = sp.tw * 0.8; // 정면이라 폭을 좁힌다
+  const th = sp.th;
+  const cb = cropped.box;
+  const toeRight = toe !== "left";
+  // 오른발은 앞코가 오른쪽, 왼발은 왼쪽을 향하게
+  const flip = d === 1 ? !toeRight : toeRight;
+  return (
+    <svg
+      x={cx - tw / 2}
+      y={bottom - th}
+      width={tw}
+      height={th}
+      viewBox={`${cb.x0 * aspect} ${cb.y0} ${(cb.x1 - cb.x0) * aspect} ${cb.y1 - cb.y0}`}
+      preserveAspectRatio="none"
+      overflow="hidden"
+      transform={`rotate(${d * 8} ${cx} ${bottom})` + (flip ? ` translate(${2 * cx} 0) scale(-1 1)` : "")}
+    >
+      <image href={href} x={0} y={0} width={aspect} height={1} preserveAspectRatio="none" />
+    </svg>
+  );
+}
+
 /** 옷이 없으면 아무것도 그리지 않는 자리(0)를 돌려주고, 있으면 균형 보정한 크기를 돌려준다 */
 function plan(slot: WornSlot, c: Cutout | null, tw0: number) {
   return c ? balance(slot, c, tw0) : { tw: 0, th: 0 };
@@ -155,11 +191,12 @@ export function Mannequin({
         {/* 옷: 하의 → 신발 → 상의 → 아우터 순으로 겹친다 */}
         <Fit cutout={bottom} cx={100} top={172} {...plan("bottom", bottom, 2 * hw + 8)} />
         {[-1, 1].map((d) => {
-          // 앞모습 신발은 발 위에 그대로, 옆모습 신발(가로로 긴 사진)은 뒤꿈치를 발목 쪽에 두고 앞코가 바깥을 향하게 놓는다
-          const side = shoes ? ratioOf(shoes) < 0.75 : false;
-          const sp = plan("shoes", shoes, side ? 50 : 44);
-          const cx = side ? 100 + d * (legX - sp.tw * 0.2 + sp.tw / 2) : 100 + d * (legX - 2);
-          return <Fit key={d} cutout={shoes} cx={cx} bottom={433} flip={d === -1} {...sp} />;
+          if (!shoes) return null;
+          // 옆모습 신발(가로로 긴 사진)은 정면 신발처럼 다시 구성해서 놓는다
+          if (ratioOf(shoes) < 0.75) {
+            return <FrontShoe key={d} cutout={shoes} cx={100 + d * (legX + 2)} bottom={433} d={d as -1 | 1} tw0={44} />;
+          }
+          return <Fit key={d} cutout={shoes} cx={100 + d * (legX - 2)} bottom={433} flip={d === -1} {...plan("shoes", shoes, 44)} />;
         })}
         <Fit cutout={top} cx={100} top={70} {...plan("top", top, 2 * armOuter + 4)} />
         <Fit cutout={outer} cx={100} top={64} {...plan("outer", outer, 2 * armOuter + 20)} />
