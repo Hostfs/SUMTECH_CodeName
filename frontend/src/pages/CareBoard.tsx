@@ -55,7 +55,7 @@ export default function CareBoard() {
   return (
     <>
       <div className="page-head"><h1 className="page-title">관리함</h1></div>
-      <p className="page-lead">세탁소·수선집에 맡긴 옷과 돌려받을 날을 모아 봐요. 맡긴 옷은 코디 추천에서 빠져요.</p>
+      <p className="page-lead">세탁소·수선집에 맡긴 옷과 돌려받을 날을 모아 봐요. 옮기기에서 세탁소로 묶어 보낸 옷도 여기에 모여요.</p>
       {error && <div style={{ marginBottom: 16 }}><Notice>{error}</Notice></div>}
       {returned.map((it) => (
         <div key={it.garment.id} style={{ marginBottom: 12 }}>
@@ -86,7 +86,11 @@ export default function CareBoard() {
             <div className="row-thumb">{it.garment.imageUrl ? <img src={it.garment.imageUrl} alt="" /> : <GarmentArt subType={it.garment.subType} colorHex={it.garment.colorHex} title={it.garment.name} />}</div>
             <div className="row-main">
               <Link className="row-title" to={`/closet/${it.garment.id}`}>{it.garment.name}</Link>
-              <div className="row-sub">{it.care.completedAt ? it.care.careTypeLabel : `${it.care.careTypeLabel} 중`}, {it.care.place === 'SHOP' ? it.care.shopName ?? '업체' : '자택'}{it.care.description ? `, ${it.care.description}` : ''}</div>
+              {/* 진행 중이면 옷의 지금 상태(세탁 중·수선 중)를, 끝났으면 맡긴 종류를 앞에 둔다. */}
+              <div className="row-sub">
+                {it.care.completedAt ? it.care.careTypeLabel : <strong className="care-status">{it.garment.statusLabel}</strong>}
+                , {it.care.place === 'SHOP' ? it.care.shopName ?? '업체' : '자택'}{it.care.description ? `, ${it.care.description}` : ''}
+              </div>
               {it.care.completedAt ? (
                 <div className="row-sub">{formatDate(it.care.droppedOn)} 맡김, {formatDate(it.care.completedAt)} 회수 완료</div>
               ) : (

@@ -4,6 +4,7 @@ import { api, errorMessage } from '../api'
 import GarmentForm from '../components/GarmentForm'
 import { processCoverIfNeeded } from '../imageCleanup'
 import { emptyForm, toInput, type GarmentFormValue } from '../garmentForm'
+import { COLOR_PALETTE } from '../colors'
 import { IconCamera, IconClose, IconSearch, IconSparkle } from '../components/Icons'
 import { Notice, Spinner } from '../components/Ui'
 import type { Candidate, Extraction, GarmentDetail, MapView, SpaceView } from '../types'
@@ -16,6 +17,12 @@ type AnalyzeResult = { extraction: Extraction; suggestion: Suggestion; aiFields:
 type SearchResult = { id: number; status: 'SUCCEEDED' | 'FAILED'; candidates: Candidate[]; message: string | null }
 
 const MAX_PHOTOS = 4
+
+// AI가 채운 항목 코드 → 입력 칸. 저장 전에 사용자가 고친 칸은 'AI가 채운 항목'에서 뺀다.
+const FIELD_KEYS: Record<string, keyof GarmentFormValue> = {
+  NAME: 'name', BRAND: 'brand', PRODUCT_CODE: 'productCode', COLOR: 'colorName', SIZE_LABEL: 'sizeLabel', ORIGIN: 'origin',
+  SUB_TYPE: 'subType', SEASONS: 'seasons', MATERIAL: 'materials', CARE: 'careLines',
+}
 
 function usePreviews(files: File[]) {
   const urls = useMemo(() => files.map((f) => URL.createObjectURL(f)), [files])
@@ -35,6 +42,8 @@ export default function Register() {
   const [analysis, setAnalysis] = useState<AnalyzeResult | null>(null)
   const [analyzeError, setAnalyzeError] = useState('')
   const [manual, setManual] = useState(false)
+  // 분석 직후의 입력값(사용자가 고쳤는지 비교용)
+  const [suggested, setSuggested] = useState<GarmentFormValue | null>(null)
 
   const [form, setForm] = useState<GarmentFormValue>(emptyForm)
   const [searching, setSearching] = useState(false)
@@ -55,6 +64,8 @@ export default function Register() {
   const [saveError, setSaveError] = useState('')
 
   const step = !analysis && !manual ? 1 : !search ? 2 : 3
+  // 분석이 끝난 뒤에만 택 사진을 잠근다. 실패하면 사진을 바꾸거나 '택 분석하기'로 다시 시도할 수 있다.
+  const analyzed = analysis?.extraction.status === 'DONE'
   const showForm = Boolean(analysis) || manual
 
   const flags = useMemo(() => {
@@ -80,21 +91,28 @@ export default function Register() {
       const result = await api.post<AnalyzeResult>('/api/labels/analyze', body)
       setAnalysis(result)
       const s = result.suggestion
-      setForm((prev) => ({
-        ...prev,
-        name: s.name ?? prev.name,
-        subType: s.subType ?? prev.subType,
-        brand: s.brand ?? prev.brand,
-        productCode: s.productCode ?? prev.productCode,
-        colorName: s.colorName ?? prev.colorName,
-        colorHex: s.colorHex ?? prev.colorHex,
-        sizeLabel: s.sizeLabel ?? prev.sizeLabel,
-        origin: s.origin ?? prev.origin,
-        seasons: s.seasons?.length ? s.seasons : prev.seasons,
-        materials: s.materials?.length ? s.materials.map((m) => ({ part: m.part, fiber: m.fiber, percent: String(m.percent) })) : prev.materials,
-        careLines: s.careLines?.length ? s.careLines.join('\n') : prev.careLines,
-      }))
-      if (result.extraction.status === 'FAILED') setAnalyzeError(result.extraction.errorMessage ?? '택을 읽지 못했어요.')
+      const next: GarmentFormValue = {
+        ...form,
+        name: s.name ?? form.name,
+        subType: s.subType ?? form.subType,
+        brand: s.brand ?? form.brand,
+        productCode: s.productCode ?? form.productCode,
+        colorName: s.colorName ?? form.colorName,
+        // 택에는 색 이름만 적혀 있으므로 같은 이름의 팔레트 색이 있으면 그 색을 고른다.
+        colorHex: (s.colorName && COLOR_PALETTE.find((p) => p.name === s.colorName)?.hex) || form.colorHex,
+        sizeLabel: s.sizeLabel ?? form.sizeLabel,
+        origin: s.origin ?? form.origin,
+        seasons: s.seasons?.length ? s.seasons : form.seasons,
+        materials: s.materials?.length ? s.materials.map((m) => ({ part: m.part, fiber: m.fiber, percent: String(m.percent) })) : form.materials,
+        careLines: s.careLines?.length ? s.careLines.join('\n') : form.careLines,
+      }
+      setForm(next)
+      setSuggested(next)
+      if (result.extraction.status === 'FAILED') {
+        // 사진은 그대로 두고 다시 분석하거나 직접 입력할 수 있게 한다.
+        setAnalyzeError(result.extraction.errorMessage ?? '택을 읽지 못했어요.')
+        setManual(true)
+      }
     } catch (e) {
       // 분석이 실패해도 입력 칸을 열어 직접 입력으로 등록을 마칠 수 있게 한다.
       setAnalyzeError(errorMessage(e))
@@ -131,7 +149,10 @@ export default function Register() {
         const up = await api.post<{ id: number }>('/api/images', body)
         imageIds.push(up.id)
       }
-      const aiFields = analysis ? analysis.aiFields.filter((k) => !analysis.unread.includes(k)) : []
+      const aiFields = analysis && suggested
+        ? analysis.aiFields.filter((k) => !analysis.unread.includes(k)
+          && (!FIELD_KEYS[k] || JSON.stringify(form[FIELD_KEYS[k]]) === JSON.stringify(suggested[FIELD_KEYS[k]])))
+        : []
       const created = await api.post<GarmentDetail>('/api/garments', {
         ...toInput(form), imageIds, extractionId: analysis?.extraction.id ?? null, candidateId, aiFields,
         spaceId: spaceId ? Number(spaceId) : null,
@@ -162,19 +183,19 @@ export default function Register() {
           <strong>택 사진 추가</strong>
           <span className="field-hint">카메라로 찍거나 사진을 골라요(JPG·PNG·WEBP, 장당 10MB)</span>
           <input className="sr-only" type="file" accept="image/jpeg,image/png,image/webp" multiple capture="environment"
-            aria-label="택 사진 추가" onChange={(e) => addFiles(e, 'tag')} disabled={tagFiles.length >= MAX_PHOTOS || Boolean(analysis)} />
+            aria-label="택 사진 추가" onChange={(e) => addFiles(e, 'tag')} disabled={tagFiles.length >= MAX_PHOTOS || analyzed} />
         </label>
         {tagFiles.length > 0 && (
           <div className="photo-row">
             {tagUrls.map((u, i) => (
               <div className="photo" key={u}>
                 <img src={u} alt={`택 사진 ${i + 1}`} />
-                {!analysis && <button type="button" aria-label={`택 사진 ${i + 1} 빼기`} onClick={() => setTagFiles(tagFiles.filter((_, j) => j !== i))}><IconClose /></button>}
+                {!analyzed && <button type="button" aria-label={`택 사진 ${i + 1} 빼기`} onClick={() => setTagFiles(tagFiles.filter((_, j) => j !== i))}><IconClose /></button>}
               </div>
             ))}
           </div>
         )}
-        {!analysis && (
+        {!analyzed && (
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 16 }}>
             <button type="button" className="btn" onClick={analyze} disabled={tagFiles.length === 0 || analyzing}>
               {analyzing ? <Spinner /> : <IconSparkle />}{analyzing ? '택을 읽는 중' : '택 분석하기'}
@@ -185,7 +206,7 @@ export default function Register() {
         {analyzeError && (
           <div style={{ marginTop: 12 }}>
             <Notice kind="warn">{analyzeError} 사진을 다시 찍거나, 아래에 직접 입력해 등록을 마칠 수 있어요.</Notice>
-            {!analysis && <button type="button" className="btn btn-sm btn-outline" style={{ marginTop: 8 }} onClick={() => setManual(true)}>직접 입력으로 계속</button>}
+            {!analyzed && !manual && <button type="button" className="btn btn-sm btn-outline" style={{ marginTop: 8 }} onClick={() => setManual(true)}>직접 입력으로 계속</button>}
           </div>
         )}
         {analysis && analysis.extraction.status === 'DONE' && (

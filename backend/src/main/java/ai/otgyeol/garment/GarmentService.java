@@ -231,6 +231,7 @@ public class GarmentService {
                     linked.add(imageId);
                 }
             }
+            recordCorrections(g, extraction);
         }
         Long productImage = null;
         if (in.candidateId() != null) {
@@ -324,8 +325,60 @@ public class GarmentService {
                     () -> covers.save(new GarmentCoverImage(g.id, image.imageId)));
         }
         g.aiFields.removeAll(changed);
+        extractions.findLatestForGarment(g.id).ifPresent(e -> recordCorrections(g, e));
         g.updatedAt = Instant.now();
         return detail(userId, g.id);
+    }
+
+    /**
+     * 택에서 읽은 값과 지금 옷 정보가 다르면 사용자가 고친 값으로 남긴다(label_extraction_values.corrected_value).
+     * 읽은 값은 그대로 두어 AI가 무엇을 읽었고 사용자가 무엇으로 고쳤는지를 함께 본다. 고친 항목은 'AI가 채운 항목'에서 뺀다.
+     * 읽은 값을 지우기만 한 경우는 고친 값이 없으므로 기록하지 않는다.
+     */
+    private static void recordCorrections(Garment g, LabelExtraction e) {
+        Set<LabelExtraction.FieldValue> next = new LinkedHashSet<>();
+        for (LabelExtraction.FieldValue v : e.values) {
+            String current = fieldText(g, v.field());
+            String corrected = current == null || sameText(v.field(), v.readValue(), current) ? null : current;
+            next.add(new LabelExtraction.FieldValue(v.field(), v.readValue(), corrected));
+            if (corrected != null) {
+                g.aiFields.remove(v.field());
+            }
+        }
+        if (!next.equals(e.values)) {
+            e.values.clear();
+            e.values.addAll(next);
+        }
+    }
+
+    /** 택 판독값과 같은 모양의 글자로 옮긴 옷 정보(소재는 '겉감 면 100%, …', 세탁법은 ' / '로 이음). */
+    private static String fieldText(Garment g, GarmentField field) {
+        return switch (field) {
+            case NAME -> g.name;
+            case BRAND -> g.brand;
+            case PRODUCT_CODE -> g.productCode;
+            case COLOR -> g.colorName;
+            case SIZE_LABEL -> g.sizeLabel;
+            case ORIGIN -> g.origin;
+            case MATERIAL -> g.materials.isEmpty() ? null : g.materials.stream()
+                    .sorted(Comparator.comparing((Garment.Material m) -> m.part()).thenComparing(m -> m.fiber()))
+                    .map(m -> m.part().label + " " + m.fiber().label + " " + m.percent().stripTrailingZeros().toPlainString() + "%")
+                    .collect(Collectors.joining(", "));
+            case CARE -> g.careLines.isEmpty() ? null : g.careLines.stream().sorted(Comparator.comparingInt(Garment.CareLine::lineNo))
+                    .map(Garment.CareLine::instruction).collect(Collectors.joining(" / "));
+            default -> null;
+        };
+    }
+
+    private static boolean sameText(GarmentField field, String read, String current) {
+        if (read == null) {
+            return false;
+        }
+        if (field == GarmentField.MATERIAL) {
+            // 소재는 부위·섬유 순서가 달라도 같은 값이다.
+            return new HashSet<>(List.of(read.split(",\\s*"))).equals(new HashSet<>(List.of(current.split(",\\s*"))));
+        }
+        return read.trim().equals(current.trim());
     }
 
     /** 사용자가 정하는 집 안 상태만 바꾼다. 세탁 중·수선 중·회수는 관리함 기록에서 계산된다. */

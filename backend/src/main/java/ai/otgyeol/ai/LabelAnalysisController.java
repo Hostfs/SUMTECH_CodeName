@@ -50,14 +50,17 @@ import tools.jackson.databind.node.ObjectNode;
 @RestController
 public class LabelAnalysisController {
 
-    /** 택에서 읽는 항목. 색상·이름·종류·계절은 택에서 확정할 수 없으니 제안으로만 쓴다. */
+    /** 택에서 읽는 항목. 색상·이름·종류·계절은 택에서 확정할 수 없으니 제안으로만 쓴다(색상은 택에 적혀 있을 때만). */
+    /** 택 분석 응답 캐시(이미지 해시 → AI 원문 응답, 6시간). */
+    private static final ResponseCache<String> CACHE = new ResponseCache<>(Duration.ofHours(6));
+
     static final List<GarmentField> READ_FIELDS = List.of(GarmentField.BRAND, GarmentField.PRODUCT_CODE,
             GarmentField.SIZE_LABEL, GarmentField.ORIGIN, GarmentField.MATERIAL, GarmentField.CARE);
 
     public record MaterialSuggestion(String part, String fiber, BigDecimal percent) {
     }
 
-    public record Suggestion(String name, String subType, String brand, String productCode, String sizeLabel,
+    public record Suggestion(String name, String subType, String brand, String productCode, String colorName, String sizeLabel,
             String origin, List<String> seasons, List<MaterialSuggestion> materials, List<String> careLines) {
     }
 
@@ -91,11 +94,17 @@ public class LabelAnalysisController {
         e.userId = userId;
         stored.forEach(i -> e.imageIds.add(i.id));
 
-        Suggestion suggestion = new Suggestion(null, null, null, null, null, null, List.of(), List.of(), List.of());
+        Suggestion suggestion = new Suggestion(null, null, null, null, null, null, null, List.of(), List.of(), List.of());
         List<String> aiFields = new ArrayList<>();
         List<String> unread = new ArrayList<>();
         try {
-            JsonNode read = AiGateway.parseObject(ai.complete(request(stored), Duration.ofSeconds(50)));
+            // 같은 사진(바이트가 같은 택 사진들)을 다시 분석하면 AI를 부르지 않고 앞의 응답을 쓴다.
+            String cacheKey = ResponseCache.sha256(stored.stream().map(i -> i.data).toArray(byte[][]::new));
+            String raw = CACHE.get(cacheKey).orElse(null);
+            if (raw == null) {
+                raw = ai.complete(request(stored), Duration.ofSeconds(50));
+            }
+            JsonNode read = AiGateway.parseObject(raw);
             e.rawText = AiGateway.text(read, "rawText", 4000);
             Map<GarmentField, String> values = new EnumMap<>(GarmentField.class);
             values.put(GarmentField.BRAND, AiGateway.text(read, "brand", 100));
@@ -117,6 +126,7 @@ public class LabelAnalysisController {
             List<String> seasons = strings(read.path("seasons"), 4, 10).stream()
                     .map(s -> enumValue(Season.class, s)).filter(s -> s != null).distinct().toList();
             String name = AiGateway.text(read, "nameSuggestion", 100);
+            String colorName = AiGateway.text(read, "colorName", 50);
             if (subType != null) {
                 aiFields.add(GarmentField.SUB_TYPE.name());
             }
@@ -126,9 +136,13 @@ public class LabelAnalysisController {
             if (name != null) {
                 aiFields.add(GarmentField.NAME.name());
             }
-            suggestion = new Suggestion(name, subType, values.get(GarmentField.BRAND), values.get(GarmentField.PRODUCT_CODE),
+            if (colorName != null) {
+                aiFields.add(GarmentField.COLOR.name());
+            }
+            suggestion = new Suggestion(name, subType, values.get(GarmentField.BRAND), values.get(GarmentField.PRODUCT_CODE), colorName,
                     values.get(GarmentField.SIZE_LABEL), values.get(GarmentField.ORIGIN), seasons, materials, careLines);
             e.status = LabelExtraction.Status.DONE;
+            CACHE.put(cacheKey, raw);
         } catch (ApiException ex) {
             e.status = LabelExtraction.Status.FAILED;
             e.errorMessage = ex.getMessage();
@@ -153,6 +167,7 @@ public class LabelAnalysisController {
                  "materials": [{"part": "SHELL|LINING|TRIM|FILL", "fiber": "%s", "percent": 숫자}],
                  "materialText": materials로 옮기기 어려운 소재 원문 또는 null,
                  "careLines": 세탁·관리 지시를 한국어 한 줄씩(예: "30도 이하 물세탁", "표백 금지", "드라이클리닝"),
+                 "colorName": 택에 색상이 적혀 있을 때만 그 색상명(예: "화이트", "네이비"), 아니면 null,
                  "subType": 택에 종류가 적혀 있을 때만 "%s" 중 하나, 아니면 null,
                  "seasons": 소재로 판단한 계절 ["SPRING","SUMMER","AUTUMN","WINTER"] 중 0~4개,
                  "nameSuggestion": 목록에 보일 짧은 한국어 이름 제안(예: "울 혼방 재킷") 또는 null}

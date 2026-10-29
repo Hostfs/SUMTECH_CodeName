@@ -9,6 +9,8 @@ const WORK_MAX = 1024 // 계산용으로 줄이는 긴 변
 const OUT_SIZE = 1024 // 결과 정사각 한 변
 const PADDING = 0.12 // 결과 여백(한 변 대비). 목록 카드가 위아래를 조금 잘라도 옷이 잘리지 않게 넉넉히 둔다
 const TOLERANCE = 42 // 배경색과의 RGB 거리 허용치(최대 441)
+// 조명 때문에 배경이 한쪽으로 조금씩 어두워지는 경우: 바로 옆 배경 픽셀과 STEP 이내로 비슷하면 배경색과 2배까지 달라도 배경으로 본다.
+const STEP = 10
 
 export async function cleanupImage(source: Blob): Promise<Blob> {
   const bitmap = await createImageBitmap(source).catch(() => {
@@ -32,13 +34,20 @@ export async function cleanupImage(source: Blob): Promise<Blob> {
   for (let x = 0; x < w; x++) border.push(x, (h - 1) * w + x)
   for (let y = 1; y < h - 1; y++) border.push(y * w, y * w + w - 1)
   const bg = [0, 1, 2].map((c) => median(border.map((i) => px[i * 4 + c])))
-  const near = (i: number) => {
+  const distBg = (i: number) => {
     const o = i * 4
-    if (px[o + 3] < 16) return true
     const dr = px[o] - bg[0], dg = px[o + 1] - bg[1], db = px[o + 2] - bg[2]
-    return dr * dr + dg * dg + db * db <= TOLERANCE * TOLERANCE
+    return dr * dr + dg * dg + db * db
   }
-  if (border.filter(near).length / border.length < 0.6) {
+  const near = (i: number) => px[i * 4 + 3] < 16 || distBg(i) <= TOLERANCE * TOLERANCE
+  // 이미 배경으로 본 픽셀(from)과 거의 같은 색이면 완만한 그러데이션으로 보고 이어서 지운다.
+  const nearFrom = (n: number, from: number) => {
+    if (distBg(n) > 4 * TOLERANCE * TOLERANCE) return false
+    const a = n * 4, b = from * 4
+    const dr = px[a] - px[b], dg = px[a + 1] - px[b + 1], db = px[a + 2] - px[b + 2]
+    return dr * dr + dg * dg + db * db <= STEP * STEP
+  }
+  if (border.filter((i) => near(i) || distBg(i) <= 2.56 * TOLERANCE * TOLERANCE).length / border.length < 0.6) {
     throw new Error('배경이 한 가지 색이 아니라 자동으로 지우지 못했어요. 단색 바닥이나 벽 앞에서 다시 찍어 보세요.')
   }
 
@@ -54,7 +63,7 @@ export async function cleanupImage(source: Blob): Promise<Blob> {
     const x = i % w
     const next = [x > 0 ? i - 1 : -1, x < w - 1 ? i + 1 : -1, i - w, i + w]
     for (const n of next) {
-      if (n >= 0 && n < w * h && !isBg[n] && near(n)) { isBg[n] = 1; queue[tail++] = n }
+      if (n >= 0 && n < w * h && !isBg[n] && (near(n) || nearFrom(n, i))) { isBg[n] = 1; queue[tail++] = n }
     }
   }
 
@@ -67,6 +76,15 @@ export async function cleanupImage(source: Blob): Promise<Blob> {
     if (x > maxX) maxX = x
     if (y < minY) minY = y
     if (y > maxY) maxY = y
+  }
+  // 옷 외곽 한 줄은 배경색에 가까운 정도만큼 반투명하게 해서 계단처럼 잘린 테두리를 부드럽게 한다(색은 그대로).
+  for (let i = 0; i < w * h; i++) {
+    if (isBg[i]) continue
+    const x = i % w
+    const touchesBg = (x > 0 && isBg[i - 1]) || (x < w - 1 && isBg[i + 1]) || (i >= w && isBg[i - w]) || (i + w < w * h && isBg[i + w])
+    if (!touchesBg) continue
+    const t = (Math.sqrt(distBg(i)) - TOLERANCE) / TOLERANCE
+    px[i * 4 + 3] = Math.round(px[i * 4 + 3] * Math.min(1, Math.max(0.35, t)))
   }
   const ratio = fg / (w * h)
   if (ratio < 0.03 || ratio > 0.97) {

@@ -14,6 +14,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -56,6 +57,15 @@ public class ProductSearchController {
     }
 
     private static final int MAX_CANDIDATES = 3;
+    /** 후보 페이지를 한꺼번에 열어 볼 최대 개수(모델이 준 주소 중 앞에서부터). */
+    private static final int MAX_FETCH = 5;
+
+    /** 검색 결과 캐시(브랜드·품번·이름 → 검증을 마친 후보, 6시간). 성공한 검색만 넣는다. */
+    private record Cached(String name, String brand, String productCode, String colorName, String imageUrl,
+            String sourceUrl, String matchReason) {
+    }
+
+    private static final ResponseCache<List<Cached>> CACHE = new ResponseCache<>(Duration.ofHours(6));
     private static final Pattern OG = Pattern.compile(
             "<meta[^>]+(?:property|name)\\s*=\\s*[\"'](og:title|og:image)[\"'][^>]*content\\s*=\\s*[\"']([^\"']+)[\"']",
             Pattern.CASE_INSENSITIVE);
@@ -99,17 +109,25 @@ public class ProductSearchController {
         s.queryProductCode = code;
         String message = null;
         List<ProductCandidate> found = new ArrayList<>();
+        String cacheKey = ResponseCache.sha256((brand + "|" + code + "|" + blankToNull(in.name())).toLowerCase(Locale.ROOT));
+        List<Cached> cached = CACHE.get(cacheKey).orElse(null);
         try {
-            JsonNode answer;
-            try {
-                answer = AiGateway.parseObject(ai.complete(request(brand, code, blankToNull(in.name()), true), Duration.ofSeconds(25)));
-            } catch (ApiException toolEx) {
-                if (!ai.configured()) {
-                    throw toolEx;
+            if (cached != null) {
+                found = cached.stream().map(ProductSearchController::candidate).toList();
+            } else {
+                JsonNode answer;
+                try {
+                    answer = AiGateway.parseObject(ai.complete(request(brand, code, blankToNull(in.name()), true), Duration.ofSeconds(25)));
+                } catch (ApiException toolEx) {
+                    if (!ai.configured()) {
+                        throw toolEx;
+                    }
+                    answer = AiGateway.parseObject(ai.complete(request(brand, code, blankToNull(in.name()), false), Duration.ofSeconds(25)));
                 }
-                answer = AiGateway.parseObject(ai.complete(request(brand, code, blankToNull(in.name()), false), Duration.ofSeconds(25)));
+                found = verify(answer.path("candidates"), brand, code);
+                CACHE.put(cacheKey, found.stream().map(c -> new Cached(c.name, c.brand, c.productCode, c.colorName, c.imageUrl,
+                        c.sourceUrl, c.matchReason)).toList());
             }
-            found = verify(answer.path("candidates"), brand, code);
             s.status = ProductSearch.Status.SUCCEEDED;
         } catch (ApiException e) {
             s.status = ProductSearch.Status.FAILED;
@@ -159,16 +177,25 @@ public class ProductSearchController {
         if (!arr.isArray()) {
             return out;
         }
+        // 페이지를 하나씩 차례로 열면 최악의 경우 대기 시간이 개수만큼 늘어나므로 앞쪽 MAX_FETCH개를 한꺼번에 열어 본다.
         Set<String> urls = new LinkedHashSet<>();
+        List<JsonNode> nodes = new ArrayList<>();
+        List<CompletableFuture<Page>> pages = new ArrayList<>();
         for (JsonNode n : arr) {
-            if (out.size() >= MAX_CANDIDATES) {
+            if (pages.size() >= MAX_FETCH) {
                 break;
             }
             String url = AiGateway.text(n, "sourceUrl", 700);
             if (url == null || !(url.startsWith("https://") || url.startsWith("http://")) || !urls.add(url)) {
                 continue;
             }
-            Page page = fetch(url);
+            nodes.add(n);
+            pages.add(CompletableFuture.supplyAsync(() -> fetch(url)));
+        }
+        for (int i = 0; i < nodes.size() && out.size() < MAX_CANDIDATES; i++) {
+            JsonNode n = nodes.get(i);
+            String url = AiGateway.text(n, "sourceUrl", 700);
+            Page page = pages.get(i).join();
             if (page == null) {
                 continue;
             }
@@ -191,6 +218,18 @@ public class ProductSearchController {
     }
 
     record Page(String url, String title, String image, String text) {
+    }
+
+    private static ProductCandidate candidate(Cached c) {
+        ProductCandidate p = new ProductCandidate();
+        p.name = c.name();
+        p.brand = c.brand();
+        p.productCode = c.productCode();
+        p.colorName = c.colorName();
+        p.imageUrl = c.imageUrl();
+        p.sourceUrl = c.sourceUrl();
+        p.matchReason = c.matchReason();
+        return p;
     }
 
     /**

@@ -58,6 +58,5 @@ test('S7 사용자가 셔츠를 세탁소에 맡기고 회수 예정일을 기�
   const row = page.getByRole('tabpanel', { name: '진행 중' }).getByLabel('네이비 옥스퍼드 셔츠 세탁', { exact: true })
   await expect(row).toContainText('동네 세탁소')
   await expect(row).toContainText(`${tomorrow.getMonth() + 1}월 ${tomorrow.getDate()}일 회수 예정`)
-  await row.getByRole('link', { name: '네이비 옥스퍼드 셔츠' }).click()
-  await expect(page.locator('.info-row', { hasText: '상태' }).locator('dd')).toHaveText('세탁 중')
+  await expect(row).toContainText('세탁 중')
 })

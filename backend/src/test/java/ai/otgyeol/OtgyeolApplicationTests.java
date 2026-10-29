@@ -13,9 +13,11 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
@@ -27,6 +29,9 @@ class OtgyeolApplicationTests {
 
     @LocalServerPort
     int port;
+
+    @Autowired
+    JdbcTemplate jdbc;
 
     final JsonMapper json = JsonMapper.builder().build();
 
@@ -253,6 +258,50 @@ class OtgyeolApplicationTests {
         // 세탁 중인 옷은 넣을 수 없다
         c.post("/api/garments/" + tee + "/care", "{\"careType\":\"WASH\",\"place\":\"HOME\",\"dueOn\":\"" + today(1) + "\"}");
         assertThat(c.post("/api/spaces/" + hanger + "/garments", "{\"garmentIds\":[" + tee + "]}").status()).isEqualTo(409);
+    }
+
+    @Test
+    void userCorrectionsAreKeptBesideWhatTheTagSaid() throws Exception {
+        Client c = new Client();
+        String email = "fix" + System.nanoTime() + "@example.com";
+        c.post("/api/auth/signup", "{\"email\":\"" + email + "\",\"password\":\"password123\"}");
+        // AI 키가 없는 테스트 환경이라 '택을 읽은 결과'를 DB에 직접 만든다: 브랜드·사이즈·소재는 읽었고 원산지는 못 읽음
+        long userId = jdbc.queryForObject("SELECT id FROM users WHERE email = ?", Long.class, email);
+        jdbc.update("INSERT INTO label_extractions (user_id, status_code, raw_text, created_at) VALUES (?, 'DONE', '택', NOW(6))", userId);
+        long ext = jdbc.queryForObject("SELECT MAX(id) FROM label_extractions WHERE user_id = ?", Long.class, userId);
+        jdbc.update("INSERT INTO label_extraction_values (extraction_id, field_code, read_value) VALUES (?, 'BRAND', 'OTGYEOL'), "
+                + "(?, 'SIZE_LABEL', 'M'), (?, 'MATERIAL', '겉감 면 60%, 겉감 폴리에스터 40%'), (?, 'ORIGIN', NULL)", ext, ext, ext, ext);
+
+        // 사이즈를 L로 고치고 못 읽은 원산지를 채운다. 브랜드와 소재(순서만 다름)는 읽은 그대로 둔다
+        JsonNode created = c.post("/api/garments", "{\"name\":\"정정 테스트\",\"subType\":\"SHIRT\",\"brand\":\"OTGYEOL\",\"sizeLabel\":\"L\","
+                + "\"origin\":\"베트남\",\"materials\":[{\"part\":\"SHELL\",\"fiber\":\"POLYESTER\",\"percent\":40},"
+                + "{\"part\":\"SHELL\",\"fiber\":\"COTTON\",\"percent\":60}],\"extractionId\":" + ext
+                + ",\"aiFields\":[\"BRAND\",\"SIZE_LABEL\",\"MATERIAL\"]}").body();
+        JsonNode values = created.get("extraction").get("values");
+        assertThat(field(values, "SIZE_LABEL").get("readValue").asString()).isEqualTo("M");
+        assertThat(field(values, "SIZE_LABEL").get("correctedValue").asString()).isEqualTo("L");
+        assertThat(field(values, "ORIGIN").get("correctedValue").asString()).isEqualTo("베트남");
+        assertThat(field(values, "BRAND").get("correctedValue").isNull()).isTrue();
+        assertThat(field(values, "MATERIAL").get("correctedValue").isNull()).isTrue();
+        assertThat(created.get("aiFields").toString()).contains("BRAND", "MATERIAL").doesNotContain("SIZE_LABEL");
+
+        // 나중에 상세에서 브랜드를 고쳐도 읽은 값 옆에 고친 값이 남는다
+        long id = created.get("summary").get("id").asLong();
+        JsonNode updated = c.send("PUT", "/api/garments/" + id, "{\"name\":\"정정 테스트\",\"subType\":\"SHIRT\",\"brand\":\"OTGYEOL BASIC\","
+                + "\"sizeLabel\":\"L\",\"origin\":\"베트남\",\"materials\":[{\"part\":\"SHELL\",\"fiber\":\"COTTON\",\"percent\":60},"
+                + "{\"part\":\"SHELL\",\"fiber\":\"POLYESTER\",\"percent\":40}]}").body();
+        assertThat(field(updated.get("extraction").get("values"), "BRAND").get("correctedValue").asString()).isEqualTo("OTGYEOL BASIC");
+        assertThat(field(updated.get("extraction").get("values"), "BRAND").get("readValue").asString()).isEqualTo("OTGYEOL");
+        assertThat(updated.get("aiFields").toString()).doesNotContain("BRAND");
+    }
+
+    static JsonNode field(JsonNode values, String code) {
+        for (JsonNode v : values) {
+            if (code.equals(v.get("field").asString())) {
+                return v;
+            }
+        }
+        throw new AssertionError(code + " not found in " + values);
     }
 
     @Test

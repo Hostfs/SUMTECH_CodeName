@@ -571,3 +571,5 @@ a { color: inherit; }
 .account-bar span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .account-bar button { background: none; border: 0; padding: 0; color: var(--ink-2); text-decoration: underline; cursor: pointer; flex: none; }
 @media (min-width: 960px) { .account-bar { display: none; } }
+
+.care-status { color: var(--accent); font-weight: 700; }

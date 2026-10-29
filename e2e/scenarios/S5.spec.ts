@@ -57,8 +57,6 @@ test('S5 사용자가 셔츠와 후드티를 세탁소 묶음으로 한 번에 �
     const row = panel.getByLabel(`${name} 세탁`, { exact: true })
     await expect(row).toContainText('동네 세탁소')
     await expect(row).toContainText(`${inDays(3)} 회수 예정`)
-    await expect(row).toContainText('세탁')
+    await expect(row).toContainText('세탁 중')
   }
-  await page.getByRole('link', { name: '그레이 후드티' }).click()
-  await expect(page.locator('.info-row', { hasText: '상태' }).locator('dd')).toHaveText('세탁 중')
 })

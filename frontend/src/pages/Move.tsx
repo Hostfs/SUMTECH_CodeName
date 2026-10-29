@@ -38,22 +38,42 @@ function boxPlaces(map: MapView): SpaceView[] {
   return map.spaces.filter((s) => (s.spaceType === 'BOX' || s.spaceType === 'OFFSITE') && !map.spaces.some((o) => o.parentId === s.id))
 }
 
-type Detector =new (o: { formats: string[] }) => { detect(s: ImageBitmap): Promise<{ rawValue: string }[]> }
+type Detector = new (o: { formats: string[] }) => { detect(s: ImageBitmap): Promise<{ rawValue: string }[]> }
 
-/** 박스 라벨 사진에서 QR을 읽어 공간 ID를 찾는다. 브라우저가 지원하지 않거나 못 읽으면 null. */
+function spaceIdFrom(text: string): number | null {
+  const m = /[?&]to=(\d+)/.exec(text)
+  return m ? Number(m[1]) : null
+}
+
+/**
+ * 박스 라벨 사진에서 QR을 읽어 공간 ID를 찾는다. 못 읽으면 null.
+ * 브라우저 내장 BarcodeDetector(안드로이드 Chrome 등)를 먼저 쓰고, 없으면(PC Chrome·iOS Safari) jsQR로 직접 읽는다.
+ */
 async function readBoxQr(file: File): Promise<number | null> {
-  const BD = (window as unknown as { BarcodeDetector?: Detector }).BarcodeDetector
-  if (!BD) return null
   try {
-    const codes = await new BD({ formats: ['qr_code'] }).detect(await createImageBitmap(file))
-    for (const c of codes) {
-      const m = /[?&]to=(\d+)/.exec(c.rawValue)
-      if (m) return Number(m[1])
+    const bitmap = await createImageBitmap(file)
+    const BD = (window as unknown as { BarcodeDetector?: Detector }).BarcodeDetector
+    if (BD) {
+      for (const c of await new BD({ formats: ['qr_code'] }).detect(bitmap)) {
+        const id = spaceIdFrom(c.rawValue)
+        if (id) return id
+      }
     }
+    // 휴대폰 사진은 커서 긴 변 1280px로 줄여 읽는다(QR은 이 크기에서도 충분히 크다).
+    const scale = Math.min(1, 1280 / Math.max(bitmap.width, bitmap.height))
+    const canvas = document.createElement('canvas')
+    canvas.width = Math.round(bitmap.width * scale)
+    canvas.height = Math.round(bitmap.height * scale)
+    const ctx = canvas.getContext('2d', { willReadFrequently: true })
+    if (!ctx) return null
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
+    const { default: jsQR } = await import('jsqr')
+    const data = ctx.getImageData(0, 0, canvas.width, canvas.height)
+    const code = jsQR(data.data, data.width, data.height, { inversionAttempts: 'attemptBoth' })
+    return code ? spaceIdFrom(code.data) : null
   } catch {
     return null
   }
-  return null
 }
 
 /**
