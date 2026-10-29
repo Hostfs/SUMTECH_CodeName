@@ -5,8 +5,9 @@ Agent가 서비스 저장소 루트의 `progress.md`로 복사해 이어 쓴다(
 ## 현재 상태
 
 - 실제 서비스 저장소 폴더: C:UsersootDesktopSUMTECHSUMTECH_CodeName
-- 현재 단계 / 다음 행동: 1단계 완료. 학생이 다음으로 가자고 하면 2단계(종이 문제정의 기록 받기) 시작
-- 학생에게 확인할 내용: 종이 문제정의 기록(2단계 시작 시). 참고: 상위 폴더에 SUMTECH_옷결_문제정의_캔버스_기입본.pdf 있음, 학생 확인 후 사용
+- 현재 단계 / 다음 행동: 2단계 문서 초안 작성(docs/problem.yaml, docs/scenarios.yaml, README 구현 설계). 학생 검토 후 push → 3단계
+- 학생에게 확인할 내용: 팀원 실제 경험(experiences E1 when/workaround/quote 학생 답 대기), sources(학생 요청 시 검색), S2용 실제 택 사진 2장(e2e/fixtures)
+- 2026-10-29 결정(학생 지시): 기획 내용은 학생이 제공한 캔버스 PDF·서비스 구체화 md에서 그대로 옮김. R02 제품 검색은 AI Gateway 검색·수집 도구로 실제 구현 유지(학생: "API 키 있음, 크롤링해서 해도 됨"). platform both, 로그인 있음·역할 '사용자', R03은 md 기준 유지(브라우저 배경 제거 + 실패 시 원본) — md의 권고안을 학생이 "계획서 작성" 지시로 채택, 이견 시 수정
 
 ## 1. GitHub 준비
 
@@ -24,8 +25,9 @@ Agent가 서비스 저장소 루트의 `progress.md`로 복사해 이어 쓴다(
 
 ## 2. 문제정의 기록 → 문제 다지기 → 해법 찾기 → 기능 명세
 
-- [ ] 종이 기록 수령(학생이 채팅에 옮겨 적거나 사진 첨부)
-- [ ] problem.example.yaml을 참고해 docs/problem.yaml 작성
+- [x] 종이 기록 수령(학생이 채팅에 옮겨 적거나 사진 첨부) → 캔버스 기입본 PDF·서비스 구체화 md
+- [x] problem.example.yaml을 참고해 docs/problem.yaml 작성 (R00~R10, YAML 파서 확인)
+- [x] docs/scenarios.yaml S1~S8 작성 (YAML 파서·키·길이 확인), README 구현 설계 작성
 - [ ] 원문 의도와 불명확한 내용 확인, 없는 근거는 빈칸 유지
 - [ ] 2-A 문제 다지기: 캔버스 칸을 질문으로 다짐(Agent가 해법·후보·예시 답을 먼저 내지 않음, 학생 답이 없는 칸은 "학생 답 대기")
 - [ ] 팀원 경험을 언제·어떤 장면·어떻게 대응했는지까지 experiences에 기록
