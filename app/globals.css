@@ -10,6 +10,7 @@
   --tile: #f9f8f5;
   --muted: #9a9892; /* '미입력', 플레이스홀더 */
   --nobadge: #eeedea; /* '위치 미지정' 배지 */
+  --dash: #d5d2cb; /* 빈 안내 박스 점선 */
 
   /* 폰 프레임 안 상태바 높이. 실제 폰에서는 safe area로 바뀐다. */
   --status-h: 38px;
@@ -54,6 +55,7 @@
   --color-tile: var(--tile);
   --color-muted: var(--muted);
   --color-nobadge: var(--nobadge);
+  --color-dash: var(--dash);
   --color-primary: var(--primary);
   --color-on: var(--on);
   --color-soft: var(--soft);

@@ -11,6 +11,7 @@ import { ChevronDownIcon, CloseIcon, FilterIcon, SearchIcon } from "@/components
 import { Screen } from "@/components/layout/Screen";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { useToast } from "@/components/ui/Toast";
 import {
   activeFilterCount,
@@ -166,22 +167,28 @@ export default function ClosetPage() {
       </div>
 
       {garments.length === 0 ? (
-        <EmptyBox>
+        <EmptyState
+          action={
+            <Link href="/closet/new" className={buttonClass()}>
+              옷 등록
+            </Link>
+          }
+        >
           아직 등록한 옷이 없어요.
           <br />첫 옷을 등록해 보세요.
-          <Link href="/closet/new" className={buttonClass() + " mt-4"}>
-            옷 등록
-          </Link>
-        </EmptyBox>
+        </EmptyState>
       ) : results.length === 0 ? (
-        <EmptyBox>
+        <EmptyState
+          action={
+            isFiltered && (
+              <Button variant="outline" onClick={resetFilters}>
+                필터 초기화
+              </Button>
+            )
+          }
+        >
           {query.q.trim() ? `'${query.q.trim()}'에 맞는 옷이 없어요.` : "조건에 맞는 옷이 없어요."}
-          {isFiltered && (
-            <Button variant="outline" className="mt-4" onClick={resetFilters}>
-              필터 초기화
-            </Button>
-          )}
-        </EmptyBox>
+        </EmptyState>
       ) : (
         <div
           className={
@@ -255,10 +262,3 @@ function SearchBox({ value, onChange }: { value: string; onChange: (v: string) =
   );
 }
 
-function EmptyBox({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="mx-4 mt-6 flex flex-col items-center rounded-card border border-dashed border-[#D5D2CB] bg-white/60 px-5 py-10 text-center text-sm leading-relaxed text-sub">
-      {children}
-    </div>
-  );
-}

@@ -69,7 +69,7 @@ export default function StoragePage() {
           <li>
             <Link
               href="/closet?place=none"
-              className="flex h-[76px] items-center gap-3 rounded-card border border-dashed border-[#D5D2CB] bg-white/60 pr-3.5 pl-3"
+              className="flex h-[76px] items-center gap-3 rounded-card border border-dashed border-dash bg-white/60 pr-3.5 pl-3"
             >
               <span className="flex size-[42px] flex-none items-center justify-center rounded-xl bg-nobadge text-sub">
                 <PinIcon size={22} stroke={1.6} />

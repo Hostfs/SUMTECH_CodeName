@@ -4,12 +4,23 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 
 /** 짧은 완료 안내. 예: "등록했어요", "코디를 저장했어요" (design-system 5절) */
 
-const ToastContext = createContext<((message: string) => void) | null>(null);
+type Show = (message: string, opts?: { error?: boolean }) => void;
+
+const ToastContext = createContext<Show | null>(null);
 const ToastStateContext = createContext<{ message: string; key: number } | null>(null);
+
+const SHOW_MS = 2400;
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toast, setToast] = useState<{ message: string; key: number } | null>(null);
-  const show = useCallback((message: string) => setToast({ message, key: Date.now() }), []);
+  // 오류 안내는 떠 있는 동안 뒤이은 완료 안내에 덮이지 않게 한다
+  const errorUntil = useRef(0);
+  const show = useCallback<Show>((message, opts) => {
+    const now = Date.now();
+    if (!opts?.error && now < errorUntil.current) return;
+    if (opts?.error) errorUntil.current = now + SHOW_MS;
+    setToast({ message, key: now });
+  }, []);
   return (
     <ToastContext.Provider value={show}>
       <ToastStateContext.Provider value={toast}>{children}</ToastStateContext.Provider>
@@ -33,7 +44,7 @@ export function ToastViewport() {
     if (!toast) return;
     setVisible(true);
     clearTimeout(timer.current);
-    timer.current = setTimeout(() => setVisible(false), 2400);
+    timer.current = setTimeout(() => setVisible(false), SHOW_MS);
     return () => clearTimeout(timer.current);
   }, [toast]);
 

@@ -7,6 +7,7 @@ import { GarmentPhoto } from "@/components/garment/GarmentPhoto";
 import { CheckIcon, PlusIcon, SmallCloseIcon } from "@/components/icons";
 import { buttonClass } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { CATEGORY_LABEL, type Category, type Outfit, type OutfitSlot } from "@/lib/types";
 
 /** 캔버스 칸 순서 (outfit_autumn.html: 아우터 · 하의 / 상의 · 신발) */
@@ -146,11 +147,14 @@ export function OutfitMaker({
 /** 옷이 2벌보다 적을 때 */
 export function NotEnoughGarments() {
   return (
-    <div className="mx-4 mt-6 flex flex-col items-center rounded-card border border-dashed border-[#D5D2CB] bg-white/60 px-5 py-10 text-center text-sm leading-relaxed text-sub">
+    <EmptyState
+      action={
+        <Link href="/closet" className={buttonClass()}>
+          내 옷장으로
+        </Link>
+      }
+    >
       코디를 만들려면 옷이 2벌 이상 필요해요.
-      <Link href="/closet" className={buttonClass() + " mt-4"}>
-        내 옷장으로
-      </Link>
-    </div>
+    </EmptyState>
   );
 }

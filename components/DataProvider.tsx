@@ -4,6 +4,8 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { SEED_GARMENTS, SEED_OUTFITS, SEED_PLACES, SEED_PROFILE } from "@/lib/mock/seed";
 import { indexPlaces, type PlaceIndex } from "@/lib/places";
 import { repos, type GarmentInput } from "@/lib/repo";
+import { SAVE_FAILED_EVENT } from "@/lib/repo/local";
+import { useToast } from "@/components/ui/Toast";
 import type { Garment, Outfit, Place, Profile } from "@/lib/types";
 
 /**
@@ -47,6 +49,14 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setReady(true),
     );
   }, [reloadGarments, reloadPlaces, reloadOutfits]);
+
+  // 기기 저장 공간이 꽉 차서 저장하지 못했을 때 알린다
+  const toast = useToast();
+  useEffect(() => {
+    const onFail = () => toast("저장 공간이 부족해 저장하지 못했어요", { error: true });
+    window.addEventListener(SAVE_FAILED_EVENT, onFail);
+    return () => window.removeEventListener(SAVE_FAILED_EVENT, onFail);
+  }, [toast]);
 
   const placeIndex = useMemo(() => indexPlaces(places), [places]);
 

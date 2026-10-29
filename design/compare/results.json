@@ -1,0 +1,149 @@
+[
+  {
+    "mock": "home_spring_sunny.png",
+    "title": "홈 · 봄 · 맑음",
+    "note": "",
+    "image": "home_spring_sunny.jpg",
+    "changed": 6.3
+  },
+  {
+    "mock": "home_spring_cloudy.png",
+    "title": "홈 · 봄 · 흐림",
+    "note": "",
+    "image": "home_spring_cloudy.jpg",
+    "changed": 6.2
+  },
+  {
+    "mock": "home_summer_sunny.png",
+    "title": "홈 · 여름 · 맑음",
+    "note": "",
+    "image": "home_summer_sunny.jpg",
+    "changed": 6.3
+  },
+  {
+    "mock": "home_summer_cloudy.png",
+    "title": "홈 · 여름 · 흐림",
+    "note": "",
+    "image": "home_summer_cloudy.jpg",
+    "changed": 6.1
+  },
+  {
+    "mock": "home_autumn_sunny.png",
+    "title": "홈 · 가을 · 맑음",
+    "note": "",
+    "image": "home_autumn_sunny.jpg",
+    "changed": 6.3
+  },
+  {
+    "mock": "home_autumn_cloudy.png",
+    "title": "홈 · 가을 · 흐림",
+    "note": "",
+    "image": "home_autumn_cloudy.jpg",
+    "changed": 6.4
+  },
+  {
+    "mock": "home_winter_sunny.png",
+    "title": "홈 · 겨울 · 맑음",
+    "note": "",
+    "image": "home_winter_sunny.jpg",
+    "changed": 6.1
+  },
+  {
+    "mock": "home_winter_cloudy.png",
+    "title": "홈 · 겨울 · 흐림",
+    "note": "",
+    "image": "home_winter_cloudy.jpg",
+    "changed": 6.1
+  },
+  {
+    "mock": "01_spring_closet.png",
+    "title": "내 옷장 · 봄 (선택 모드)",
+    "note": "목업은 봄 옷 카드, 구현은 최근 등록순(가을 옷이 앞)이라 카드 내용이 다르다",
+    "image": "01_spring_closet.jpg",
+    "changed": 12.3
+  },
+  {
+    "mock": "03_summer_closet.png",
+    "title": "내 옷장 · 여름 (선택 모드)",
+    "note": "카드 내용 차이는 위와 같다",
+    "image": "03_summer_closet.jpg",
+    "changed": 11.6
+  },
+  {
+    "mock": "05_autumn_closet.png",
+    "title": "내 옷장 · 가을 (선택 모드)",
+    "note": "",
+    "image": "05_autumn_closet.jpg",
+    "changed": 6.6
+  },
+  {
+    "mock": "07_winter_closet.png",
+    "title": "내 옷장 · 겨울 (선택 모드)",
+    "note": "카드 내용 차이는 위와 같다",
+    "image": "07_winter_closet.jpg",
+    "changed": 12.5
+  },
+  {
+    "mock": "02_spring_detail.png",
+    "title": "의류 상세 · 봄",
+    "note": "",
+    "image": "02_spring_detail.jpg",
+    "changed": 5.7
+  },
+  {
+    "mock": "04_summer_detail.png",
+    "title": "의류 상세 · 여름",
+    "note": "",
+    "image": "04_summer_detail.jpg",
+    "changed": 5.5
+  },
+  {
+    "mock": "06_autumn_detail.png",
+    "title": "의류 상세 · 가을",
+    "note": "",
+    "image": "06_autumn_detail.jpg",
+    "changed": 5.4
+  },
+  {
+    "mock": "08_winter_detail.png",
+    "title": "의류 상세 · 겨울",
+    "note": "",
+    "image": "08_winter_detail.jpg",
+    "changed": 5.7
+  },
+  {
+    "mock": "add_autumn.png",
+    "title": "옷 등록 · 가을",
+    "note": "",
+    "image": "add_autumn.jpg",
+    "changed": 5.2
+  },
+  {
+    "mock": "storage_autumn.png",
+    "title": "보관함 · 가을",
+    "note": "개수는 예시 데이터 차이(42벌 → 23벌)",
+    "image": "storage_autumn.jpg",
+    "changed": 6.2
+  },
+  {
+    "mock": "outfit_autumn.png",
+    "title": "코디 만들기 · 가을",
+    "note": "",
+    "image": "outfit_autumn.jpg",
+    "changed": 5.3
+  },
+  {
+    "mock": "my_autumn.png",
+    "title": "마이 · 가을",
+    "note": "테마를 '가을'로 고른 상태라 값이 '자동 · 가을' 대신 '가을'",
+    "image": "my_autumn.jpg",
+    "changed": 4.9
+  },
+  {
+    "mock": "theme_autumn.png",
+    "title": "화면 테마 · 가을",
+    "note": "",
+    "image": "theme_autumn.jpg",
+    "changed": 5.2
+  }
+]

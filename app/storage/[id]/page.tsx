@@ -13,6 +13,7 @@ import { TopBar } from "@/components/layout/TopBar";
 import { PlaceEditSheet } from "@/components/storage/PlaceEditSheet";
 import { Chip } from "@/components/ui/Chip";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { useToast } from "@/components/ui/Toast";
 import { childPlaces, countLabel, garmentsInPlace, movedMessage } from "@/lib/places";
 
@@ -152,9 +153,7 @@ export default function PlaceDetailPage() {
       </div>
 
       {list.length === 0 ? (
-        <div className="mx-4 mt-3 rounded-card border border-dashed border-[#D5D2CB] bg-white/60 px-5 py-10 text-center text-sm leading-relaxed text-sub">
-          아직 이곳에 둔 옷이 없어요.
-        </div>
+        <EmptyState className="mx-4 mt-3">아직 이곳에 둔 옷이 없어요.</EmptyState>
       ) : (
         <div
           className={

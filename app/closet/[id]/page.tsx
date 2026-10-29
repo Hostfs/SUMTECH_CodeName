@@ -183,7 +183,7 @@ export default function GarmentDetailPage() {
           ))}
         </ul>
       ) : (
-        <div className="mx-4 mt-2 mb-4 flex items-center gap-3 rounded-card-lg border border-dashed border-[#D5D2CB] bg-white/60 px-3.5 py-3">
+        <div className="mx-4 mt-2 mb-4 flex items-center gap-3 rounded-card-lg border border-dashed border-dash bg-white/60 px-3.5 py-3">
           <p className="flex-1 text-[13px] leading-normal text-sub">
             등록된 관리 정보가 없어요.
             <br />

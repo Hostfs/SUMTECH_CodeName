@@ -7,6 +7,7 @@ import { EMPTY_DRAFT, NotEnoughGarments, OutfitMaker, type OutfitDraft } from "@
 import { Screen } from "@/components/layout/Screen";
 import { TopBar } from "@/components/layout/TopBar";
 import { Button } from "@/components/ui/Button";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { useToast } from "@/components/ui/Toast";
 
 type Tab = "make" | "saved";
@@ -88,12 +89,9 @@ export default function OutfitsPage() {
           <NotEnoughGarments />
         )
       ) : outfits.length === 0 ? (
-        <div className="mx-4 mt-6 flex flex-col items-center rounded-card border border-dashed border-[#D5D2CB] bg-white/60 px-5 py-10 text-center text-sm leading-relaxed text-sub">
+        <EmptyState action={<Button onClick={() => setTab("make")}>코디 만들기</Button>}>
           아직 저장한 코디가 없어요.
-          <Button className="mt-4" onClick={() => setTab("make")}>
-            코디 만들기
-          </Button>
-        </div>
+        </EmptyState>
       ) : (
         <ul className="flex flex-col gap-2 px-4 pt-3 pb-6">
           {outfits.map((o) => (

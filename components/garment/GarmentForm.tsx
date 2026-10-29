@@ -102,7 +102,7 @@ export function GarmentForm({
           aria-label={photo === "ready" ? "사진 다시 선택" : "사진 올리기"}
           className={
             "flex size-[104px] flex-none items-center justify-center overflow-hidden rounded-card bg-card " +
-            (photo === "ready" ? "border border-line" : "border border-dashed border-[#D5D2CB] text-sub")
+            (photo === "ready" ? "border border-line" : "border border-dashed border-dash text-sub")
           }
         >
           {photo === "ready" ? (
@@ -195,7 +195,11 @@ export function GarmentForm({
               key={s}
               on={v.seasons.includes(s)}
               onClick={() =>
-                set("seasons", v.seasons.includes(s) ? v.seasons.filter((x) => x !== s) : [...v.seasons, s])
+                // 연달아 눌러도 최신 값 기준으로 토글한다
+                setV((cur) => ({
+                  ...cur,
+                  seasons: cur.seasons.includes(s) ? cur.seasons.filter((x) => x !== s) : [...cur.seasons, s],
+                }))
               }
             >
               {SEASON_LABEL[s]}

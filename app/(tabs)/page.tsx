@@ -166,7 +166,7 @@ export default function HomePage() {
           {ok && copy && <WeatherWidget weather={ok.data} tip={copy.tip} />}
           {weather.status === "loading" && <div className="h-[273px]" aria-hidden />}
           {weather.status === "error" && (
-            <div className="rounded-card-lg border border-dashed border-[#D5D2CB] bg-white/60 px-4 py-6 text-center text-[13.5px] leading-normal text-sub">
+            <div className="rounded-card-lg border border-dashed border-dash bg-white/60 px-4 py-6 text-center text-[13.5px] leading-normal text-sub">
               {WEATHER_ERROR[0]}
               <br />
               {WEATHER_ERROR[1]}

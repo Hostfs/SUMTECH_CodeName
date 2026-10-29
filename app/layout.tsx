@@ -29,11 +29,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <ThemeProvider>
-          <DataProvider>
-            <ToastProvider>
+          <ToastProvider>
+            <DataProvider>
               <PhoneFrame>{children}</PhoneFrame>
-            </ToastProvider>
-          </DataProvider>
+            </DataProvider>
+          </ToastProvider>
         </ThemeProvider>
       </body>
     </html>

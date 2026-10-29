@@ -39,10 +39,15 @@ function load(): Db {
   return db;
 }
 
+/** 저장에 실패하면(주로 용량 초과) 이 이벤트를 보낸다. 바뀐 내용은 이번 접속 동안 메모리에는 남는다. */
+export const SAVE_FAILED_EVENT = "closet:save-failed";
+
 function save() {
   try {
     localStorage.setItem(DB_KEY, JSON.stringify(db));
-  } catch {}
+  } catch {
+    window.dispatchEvent(new Event(SAVE_FAILED_EVENT));
+  }
 }
 
 const newId = (prefix: string) => `${prefix}${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
