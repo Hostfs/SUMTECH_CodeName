@@ -170,4 +170,6 @@ export type Weather = {
   seasons: string[]
   seasonLabels: string[]
   seasonReason: string
+  /** 지금 + 3시간 간격 예보. icon은 sun·partly·cloud·rain·snow·moon */
+  hours: { label: string; temperature: number | null; icon: string }[]
 }

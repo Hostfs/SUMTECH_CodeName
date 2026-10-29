@@ -52,7 +52,11 @@ public class WeatherController {
 
     public record Weather(String observedAt, Double temperature, String sky, String precipitation, boolean raining,
             Integer humidity, Double windSpeed, Double minTemperature, Double maxTemperature, Integer rainChance,
-            List<String> seasons, List<String> seasonLabels, String seasonReason) {
+            List<String> seasons, List<String> seasonLabels, String seasonReason, List<Hour> hours) {
+    }
+
+    /** 시간대 예보 한 칸. icon은 sun·partly·cloud·rain·snow·moon 중 하나. */
+    public record Hour(String label, Double temperature, String icon) {
     }
 
     private record Cached(Weather weather, Instant at) {
@@ -111,13 +115,18 @@ public class WeatherController {
         Double max = null;
         Integer pop = null;
         String skyCode = null;
+        // 시간대 예보용: '날짜+시각' → {TMP, SKY, PTY}
+        Map<String, Map<String, String>> byTime = new HashMap<>();
         for (JsonNode item : items("getVilageFcst", fcstBase, p, 1000)) {
-            if (!todayYmd.equals(item.path("fcstDate").asString())) {
-                continue;
-            }
             String cat = item.path("category").asString();
             String time = item.path("fcstTime").asString();
             String value = item.path("fcstValue").asString();
+            if (cat.equals("TMP") || cat.equals("SKY") || cat.equals("PTY")) {
+                byTime.computeIfAbsent(item.path("fcstDate").asString() + time, k -> new HashMap<>()).put(cat, value);
+            }
+            if (!todayYmd.equals(item.path("fcstDate").asString())) {
+                continue;
+            }
             switch (cat) {
                 case "TMN" -> min = number(value);
                 case "TMX" -> max = number(value);
@@ -147,9 +156,34 @@ public class WeatherController {
         List<Season> seasons = seasonsFor(basis);
         String reason = basis == null ? "기온을 받지 못해 이번 달 계절로 골랐어요."
                 : String.format("오늘 평균 %.0f°C 기준", basis);
+        // 지금 + 3시간 간격 4칸
+        List<Hour> hours = new ArrayList<>();
+        hours.add(new Hour("지금", temp, iconOf(skyCode, pty, now.getHour())));
+        ZonedDateTime slot = now.truncatedTo(ChronoUnit.HOURS);
+        for (int i = 1; i <= 4; i++) {
+            ZonedDateTime t = slot.plusHours(3L * i);
+            Map<String, String> f = byTime.get(t.format(YMD) + t.format(HM));
+            if (f == null) {
+                break;
+            }
+            hours.add(new Hour(t.getHour() == 0 ? "24시" : t.getHour() + "시", number(f.get("TMP")),
+                    iconOf(f.get("SKY"), f.getOrDefault("PTY", "0"), t.getHour())));
+        }
         return new Weather(ncstBase.format(DateTimeFormatter.ofPattern("HH:mm")), temp, skyLabel(skyCode), ptyLabel(pty),
                 !"0".equals(pty), hum == null ? null : hum.intValue(), number(ncst.get("WSD")), min, max, pop,
-                seasons.stream().map(Enum::name).toList(), seasons.stream().map(s -> s.label).toList(), reason);
+                seasons.stream().map(Enum::name).toList(), seasons.stream().map(s -> s.label).toList(), reason, hours);
+    }
+
+    /** 강수형태가 있으면 비·눈, 없으면 하늘상태. 밤(19~6시)에 맑으면 달. */
+    static String iconOf(String sky, String pty, int hour) {
+        if (pty != null && !"0".equals(pty)) {
+            return pty.equals("3") || pty.equals("7") ? "snow" : "rain";
+        }
+        boolean night = hour >= 19 || hour < 6;
+        if ("1".equals(sky)) {
+            return night ? "moon" : "sun";
+        }
+        return "3".equals(sky) ? "partly" : "cloud";
     }
 
     /** 기온 기준표: 23°C 이상 여름, 12~22°C 봄·가을, 5~11°C 가을·겨울, 5°C 미만 겨울. */

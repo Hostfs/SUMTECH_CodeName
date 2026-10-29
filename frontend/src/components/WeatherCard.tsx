@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { api, errorMessage } from '../api'
 import type { GarmentSummary, Weather } from '../types'
 import { isNight, pickForWeather, sceneOf, type Scene } from '../weatherPicks'
 import GarmentArt from './GarmentArt'
-import { IconPin } from './Icons'
+import { IconPin, IconShirt } from './Icons'
 import { Spinner } from './Ui'
 
 // 한 번 위치를 허락하면 다음부터는 옷장을 열 때 바로 불러온다(이 기기에서만).
@@ -38,19 +38,51 @@ function position(): Promise<GeolocationPosition> {
   })
 }
 
-function WeatherIcon({ scene, night }: { scene: Scene; night: boolean }) {
+const deg = (n: number | null) => (n === null ? '–' : `${Math.round(n)}°`)
+
+/** 선 아이콘(24 그리드). 디자인 시스템의 날씨 아이콘과 같은 모양. */
+function WxIcon({ name, size = 22 }: { name: string; size?: number }) {
+  const paths: Record<string, ReactNode> = {
+    sun: <><circle cx="12" cy="12" r="4" />{[0, 45, 90, 135, 180, 225, 270, 315].map((a) => <path key={a} d="M12 2.5v2.2" transform={`rotate(${a} 12 12)`} />)}</>,
+    moon: <path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z" />,
+    cloud: <path d="M7 18h10a4 4 0 0 0 .4-8 5.5 5.5 0 0 0-10.6 1.3A3.4 3.4 0 0 0 7 18Z" />,
+    partly: <><path d="M8.5 6.2A4 4 0 0 1 14.6 9" /><path d="M5.5 4.8 4.6 3.9M8 3V2M3.5 8.5h-1" /><path d="M8 19h9a3.6 3.6 0 0 0 .4-7.2 5 5 0 0 0-9.6 1.2A3 3 0 0 0 8 19Z" /></>,
+    rain: <><path d="M7 15h10a4 4 0 0 0 .4-8 5.5 5.5 0 0 0-10.6 1.3A3.4 3.4 0 0 0 7 15Z" /><path d="m9 18-1 2.5M13 18l-1 2.5M17 18l-1 2.5" /></>,
+    snow: <><path d="M7 15h10a4 4 0 0 0 .4-8 5.5 5.5 0 0 0-10.6 1.3A3.4 3.4 0 0 0 7 15Z" /><path d="M8.5 19h.01M12 20.5h.01M15.5 19h.01" /></>,
+  }
   return (
-    <svg className="wx-icon" viewBox="0 0 64 64" aria-hidden>
-      {scene === 'clear' && (night
-        ? <path d="M40 12a20 20 0 1 0 12 32A16 16 0 0 1 40 12Z" fill="currentColor" />
-        : <><circle cx="32" cy="32" r="12" fill="currentColor" />{[0, 45, 90, 135, 180, 225, 270, 315].map((a) => (
-          <line key={a} x1="32" y1="9" x2="32" y2="15" stroke="currentColor" strokeWidth="3" strokeLinecap="round" transform={`rotate(${a} 32 32)`} />
-        ))}</>)}
-      {scene !== 'clear' && <path d="M20 42a10 10 0 0 1 1-20 13 13 0 0 1 24 3 8.5 8.5 0 0 1 1 17Z" fill="currentColor" />}
-      {scene === 'rain' && [22, 32, 42].map((x) => <line key={x} x1={x} y1="48" x2={x - 3} y2="56" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />)}
-      {scene === 'snow' && [22, 32, 42].map((x) => <circle key={x} cx={x} cy="53" r="2.5" fill="currentColor" />)}
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      {paths[name] ?? paths.cloud}
     </svg>
   )
+}
+
+function bigIcon(scene: Scene, night: boolean) {
+  if (scene === 'clear') return night ? 'moon' : 'sun'
+  if (scene === 'cloudy') return 'partly'
+  return scene === 'overcast' ? 'cloud' : scene
+}
+
+/** 화면 위쪽 절반에 까는 날씨 배경(디자인 시스템 1절). 카드는 그 위에 흰색 그대로 둔다. */
+function Sky({ scene, night }: { scene: Scene; night: boolean }) {
+  return (
+    <div className={`wx-sky wx-sky-${scene}${night ? ' night' : ''}`} aria-hidden>
+      {(scene === 'clear' || scene === 'cloudy') && !night && <span className="wx-sun" />}
+      {scene !== 'rain' && scene !== 'snow' && (
+        <svg className="wx-clouds" viewBox="0 0 390 300" preserveAspectRatio="xMidYMin slice">
+          {(scene === 'clear' ? [[60, 150, 0.55, 0.9], [340, 230, 0.45, 0.8]] : [[80, 120, 1.0, 0.7], [350, 100, 1.1, 0.65], [230, 220, 0.9, 0.7]]).map(([x, y, k, o], i) => (
+            <g key={i} transform={`translate(${x},${y}) scale(${k})`} opacity={o}>
+              <ellipse cx="0" cy="0" rx="78" ry="24" /><circle cx="-28" cy="-16" r="28" /><circle cx="10" cy="-26" r="36" /><circle cx="48" cy="-10" r="24" />
+            </g>
+          ))}
+        </svg>
+      )}
+    </div>
+  )
+}
+
+function dateLabel() {
+  return new Intl.DateTimeFormat('ko-KR', { month: 'long', day: 'numeric', weekday: 'long', timeZone: 'Asia/Seoul' }).format(new Date())
 }
 
 /** 내 옷장 맨 위: 현재 위치 날씨와 지금 꺼낼 수 있는 옷(R12). 배경은 날씨·밤낮에 따라 바뀐다. */
@@ -86,8 +118,9 @@ export default function WeatherCard({ items }: { items: GarmentSummary[] }) {
 
   if (!weather || !result) {
     return (
-      <section className="wx wx-empty" aria-label="오늘 날씨">
-        <div>
+      <section className="wx-card wx-empty" aria-label="오늘 날씨">
+        <span className="wx-tip-icon"><WxIcon name={night ? 'moon' : 'sun'} size={20} /></span>
+        <div className="wx-empty-text">
           <strong>오늘 날씨에 맞는 옷, 어디 있는지까지</strong>
           <p>{state === 'error' ? error : '현재 위치의 기상청 날씨로, 지금 집에서 바로 꺼낼 수 있는 옷을 골라 드려요.'}</p>
         </div>
@@ -99,28 +132,51 @@ export default function WeatherCard({ items }: { items: GarmentSummary[] }) {
   }
 
   const scene = sceneOf(weather)
-  const temp = weather.temperature !== null ? Math.round(weather.temperature) : null
   const condition = weather.raining ? weather.precipitation : weather.sky ?? '날씨'
-  const range = [weather.minTemperature !== null && `최저 ${Math.round(weather.minTemperature)}°`, weather.maxTemperature !== null && `최고 ${Math.round(weather.maxTemperature)}°`].filter(Boolean).join(' / ')
+  const range = [weather.maxTemperature !== null && `최고 ${deg(weather.maxTemperature)}`, weather.minTemperature !== null && `최저 ${deg(weather.minTemperature)}`].filter(Boolean).join(' · ')
+  const tip = result.tips[0] ?? `${weather.seasonReason}, ${weather.seasonLabels.join('·')} 옷이 맞아요.`
 
   return (
-    <section className={`wx wx-${scene}${night ? ' night' : ''}`} aria-label="오늘 날씨" data-scene={scene}>
-      <div className="wx-now">
-        <WeatherIcon scene={scene} night={night} />
-        <div className="wx-temp">{temp !== null ? `${temp}°` : '–'}</div>
-        <div className="wx-text">
-          <strong>{condition}</strong>
-          <span>{[range, weather.rainChance !== null && `강수확률 ${weather.rainChance}%`].filter(Boolean).join(', ')}</span>
-          <span className="wx-src">기상청 {weather.observedAt} 관측{weather.humidity !== null ? `, 습도 ${weather.humidity}%` : ''}</span>
+    <>
+      <Sky scene={scene} night={night} />
+      <section className="wx-card" aria-label="오늘 날씨" data-scene={scene}>
+        <div className="wx-head">
+          <b><IconPin />현재 위치</b>
+          <span>{dateLabel()}</span>
+          <button type="button" className="wx-refresh" onClick={load} disabled={state === 'loading'} aria-label="날씨 새로고침">
+            {state === 'loading' ? <Spinner /> : '새로고침'}
+          </button>
         </div>
-        <button type="button" className="wx-refresh" onClick={load} disabled={state === 'loading'} aria-label="날씨 새로고침">
-          {state === 'loading' ? <Spinner /> : '새로고침'}
-        </button>
-      </div>
-      {result.tips.length > 0 && <ul className="wx-tips">{result.tips.map((t) => <li key={t}>{t}</li>)}</ul>}
+        <div className="wx-now">
+          <div className="wx-temp">{deg(weather.temperature)}</div>
+          <div className="wx-cond">
+            <div>
+              <b>{condition}</b>
+              <span>{range}{weather.rainChance !== null ? `${range ? ' · ' : ''}강수 ${weather.rainChance}%` : ''}</span>
+            </div>
+            <span className="wx-big"><WxIcon name={bigIcon(scene, night)} size={40} /></span>
+          </div>
+        </div>
+        {weather.hours.length > 1 && (
+          <ul className="wx-hours" aria-label="시간대 예보">
+            {weather.hours.map((h) => (
+              <li key={h.label}>
+                <span>{h.label}</span>
+                <WxIcon name={h.icon} />
+                <b>{deg(h.temperature)}</b>
+              </li>
+            ))}
+          </ul>
+        )}
+        <div className="wx-tip">
+          <span className="wx-tip-icon"><IconShirt /></span>
+          <p>{tip}{result.tips.length > 1 && <><br />{result.tips[1]}</>}</p>
+        </div>
+        <p className="wx-src">기상청 {weather.observedAt} 관측{weather.humidity !== null ? ` · 습도 ${weather.humidity}%` : ''}</p>
+      </section>
 
-      <div className="wx-picks" role="group" aria-label="옷장에서 바로 꺼내기">
-        <h2>옷장에서 바로 꺼내기 <small>{weather.seasonReason}, {weather.seasonLabels.join('·')} 옷 중 지금 집에 있는 옷</small></h2>
+      <section className="wx-picks" role="group" aria-label="옷장에서 바로 꺼내기">
+        <h2 className="section-title">옷장에서 바로 꺼내기<small>{weather.seasonReason}, 지금 집에 있는 {weather.seasonLabels.join('·')} 옷</small></h2>
         {result.picks.length === 0 ? (
           <p className="wx-none">이 기온에 맞는 {weather.seasonLabels.join('·')} 옷 중 지금 집 안에 배치된 옷이 없어요. 옷의 계절을 정하거나 옷장 지도에서 배치해 보세요.</p>
         ) : (
@@ -139,7 +195,7 @@ export default function WeatherCard({ items }: { items: GarmentSummary[] }) {
             ))}
           </ul>
         )}
-      </div>
-    </section>
+      </section>
+    </>
   )
 }
