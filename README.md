@@ -47,7 +47,7 @@
 | R02 | `ProductCandidate`: 상품명, 이미지 URL, 색상, 출처 URL, 조회 시점, 일치 근거, 확정 여부 | 소유자만 | 결과 없음·차단·시간 초과(20초)는 '검색 결과 없음'과 '직접 입력으로 계속'. 페이지 내용 속 지시문은 데이터로만 취급 |
 | R03 | `ImageAsset`: 원본, 정리본, 출처, 처리 상태 | 소유자만 | 처리 실패 시 원본을 대표 이미지로 유지, '다시 처리' 제공. 로고·무늬·색을 생성·변경하지 않음 |
 | R04 | `garments`(세부 종류에서 종류 계산), `garment_seasons`, `garment_collections`, `garment_materials`(부위·섬유·혼용률), `garment_care_instructions`, `garment_ai_fields` | 소유자만 | 옷 이름이 비면 저장 거부. 부위별 혼용률 합계가 100%가 아니면 거부. 사용자 수정값은 AI 재분석으로 덮어쓰지 않음. 같은 품번은 중복 후보 안내만, 자동 병합 안 함 |
-| R05·R06 | **범위에서 제외(수정안 2026-10-29).** 좁힌 문제가 '집 밖·박스 속 옷의 위치·상태'라서 3D 가상착의·코디(R05)와 보유 의류 기반 AI 코디 추천(R06)은 문제를 직접 풀지 않는다고 팀이 판단했다(`problem.yaml`의 `solution_paths`·`insight.design_decision`). 그래서 화면(`/studio`, `Studio.tsx`·`Mannequin.tsx`), API(`/api/studio/*`, `/api/recommendations`), 3D 라이브러리(three·@react-three)를 코드에서 지웠다. 테이블 `body_profiles`·`outfits`·`outfit_garments`는 이미 적용된 V1 마이그레이션을 바꾸지 않으려고 남겨 두되 읽거나 쓰는 코드는 없다(시드 초기화만 비운다). R-id는 추적을 위해 비워 둔다 | — | 지운 주소(`/studio`)는 404 화면 |
+| R05·R06 | **범위에서 제외(수정안 2026-10-29).** 좁힌 문제가 '집 밖·박스 속 옷의 위치·상태'라서 3D 가상착의·코디(R05)와 보유 의류 기반 AI 코디 추천(R06)은 문제를 직접 풀지 않는다고 팀이 판단했다(`problem.yaml`의 `solution_paths`·`insight.design_decision`). 그래서 화면(`/studio`, `Studio.tsx`·`Mannequin.tsx`), API(`/api/studio/*`, `/api/recommendations`), 3D 라이브러리(three·@react-three)를 코드에서 지웠다. 테이블 `body_profiles`·`outfits`·`outfit_garments`는 V3 마이그레이션(`V3__scope_cleanup.sql`)에서 지웠다. R-id는 추적을 위해 비워 둔다 | — | 지운 주소(`/studio`)는 404 화면 |
 | R07 | `storage_spaces`(유형: 걸기·접기·장기보관·박스·집 밖), `storage_space_parents`(계층), `placement_proposals`(미확정 추천), `garment_placements`(확정 위치) | 소유자만 | 이름이 비거나 용량이 1 미만이면 거부. 용량 초과는 초과 수량 표시. 추천만으로 현재 위치 변경 안 함, 추천은 집 밖을 고르지 않음. 바로 넣기는 가장 안쪽 공간만, 세탁·수선 중인 옷은 거부. 안쪽 공간이나 옷이 있는 공간은 삭제 거부 |
 | R08 | `care_events`(종류, 자택/업체, 업체명, 내용, 맡긴 날, 예정일, 회수 시각) | 소유자만 | 예정일이 맡긴 날보다 앞서면 거부. 진행 중 기록은 한 벌에 하나. 세탁 중·수선 중·회수 후 위치 미확인은 저장하지 않고 이 기록에서 계산해 모든 화면이 같은 값을 읽음 |
 | R09 | 위 모든 기록이 같은 `garments.id`를 참조 | 서버에서 소유권 검사 + DB 트리거로 같은 주인 강제 | 다른 계정 자료 접근은 404 |
@@ -156,12 +156,12 @@
 
 ### 11. 데이터 모델
 
-5NF까지 정규화한 51개 테이블(핵심 34 + 도메인 17, V2 마이그레이션의 옮기는 묶음 5개 포함)이다. 전체 다이어그램과 단계별 근거는 [`docs/db/ERD.md`](docs/db/ERD.md)에 있다.
+5NF까지 정규화한 49개 테이블(핵심 32 + 도메인 17)이다. V2가 옮기는 묶음 5개를 더했고, V3가 제외한 코디 테이블 3개를 지우고 검색 연결 1개를 더했다. 전체 다이어그램과 단계별 근거는 [`docs/db/ERD.md`](docs/db/ERD.md)에 있다.
 
-- 개체: `users`, `garments`, `storage_spaces`, `collections`, `images`, `label_extractions`, `product_searches`, `product_candidates`, `care_events`, `placement_proposals`, `move_batches`, `outfits`·`body_profiles`(제외 기능, 코드에서 쓰지 않는 빈 테이블)
-- 연결: 확정 위치 `garment_placements`, 공간 계층 `storage_space_parents`, 이미지 `garment_images`·`garment_cover_images`·`image_processings`, 택 판독 `label_extraction_images`·`label_extraction_values`·`garment_label_extractions`, 제품 `label_extraction_searches`·`garment_products`, 옮기는 묶음 `move_batch_spaces`·`move_batch_space_garments`·`move_batch_care_events`·`move_batch_images`, 코디 `outfit_garments`(제외 기능, 빈 테이블)
+- 개체: `users`, `garments`, `storage_spaces`, `collections`, `images`, `label_extractions`, `product_searches`, `product_candidates`, `care_events`, `placement_proposals`, `move_batches`
+- 연결: 확정 위치 `garment_placements`, 공간 계층 `storage_space_parents`, 이미지 `garment_images`·`garment_cover_images`·`image_processings`, 택 판독 `label_extraction_images`·`label_extraction_values`·`garment_label_extractions`, 제품 `label_extraction_searches`·`garment_products`, 옮기는 묶음 `move_batch_spaces`·`move_batch_space_garments`·`move_batch_care_events`·`move_batch_images`, 옷 ↔ 등록 때 한 제품 검색 `garment_product_searches`(V3)
 - 다치 속성: `garment_seasons`, `garment_collections`, `garment_ai_fields`, `garment_materials`, `garment_care_instructions`, `garment_measurements`
-- 무결성: 코드 값은 도메인 테이블 FK, 값 범위는 CHECK, 같은 주인 규칙은 트리거 30개, 진행 중 세탁·수선 1건은 생성 열 + UNIQUE
+- 무결성: 코드 값은 도메인 테이블 FK, 값 범위는 CHECK, 같은 주인 규칙은 트리거 30개(V3에서 코디 2개를 지우고 검색 연결 2개를 더함), 진행 중 세탁·수선 1건은 생성 열 + UNIQUE
 
 ### 12. 시드 데이터 (docker 첫 기동 시)
 

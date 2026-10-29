@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -58,6 +59,7 @@ import ai.otgyeol.label.LabelExtractionRepository;
 import ai.otgyeol.label.LabelExtractionSearchRepository;
 import ai.otgyeol.label.ProductCandidate;
 import ai.otgyeol.label.ProductCandidateRepository;
+import ai.otgyeol.label.ProductSearch;
 import ai.otgyeol.label.ProductSearchRepository;
 import ai.otgyeol.space.GarmentPlacement;
 import ai.otgyeol.space.GarmentPlacementRepository;
@@ -170,7 +172,11 @@ public class GarmentService {
         LabelExtraction latest = extractions.findLatestForGarment(g.id).orElse(null);
         ExtractionView extraction = latest == null ? null : extractionView(latest);
         Long confirmedCandidate = garmentProducts.findById(g.id).map(gp -> gp.candidateId).orElse(null);
-        SearchView search = latest == null ? null : searches.findLatestForExtraction(latest.id).map(s -> new SearchView(s.id,
+        Optional<ProductSearch> searchRow = latest == null ? Optional.empty() : searches.findLatestForExtraction(latest.id);
+        if (searchRow.isEmpty()) {
+            searchRow = searches.findForGarment(g.id);
+        }
+        SearchView search = searchRow.map(s -> new SearchView(s.id,
                 s.status.name(), s.searchedAt, candidates.findBySearchIdOrderByIdAsc(s.id).stream()
                         .map(c -> new CandidateView(c.id, c.name, c.brand, c.colorName, c.imageUrl, c.sourceUrl, c.matchReason,
                                 c.id.equals(confirmedCandidate)))
@@ -232,6 +238,10 @@ public class GarmentService {
                 }
             }
             recordCorrections(g, extraction);
+        }
+        if (in.searchId() != null) {
+            searches.findByIdAndUserId(in.searchId(), userId).orElseThrow(() -> ApiException.notFound("제품 검색"));
+            searches.linkToGarment(g.id, in.searchId());
         }
         Long productImage = null;
         if (in.candidateId() != null) {
@@ -415,6 +425,8 @@ public class GarmentService {
         }
         requireLeafSpace(userId, target);
         place(g.id, target);
+        // 위치를 확인해 넣었으니 집 안 상태도 보관 중이다(R08 '재배치 확인' → '보관 중').
+        g.homeStatus = GarmentStatus.STORED;
         g.updatedAt = Instant.now();
         return detail(userId, g.id);
     }
@@ -438,7 +450,7 @@ public class GarmentService {
     }
 
     /** 옷은 가장 안쪽 공간에만 넣는다('옷장 A'가 아니라 '옷장 A → 왼쪽 행거'). */
-    private void requireLeafSpace(long userId, long spaceId) {
+    public void requireLeafSpace(long userId, long spaceId) {
         spaces.findByIdAndUserId(spaceId, userId).orElseThrow(() -> ApiException.notFound("공간"));
         if (locationPaths.parentMap(userId).containsValue(spaceId)) {
             throw ApiException.badRequest("안쪽에 다른 공간이 있는 곳이에요. 가장 안쪽 공간을 골라 주세요.");

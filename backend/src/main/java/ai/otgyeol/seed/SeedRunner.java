@@ -104,14 +104,12 @@ public class SeedRunner implements ApplicationRunner {
             return;
         }
         jdbc.update("DELETE FROM move_batches WHERE user_id = ?", user.id);
-        jdbc.update("DELETE FROM outfits WHERE user_id = ?", user.id);
         jdbc.update("DELETE FROM product_searches WHERE user_id = ?", user.id);
         jdbc.update("DELETE FROM label_extractions WHERE user_id = ?", user.id);
         jdbc.update("DELETE FROM garments WHERE user_id = ?", user.id);
         jdbc.update("DELETE FROM collections WHERE user_id = ?", user.id);
         jdbc.update("DELETE FROM images WHERE user_id = ?", user.id);
         jdbc.update("DELETE FROM storage_spaces WHERE user_id = ?", user.id);
-        jdbc.update("DELETE FROM body_profiles WHERE user_id = ?", user.id);
         populateSeedData(user.id);
     }
 

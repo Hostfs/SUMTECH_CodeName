@@ -28,7 +28,7 @@ Agent가 서비스 저장소 루트의 `progress.md`로 복사해 이어 쓴다(
   - 운영 미완: 배포 URL 없음, AI 키 연결 실요청 미확인(S2 E2E도 키 필요). e2e/·workflows/scenarios.yml은 추가함(6장)
 - 2026-10-29 학생 결정: 백엔드 Spring, DB MariaDB, 프런트 Vite+React. DB는 5NF까지 정규화하고 ER 다이어그램과 교차 검증 결과를 제공(docs/db/ERD.md). 이 PC에 Docker 없음 → docker 검증은 GitHub Actions로
 - 로컬 테스트용 일회용 MariaDB 10.4 인스턴스: 127.0.0.1:3399(root, 비밀번호 없음, 데이터는 세션 scratchpad). 학생 PC의 MariaDB 서비스(3307)는 건드리지 않음
-- 학생에게 확인할 내용: 팀원 실제 경험(experiences E1 when/workaround/quote 학생 답 대기), sources(학생 요청 시 검색), S2용 실제 택 사진 2장(e2e/fixtures)
+- 학생에게 확인할 내용: 팀원 실제 경험 세부 에피소드·발언 원문 및 옷 찾기 시간·QR 대 메모 기록 시간 실측값(학생 답 대기 — 팀장 조선대학교 AISW학부 정보보안전공 이현준, 팀원 울산대학교 전기공학부 김근호·선문대학교 컴퓨터공학부 김우성·국립순천대학교 컴퓨터공학과 박규성·한양대학교 ERICA 수리데이터사이언스학과 이고은 전원 피드백 반영 동의 확인), S2용 실제 택 사진 2장(e2e/fixtures)
 - 2026-10-29 결정(학생 지시): 기획 내용은 학생이 제공한 캔버스 PDF·서비스 구체화 md에서 그대로 옮김. R02 제품 검색은 AI Gateway 검색·수집 도구로 실제 구현 유지(학생: "API 키 있음, 크롤링해서 해도 됨"). platform both, 로그인 있음·역할 '사용자', R03은 md 기준 유지(브라우저 배경 제거 + 실패 시 원본) — md의 권고안을 학생이 "계획서 작성" 지시로 채택, 이견 시 수정
 
 ## 1. GitHub 준비

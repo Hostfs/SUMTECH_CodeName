@@ -354,7 +354,10 @@ class OtgyeolApplicationTests {
         assertThat(find(board.get("inProgress"), "후드티")).isNotNull();
 
         // 이미 맡긴 옷은 다시 맡기거나 박스로 옮길 수 없다. 날짜 순서가 틀리면 거부한다
-        assertThat(c.post("/api/moves", "{\"destination\":\"LAUNDRY\",\"garmentIds\":[" + ids[2] + "]}").status()).isEqualTo(409);
+        assertThat(c.post("/api/moves", "{\"destination\":\"LAUNDRY\",\"dueOn\":\"" + today(2) + "\",\"garmentIds\":[" + ids[2] + "]}").status())
+                .isEqualTo(409);
+        // 세탁소 묶음은 회수 예정일이 있어야 관리함에 모인다
+        assertThat(c.post("/api/moves", "{\"destination\":\"LAUNDRY\",\"garmentIds\":[" + ids[0] + "]}").status()).isEqualTo(400);
         assertThat(c.post("/api/moves", "{\"destination\":\"SPACE\",\"spaceId\":" + home + ",\"garmentIds\":[" + ids[3] + "]}").status())
                 .isEqualTo(409);
         assertThat(c.post("/api/moves", "{\"destination\":\"LAUNDRY\",\"dueOn\":\"" + today(-1) + "\",\"garmentIds\":[" + ids[0] + "]}")
@@ -367,6 +370,51 @@ class OtgyeolApplicationTests {
         // 남의 옷은 옮길 수 없다
         assertThat(new Client().login().post("/api/moves", "{\"destination\":\"LAUNDRY\",\"garmentIds\":[" + ids[0] + "]}").status())
                 .isEqualTo(404);
+    }
+
+    @Test
+    void placementRulesSearchLinkAndConfirmMakesStored() throws Exception {
+        Client c = new Client();
+        c.post("/api/auth/signup", "{\"email\":\"rules" + System.nanoTime() + "@example.com\",\"password\":\"password123\"}");
+        long closet = c.post("/api/spaces", "{\"name\":\"옷장 B\",\"spaceType\":\"HANG\"}").body().get("spaces").get(0).get("id").asLong();
+        JsonNode map = c.post("/api/spaces", "{\"name\":\"행거\",\"parentId\":" + closet + ",\"spaceType\":\"HANG\",\"capacity\":5}").body();
+        long hanger = find(map.get("spaces"), "행거").get("id").asLong();
+
+        // R07: 옷이 들어 있는 공간 안에는 다른 공간을 만들 수 없다(옷이 위치 경로 중간에 끼지 않게)
+        long shirt = c.post("/api/garments", "{\"name\":\"규칙 셔츠\",\"subType\":\"SHIRT\",\"spaceId\":" + hanger + "}").body()
+                .get("summary").get("id").asLong();
+        assertThat(c.post("/api/spaces", "{\"name\":\"칸\",\"parentId\":" + hanger + ",\"spaceType\":\"FOLD\"}").status()).isEqualTo(400);
+
+        // R07: 배치 추천의 공간을 바깥 공간(안쪽에 공간이 있는 곳)으로 바꿀 수 없다
+        long tee = c.post("/api/garments", "{\"name\":\"추천 티\",\"subType\":\"SHORT_SLEEVE_TEE\"}").body().get("summary").get("id").asLong();
+        JsonNode proposals = c.post("/api/placements/recommend", "{\"garmentIds\":[" + tee + "]}").body();
+        long proposal = proposals.get(0).get("id").asLong();
+        assertThat(c.send("PUT", "/api/placements/" + proposal, "{\"spaceId\":" + closet + "}").status()).isEqualTo(400);
+        assertThat(c.send("PUT", "/api/placements/" + proposal, "{\"spaceId\":" + hanger + "}").status()).isEqualTo(200);
+
+        // R08: '착용·보관 전'이던 옷도 회수 후 '재배치 확인'을 누르면 '보관 중'이 된다
+        c.send("PATCH", "/api/garments/" + shirt + "/status", "{\"status\":\"PENDING\"}");
+        long care = c.post("/api/garments/" + shirt + "/care", "{\"careType\":\"WASH\",\"place\":\"HOME\",\"dueOn\":\"" + today(1) + "\"}")
+                .body().get("inProgress").get(0).get("care").get("id").asLong();
+        c.post("/api/care/" + care + "/complete", null);
+        JsonNode confirmed = c.post("/api/garments/" + shirt + "/confirm-placement", null).body();
+        assertThat(confirmed.get("summary").get("status").asString()).isEqualTo("STORED");
+        assertThat(confirmed.get("summary").get("statusLabel").asString()).isEqualTo("보관 중");
+
+        // R02: 택 분석 없이 한 검색도 옷에 남는다(결과가 없어도 '검색 결과 없음'으로 상세에 보인다)
+        long searchId = jdbcInsertSearch(c);
+        JsonNode linked = c.post("/api/garments", "{\"name\":\"검색만 한 셔츠\",\"subType\":\"SHIRT\",\"searchId\":" + searchId + "}").body();
+        assertThat(linked.get("search").get("id").asLong()).isEqualTo(searchId);
+        assertThat(linked.get("search").get("candidates").size()).isZero();
+        assertThat(new Client().login().post("/api/garments", "{\"name\":\"남의 검색\",\"subType\":\"SHIRT\",\"searchId\":" + searchId + "}")
+                .status()).isEqualTo(404);
+    }
+
+    /** AI 없이 검색 기록 한 건을 만든다(결과 없음). 로그인한 사용자의 것. */
+    long jdbcInsertSearch(Client c) throws Exception {
+        long userId = c.get("/api/auth/me").body().get("id").asLong();
+        jdbc.update("INSERT INTO product_searches (user_id, query_brand, query_product_code, status_code, searched_at) VALUES (?, '테스트', NULL, 'SUCCEEDED', NOW(6))", userId);
+        return jdbc.queryForObject("SELECT MAX(id) FROM product_searches WHERE user_id = ?", Long.class, userId);
     }
 
     static JsonNode imageById(JsonNode images, long imageId) {

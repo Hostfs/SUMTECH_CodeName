@@ -159,6 +159,9 @@ public class SpaceController {
             return;
         }
         spaces.findByIdAndUserId(parentId, userId).orElseThrow(() -> ApiException.notFound("상위 공간"));
+        if (placements.countBySpaceId(parentId) > 0) {
+            throw ApiException.badRequest("옷이 들어 있는 공간 안에는 다른 공간을 만들 수 없어요. 옷을 먼저 옮겨 주세요.");
+        }
         Map<Long, Long> parentOf = locationPaths.parentMap(userId);
         for (Long cur = parentId; cur != null; cur = parentOf.get(cur)) {
             if (cur == spaceId) {

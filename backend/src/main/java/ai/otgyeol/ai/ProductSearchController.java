@@ -9,6 +9,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -53,7 +54,8 @@ public class ProductSearchController {
             String matchReason) {
     }
 
-    public record SearchResult(long id, String status, List<CandidateView> candidates, String message) {
+    /** searchedAt: 조회 시점(R02). 옷에 연결되면 상세의 제품 정보 칸에도 같은 값이 보인다. */
+    public record SearchResult(long id, String status, Instant searchedAt, List<CandidateView> candidates, String message) {
     }
 
     private static final int MAX_CANDIDATES = 3;
@@ -143,7 +145,7 @@ public class ProductSearchController {
             candidates.save(c);
             views.add(new CandidateView(c.id, c.name, c.brand, c.colorName, c.imageUrl, c.sourceUrl, c.matchReason));
         }
-        return new SearchResult(s.id, s.status.name(), views, message);
+        return new SearchResult(s.id, s.status.name(), s.searchedAt, views, message);
     }
 
     private ObjectNode request(String brand, String code, String name, boolean usePerplexityTool) {

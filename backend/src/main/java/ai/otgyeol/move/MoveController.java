@@ -137,7 +137,10 @@ public class MoveController {
             dest.garmentIds.addAll(garmentIds);
             batchSpaces.save(dest);
         } else {
-            if (in.dueOn() != null && in.dueOn().isBefore(movedOn)) {
+            if (in.dueOn() == null) {
+                throw ApiException.badRequest("세탁소에 맡길 때는 회수 예정일을 골라 주세요.");
+            }
+            if (in.dueOn().isBefore(movedOn)) {
                 throw ApiException.badRequest("회수 예정일은 맡긴 날짜보다 앞설 수 없어요.");
             }
             String shop = in.shopName() == null || in.shopName().isBlank() ? null : in.shopName().trim();

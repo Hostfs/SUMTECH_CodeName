@@ -116,7 +116,7 @@ public class PlacementService {
     @Transactional
     public List<ProposalView> change(long userId, long proposalId, long spaceId) {
         PlacementProposal p = owned(userId, proposalId);
-        spaces.findByIdAndUserId(spaceId, userId).orElseThrow(() -> ApiException.notFound("공간"));
+        garmentService.requireLeafSpace(userId, spaceId);
         p.spaceId = spaceId;
         p.reason = "직접 고른 공간이에요.";
         return pending(userId);
@@ -130,6 +130,8 @@ public class PlacementService {
         if (garmentService.context(userId).status(g).isAway()) {
             throw ApiException.conflict("세탁·수선 중인 옷은 회수 완료 후에 배치할 수 있어요.");
         }
+        // 추천 뒤에 그 공간 안에 다른 공간이 생겼을 수 있다.
+        garmentService.requireLeafSpace(userId, p.spaceId);
         garmentService.place(g.id, p.spaceId);
         proposals.delete(p);
         return pending(userId);

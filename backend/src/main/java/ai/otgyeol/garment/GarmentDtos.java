@@ -61,7 +61,9 @@ public final class GarmentDtos {
             Long extractionId,
             Long candidateId,
             Set<GarmentField> aiFields,
-            Long spaceId) {
+            Long spaceId,
+            /** 등록 화면에서 한 제품 검색(R02). 택 분석 없이 검색했어도 결과(후보·'검색 결과 없음')가 옷에 남는다. */
+            Long searchId) {
     }
 
     public record StatusInput(@NotNull(message = "상태를 골라 주세요.") GarmentStatus status, Boolean usableWhenPending) {
