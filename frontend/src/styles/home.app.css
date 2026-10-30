@@ -68,12 +68,6 @@
   .home-where { display: block; }
 }
 
-/* 흐림·비·눈의 낮 하늘은 밝은 회색이라 흰 글씨가 묻힌다. 날씨가 없을 때(기본 하늘)도 같다. 밝은 톤일 때만 하늘 그늘을 짙게 하고 글자 그림자를 키운다. */
-:root:not([data-tone='dark']) .home:is([data-sky='cloudy'], [data-sky='rain'], [data-sky='snow'], [data-sky='none']) .sky-scrim {
-  background: linear-gradient(to bottom, rgba(24, 30, 42, 0.14) 0%, rgba(24, 30, 42, 0.34) 26%, rgba(22, 26, 36, 0.38) 70%, rgba(20, 22, 30, 0.44) 100%);
-}
-:root:not([data-tone='dark']) .home:is([data-sky='cloudy'], [data-sky='rain'], [data-sky='snow'], [data-sky='none']) .wx { text-shadow: 0 1px 18px rgba(0, 0, 0, 0.36); }
-
 /* 휴대폰은 초안처럼 두 벌만(나머지는 '전체 보기') */
 @media (max-width: 959px) {
   .home .recs-row .rec:nth-child(n + 3) { display: none; }

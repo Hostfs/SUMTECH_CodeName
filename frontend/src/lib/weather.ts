@@ -25,8 +25,7 @@ export interface Weather {
   raw: ApiWeather
 }
 
-/** off: 서버에 기상청 키가 없어(503) 날씨를 쓸 수 없는 환경. 다시 불러도 소용없다. */
-export type WeatherStatus = 'loading' | 'ready' | 'error' | 'off'
+export type WeatherStatus = 'loading' | 'ready' | 'error'
 
 export interface WeatherValue {
   weather: Weather | null

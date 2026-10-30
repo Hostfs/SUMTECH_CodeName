@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { ApiError, errorMessage } from '../api'
+import { errorMessage } from '../api'
 import { useDaylight } from './daylight'
 import { DEFAULT_PLACE, GEO_KEY, WeatherContext, fetchWeatherAt, toWeather, type Weather, type WeatherStatus, type WeatherValue } from './weather'
 
@@ -25,12 +25,7 @@ export function WeatherProvider({ children }: { children: ReactNode }) {
         setWeather((prev) => (prev?.here ? prev : toWeather(w, DEFAULT_PLACE.name, false)))
         setStatus('ready')
       })
-      .catch((e) => {
-        if (!alive.current) return
-        // 서버에 기상청 키가 없으면(503) 다시 불러도 소용없으니 'off'로 두고, 일시적인 실패만 '다시 불러오기'를 보여 준다.
-        const off = e instanceof ApiError && e.status === 503
-        setStatus((s) => (s === 'ready' ? s : off ? 'off' : 'error'))
-      })
+      .catch(() => { if (alive.current) setStatus((s) => (s === 'ready' ? s : 'error')) })
   }, [])
 
   const locate = useCallback(() => {
